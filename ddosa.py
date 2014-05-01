@@ -27,8 +27,12 @@ class ScWData(DataAnalysis):
             self.input_scwid=scwid
 
     def main(self):
-        self.scwpath=os.environ['REP_BASE_PROD']+"/scw/"+self.input_scwid[:4]+"/"+self.input_scwid
+        self.scwid=self.input_scwid.handle
+        self.revid=self.scwid[:4]
+
+        self.scwpath=os.environ['REP_BASE_PROD']+"/scw/"+self.scwid[:4]+"/"+self.input_scwid #!!!!
         self.revdirpath=os.environ['REP_BASE_PROD']+"/scw/"+self.input_scwid[:4]+"/rev.001"
+        self.auxadppath=os.environ['REP_BASE_PROD']+"/aux/adp/"+self.input_scwid[:4]+".001"
 
         if not os.path.exists(self.scwpath+"/swg.fits"):
             raise Exception("no scw data!")
@@ -212,6 +216,73 @@ class ibis_dead(DataAnalysis):
         shutil.copy(ht.cwd+"/isgri_dead.fits","./isgri_dead.fits")
         self.output_dead=DataFile("isgri_dead.fits")
 
+class ISGRIEvents(DataAnalysis):
+    input_evttag=ibis_isgr_evts_tag()
+
+    version="v2"
+    def main(self):
+        self.events=self.input_evttag.output_events
+
+class ImageBins(DataAnalysis):
+    input_binsname="g25-80"
+
+    def main(self):
+        self.bins=[(25,80)]
+
+class ListBins(DataAnalysis):
+    input_bins=ImageBins
+
+    def main(self):
+        open("f.txt","w").write(str(self.input_bins.bins))
+
+class BinEventsImage(DataAnalysis):
+    # how do we guarantee the same ScW is used?..
+    input_bins=ImageBins
+
+    input_scw=ScWData()
+
+    input_events=ISGRIEvents()
+    input_gti=ibis_gti()
+    input_dead=ibis_dead()
+
+    version="v5"
+
+    def main(self):
+        # ask stephane why need raw events
+        construct_gnrl_scwg_grp(self.input_scw,[\
+            self.input_events.events.path, \
+            self.input_scw.scwpath+"/isgri_events.fits[3]", \
+            self.input_scw.scwpath+"/ibis_hk.fits[IBIS-DPE.-CNV]", \
+            self.input_scw.auxadppath+"/time_correlation.fits[AUXL-TCOR-HIS]" \
+        ]) # get separately tc etc
+
+        import_attr(self.input_scw.scwpath+"/swg.fits",['OBTSTART','OBTEND'])
+        set_attr({'ISDCLEVL':"BIN_I"})
+
+        remove_withtemplate("isgri_detector_shadowgram.fits(ISGR-DETE-SHD-IDX.tpl)")
+        remove_withtemplate("isgri_efficiency_shadowgram.fits(ISGR-EFFI-SHD-IDX.tpl)")
+
+        bin="ii_shadow_build"
+        ht=heatool(bin)
+        ht['outSWGGRP']="og.fits[GROUPING,1,BINTABLE]"
+        ht['inDead']=self.input_dead.output_dead.path
+        ht['inGTI']=self.input_gti.output_gti.path
+        ht['gti_name'] = 'MERGED_ISGRI'
+        ht['isgri_e_num'] = len(self.input_bins.bins)
+        ht['isgri_e_min'] = " ".join([str(a[0]) for a in self.input_bins.bins])
+        ht['isgri_e_max'] = " ".join([str(a[1]) for a in self.input_bins.bins])
+        ht['isgri_min_rise'] = 16
+        ht['isgri_max_rise'] = 116
+        ht['isgri_t_len'] = 10000000
+        ht['idxLowThre']=self.input_scw.revdirpath+"/idx/isgri_context_index.fits[1]"
+        ht['idxNoisy']=self.input_scw.revdirpath+"/idx/isgri_prp_noise_index.fits[1]"
+        ht['outRawShadow']="isgri_detector_shadowgram.fits(ISGR-DETE-SHD-IDX.tpl)"
+        ht['outEffShadow']="isgri_efficiency_shadowgram.fits(ISGR-EFFI-SHD-IDX.tpl)"
+        ht.run()
+
+        self.shadow_detector=DataFile("isgri_detector_shadowgram.fits")
+        self.shadow_efficiency=DataFile("isgri_efficiency_shadowgram.fits")
+
 class root(DataAnalysis):
     input=[ibis_gti()]
 
@@ -259,3 +330,17 @@ def import_attr(obj,attr):
     da['outdol']="og.fits"
     da['keylist']=",".join(attr)
     da.run()
+    
+def set_attr(attrs):
+
+    pt2dt={int:"DAL_INT",str:"DAL_CHAR"}
+    pt2k={int:"i",str:"s"}
+
+    for k,v in attrs.items():
+        da=heatool("dal_attr")
+        da['indol']="og.fits"
+        da['keynam']=k
+        da['action']="WRITE"
+        da['type']=pt2dt[type(v)]
+        da['value_'+pt2k[type(v)]]=v
+        da.run()
