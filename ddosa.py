@@ -1,5 +1,13 @@
 # check for logic in osa! make sure there is none!
 
+# make cool plots
+
+# reduce logs to essential; marker stream on topic
+
+# output effect
+
+# evaluate time, estimate time to do
+
 from dataanalysis import DataFile
 #from dataanalysis import DataAnalysis,DataFile,Cache
 import dataanalysis 
@@ -289,7 +297,6 @@ class BinEventsImage(DataAnalysis):
 class BinMapsImage(DataAnalysis):
     input_bins=ImageBins
     input_ic=IBIS_ICRoot
-    input_scw=ScWData
     # and dependency on bkg!
 
     def main(self):
@@ -339,9 +346,153 @@ class ShadowUBC(DataAnalysis):
         ht['outCorShadow']="isgri_cor_shad.fits(ISGR-CEXP-SHD-IDX.tpl)"
         ht['isgrUnifDol']=self.input_maps.unif_ima.path
         ht['isgrBkgDol']=self.input_maps.back_ima.path
+        ht['method_cor']=1
         ht.run()
 
-        self.corshad=ht['outCorShadow'].value
+        self.corshad=DataFile("isgri_cor_shad.fits")
+
+class GRcat(DataAnalysis):
+    input="gnrl_ref_cat_33"
+    input_ic=ICRoot
+
+    def main(self):
+        self.cat=os.environ['REP_BASE_PROD']+"/cat/gnrl_refr_cat_0033_FLAG1.fits[1]"
+
+class GBcat(DataAnalysis):
+    input=GRcat
+    input_selection="flag5"
+
+    def main(self):
+        self.cat=self.input.cat+"[ISGRI_FLAG2==5]"
+
+class ghost_busters(DataAnalysis):
+    input=ShadowUBC
+    input_ic=IBIS_ICRoot
+    input_scw=ScWData
+    input_cat=GBcat
+
+    def main(self):
+        construct_gnrl_scwg_grp(self.input_scw,[\
+                self.input.corshad.path,
+                self.input_scw.auxadppath+"/attitude_historic.fits[AUXL-ATTI-HIS,1,BINTABLE]" \
+            ])
+
+        import_attr(self.input_scw.scwpath+"/swg.fits",["TSTART","TSTOP"])
+        
+        ht=heatool("ghost_busters")
+        ht['ogDOL']=""
+        ht['sourcecat']=self.input_cat.cat
+        ht['maskmod']=self.input_ic.ibisicroot+"/mod/isgr_ghos_mod_001.fits[ISGR-GHOS-MOD,1,IMAGE]"
+        ht['inDOL']="og.fits"
+        ht.run()
+
+        os.rename(self.input.corshad.path,"isgri_cor_shad_gb.fits")
+
+        self.corshad=DataFile("isgri_cor_shad_gb.fits")
+
+class ISGRIRefCat(DataAnalysis):
+    input=GRcat
+    input_selection="onlyisgri33"
+
+    def main(self):
+        self.cat=self.input.cat+"[ISGRI_FLAG==1 || ISGRI_FLAG==2]"
+
+class CatExtract(DataAnalysis):
+    input_cat=ISGRIRefCat
+    input_scw=ScWData
+
+    def main(self):
+        construct_gnrl_scwg_grp(self.input_scw,[\
+                ])
+        import_attr(self.input_scw.scwpath+"/swg.fits",["RA_SCX","DEC_SCX"])
+
+        remove_withtemplate("isgri_catalog.fits(ISGR-SRCL-CAT.tpl)")
+
+        ht=heatool("cat_extract")
+        ht['outGRP']="og.fits[1]"
+        ht['outCat']="isgri_catalog.fits(ISGR-SRCL-CAT.tpl)"
+        ht['outExt']='ISGR-SRCL-CAT'
+        ht['instrument']='ISGRI'
+        ht['clobber']='yes'
+        ht['refCat']=self.input_cat.cat
+        ht.run()
+
+        self.cat=DataFile("isgri_catalog.fits")
+
+class ImagingConfig(DataAnalysis):
+    input="default"
+
+    def main(self):
+        self.SearchMode=3
+        self.ToSearch=5
+        self.CleanMode=1
+        self.MinCatSouSnr=4
+        self.MinNewSouSnr=5
+        self.NegModels=0
+
+class ii_skyimage(DataAnalysis):
+    input_gb=ghost_busters
+    input_maps=BinMapsImage
+    input_bins=ImageBins
+    input_cat=CatExtract
+    input_ic=IBIS_ICRoot
+    input_imgconfig=ImagingConfig
+    input_scw=ScWData
+    input_gti=ibis_gti
+
+    def main(self):
+        construct_gnrl_scwg_grp(self.input_scw,[\
+                    self.input_gb.corshad.path,
+                    self.input_cat.cat.path,
+                    self.input_scw.auxadppath+"/time_correlation.fits[AUXL-TCOR-HIS]",
+                    self.input_gti.output_gti.path,
+                ])
+        
+        import_attr(self.input_scw.scwpath+"/swg.fits",["OBTSTART","OBTEND","TSTART","TSTOP","SW_TYPE","TELAPSE"])
+        set_attr({'ISDCLEVL':"BIN_I"})
+        set_attr({'INSTRUME':"IBIS"},"og.fits")
+
+        construct_gnrl_scwg_grp_idx(self.input_scw,[\
+                    "og.fits",
+                ])
+        set_attr({'ISDCLEVL':"BIN_I"},"og_idx.fits")
+        
+        construct_og(self.input_scw,[\
+                    "og_idx.fits",
+                ])
+        set_attr({'ISDCLEVL':"BIN_I"},"ogg.fits")
+        
+        remove_withtemplate("isgri_srcl_res.fits(ISGR-SRCL-RES.tpl)")
+        remove_withtemplate("isgri_mosa_ima.fits(ISGR-MOSA-IMA-IDX.tpl)")
+        remove_withtemplate("isgri_mosa_res.fits(ISGR-MOSA-RES-IDX.tpl)")
+        remove_withtemplate("isgri_sky_ima.fits")
+        remove_withtemplate("isgri_sky_res.fits")
+
+        ht=heatool("ii_skyimage")
+        ht['outOG']="ogg.fits[1]"
+        ht['outCat']="isgri_srcl_res.fits(ISGR-SRCL-RES.tpl)"
+        ht['mask']=self.input_ic.ibisicroot+"/mod/isgr_mask_mod_0003.fits[ISGR-MASK-MOD,1,IMAGE]"
+        ht['deco']=self.input_ic.ibisicroot+"/mod/isgr_deco_mod_0008.fits[ISGR-DECO-MOD,1,IMAGE]"
+        ht['tungAtt']=self.input_ic.ibisicroot+"/mod/isgr_attn_mod_0010.fits[ISGR-ATTN-MOD,1,BINTABLE]"
+        ht['aluAtt']=self.input_ic.ibisicroot+"/mod/isgr_attn_mod_0011.fits[ISGR-ATTN-MOD,1,BINTABLE]"
+        ht['leadAtt']=self.input_ic.ibisicroot+"/mod/isgr_attn_mod_0012.fits[ISGR-ATTN-MOD,1,BINTABLE]"
+        ht['covrMod']=self.input_ic.ibisicroot+"/mod/isgr_covr_mod_0002.fits[1]"
+        ht['outMosIma']="isgri_mosa_ima.fits(ISGR-MOSA-IMA-IDX.tpl)"
+        ht['outMosRes']="isgri_mosa_res.fits(ISGR-MOSA-RES-IDX.tpl)"
+        ht['ScwDir'] = './'
+        ht['ScwType'] = 'pointing'
+        ht['ExtenType'] = 2
+        ht['num_band'] = len(self.input_bins.bins)
+        ht['E_band_min'] = " ".join([str(a[0]) for a in self.input_bins.bins])
+        ht['E_band_max'] = " ".join([str(a[1]) for a in self.input_bins.bins])
+        for k in ['SearchMode','ToSearch','CleanMode','MinCatSouSnr','MinNewSouSnr','NegModels','DoPart2']: # dopart2 is flow control, separately
+            ht[k]=getattr(self.input_imgconfig,k)
+        ht['corrDol'] = self.input_maps.corr_ima.path
+        ht.run()
+
+        self.skyima=DataFile("isgri_sky_ima.fits")
+        self.skyres=DataFile("isgri_sky_res.fits")
+
 
 class root(DataAnalysis):
     input=[ibis_gti()]
@@ -367,14 +518,14 @@ def remove_withtemplate(fn):
         pass
     
 
-def construct_gnrl_scwg_grp(scw,children=[]):
+def construct_gnrl_scwg_grp(scw,children=[],fn="og.fits"):
     dc=heatool("dal_create")
-    dc['obj_name']="!og.fits"
+    dc['obj_name']="!"+fn
     dc['template']="GNRL-SCWG-GRP.tpl"
     dc.run()
     
     da=heatool("dal_attr")
-    da['indol']="og.fits"
+    da['indol']=fn
     da['keynam']="REVOL"
     da['action']="WRITE"
     da['type']="DAL_INT"
@@ -383,7 +534,30 @@ def construct_gnrl_scwg_grp(scw,children=[]):
     
     if children!=[]:
         dac=heatool("dal_attach")
-        dac['Parent']="og.fits"
+        dac['Parent']=fn
+        for i,c in enumerate(children):
+            dac['Child%i'%(i+1)]=c
+            if i>3:
+                raise Exception("can not attach more than 4 children to the group!")
+        dac.run()
+
+def construct_gnrl_scwg_grp_idx(scw,children=[],fn="og_idx.fits"):
+    open("swgs.txt","w").write("\n".join(children))
+    dc=heatool("txt2idx")
+    dc['element']="swgs.txt"
+    dc['index']=fn
+    dc['template']="GNRL-SCWG-GRP-IDX.tpl"
+    dc.run()
+
+def construct_og(scw,children=[],fn="ogg.fits"):
+    dc=heatool("dal_create")
+    dc['obj_name']="!"+fn
+    dc['template']="GNRL-OBSG-GRP.tpl"
+    dc.run()
+    
+    if children!=[]:
+        dac=heatool("dal_attach")
+        dac['Parent']=fn
         for i,c in enumerate(children):
             dac['Child%i'%(i+1)]=c
             if i>3:
@@ -397,14 +571,14 @@ def import_attr(obj,attr):
     da['keylist']=",".join(attr)
     da.run()
     
-def set_attr(attrs):
+def set_attr(attrs,fn="og.fits"):
 
     pt2dt={int:"DAL_INT",str:"DAL_CHAR"}
     pt2k={int:"i",str:"s"}
 
     for k,v in attrs.items():
         da=heatool("dal_attr")
-        da['indol']="og.fits"
+        da['indol']=fn
         da['keynam']=k
         da['action']="WRITE"
         da['type']=pt2dt[type(v)]
