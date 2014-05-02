@@ -8,6 +8,7 @@ from pilton import heatool
 
 import os,shutil,re,time
 
+
 mcg=dataanalysis.MemCache('/sps/integral/analysis/cache/dda_global')
 
 class DataAnalysis(dataanalysis.DataAnalysis):
@@ -28,11 +29,12 @@ class ScWData(DataAnalysis):
 
     def main(self):
         self.scwid=self.input_scwid.handle
+        self.scwver=self.scwid[-3:]
         self.revid=self.scwid[:4]
 
-        self.scwpath=os.environ['REP_BASE_PROD']+"/scw/"+self.scwid[:4]+"/"+self.input_scwid #!!!!
-        self.revdirpath=os.environ['REP_BASE_PROD']+"/scw/"+self.input_scwid[:4]+"/rev.001"
-        self.auxadppath=os.environ['REP_BASE_PROD']+"/aux/adp/"+self.input_scwid[:4]+".001"
+        self.scwpath=os.environ['REP_BASE_PROD']+"/scw/"+self.revid+"/"+self.scwid #!!!!
+        self.revdirpath=os.environ['REP_BASE_PROD']+"/scw/"+self.revid+"/rev.001" # ver?
+        self.auxadppath=os.environ['REP_BASE_PROD']+"/aux/adp/"+self.revid+".001"
 
         if not os.path.exists(self.scwpath+"/swg.fits"):
             raise Exception("no scw data!")
@@ -46,7 +48,7 @@ class GetLUT2(DataAnalysis):
 
 class GetEcorrCalDB(DataAnalysis):
     input=["ecorr_standard_OSA10"]
-    input_lut2=GetLUT2()
+    input_lut2=GetLUT2
 
     def main(self):
         self.godol=os.environ['REP_BASE_PROD']+"/ic/ic_10/ic/ibis/cal/ibis_isgr_gain_offset_0010.fits"
@@ -79,6 +81,7 @@ class ibis_isgr_energy(DataAnalysis):
         ht['inGRP']="og.fits"
         ht['outCorEvts']="isgri_events_corrected.fits(ISGR-EVTS-COR.tpl)"
         ht['useGTI']="n"
+        ht['randSeed']=500
         ht['riseDOL']=self.input_ecorrdata.risedol
         ht['GODOL']=self.input_ecorrdata.godol
         ht['supGDOL']=self.input_ecorrdata.supgdol
@@ -146,7 +149,7 @@ class ibis_gti(DataAnalysis):
     def main(self):
         # horrible horrible full OSA
 
-        open("scw.list","w").write(self.input_scw.input_scwid)
+        open("scw.list","w").write(self.input_scw.scwid)
 
         if os.path.exists("obs"):
             os.rename("obs","obs."+str(time.time()))
@@ -155,11 +158,11 @@ class ibis_gti(DataAnalysis):
         ogc=heatool(bin)
         ogc['idxSwg']="scw.list"
         ogc['instrument']="IBIS"
-        ogc['ogid']="scw_"+self.input_scw.input_scwid[:12]
+        ogc['ogid']="scw_"+self.input_scw.scwid
         ogc['baseDir']="./"
         ogc.run()
         
-        scwroot="scw/"+self.input_scw.input_scwid
+        scwroot="scw/"+self.input_scw.scwid
 
         bin="ibis_gti"
         ht=heatool(bin,wd="obs/"+ogc['ogid'].value) 
@@ -186,7 +189,7 @@ class ibis_dead(DataAnalysis):
     def main(self):
         # horrible horrible full OSA
 
-        open("scw.list","w").write(self.input_scw.input_scwid)
+        open("scw.list","w").write(self.input_scw.scwid)
 
         if os.path.exists("obs"):
             os.rename("obs","obs."+str(time.time()))
@@ -195,11 +198,11 @@ class ibis_dead(DataAnalysis):
         ogc=heatool(bin)
         ogc['idxSwg']="scw.list"
         ogc['instrument']="IBIS"
-        ogc['ogid']="scw_"+self.input_scw.input_scwid[:12]
+        ogc['ogid']="scw_"+self.input_scw.scwid
         ogc['baseDir']="./"
         ogc.run()
         
-        scwroot="scw/"+self.input_scw.input_scwid
+        scwroot="scw/"+self.input_scw.scwid
 
         bin="ibis_dead"
         ht=heatool(bin,wd="obs/"+ogc['ogid'].value) 
@@ -283,8 +286,71 @@ class BinEventsImage(DataAnalysis):
         self.shadow_detector=DataFile("isgri_detector_shadowgram.fits")
         self.shadow_efficiency=DataFile("isgri_efficiency_shadowgram.fits")
 
+class BinMapsImage(DataAnalysis):
+    input_bins=ImageBins
+    input_ic=IBIS_ICRoot
+    input_scw=ScWData
+    # and dependency on bkg!
+
+    def main(self):
+        #construct_gnrl_scwg_grp(self.input_scw,[\
+        #        ])
+
+        construct_empty_shadidx(self.input_bins.bins)
+
+        maps={
+                'back':('Bkg','bkg/isgr_back_bkg_0007.fits[1]'),
+                'corr':('Corr','mod/isgr_effi_mod_0011.fits[1]'),
+                'unif':('Uni','bkg/isgr_unif_bkg_0002.fits[1]')
+                }
+        
+        for k,(k2,m) in maps.items():
+            fn="rebinned_"+k+"_ima.fits"
+
+            remove_withtemplate(fn) # again
+
+            bin="ii_map_rebin"
+            ht=heatool(bin)
+            ht['outSwg']='og.fits[GROUPING,1,BINTABLE]'
+            ht['OutType']='BIN_I'
+            ht['slope']='-2'
+            ht['arfDol']=self.input_ic.ibisicroot+'/mod//isgr_effi_mod_0011.fits[ISGR-ARF.-RSP]'
+            ht['inp'+k2+'Dol']=self.input_ic.ibisicroot+"/"+m 
+            ht['reb'+k2+'Dol']=fn
+            ht.run()
+
+            setattr(self,k+'_ima',DataFile(fn))
+
+class ShadowUBC(DataAnalysis):
+    input_scw=ScWData
+    input_shadows=BinEventsImage
+    input_maps=BinMapsImage
+
+    def main(self):
+        construct_gnrl_scwg_grp(self.input_scw,[\
+                self.input_shadows.shadow_detector.path,
+                self.input_shadows.shadow_efficiency.path,
+            ])
+
+        remove_withtemplate("isgri_cor_shad.fits(ISGR-CEXP-SHD-IDX.tpl)")
+        
+        ht=heatool("ii_shadow_ubc")
+        ht['outSWGRP']="og.fits"
+        ht['outCorShadow']="isgri_cor_shad.fits(ISGR-CEXP-SHD-IDX.tpl)"
+        ht['isgrUnifDol']=self.input_maps.unif_ima.path
+        ht['isgrBkgDol']=self.input_maps.back_ima.path
+        ht.run()
+
+        self.corshad=ht['outCorShadow'].value
+
 class root(DataAnalysis):
     input=[ibis_gti()]
+
+#
+#
+#### tools
+#
+#
 
 def remove_withtemplate(fn):
     s=re.search("(.*?)\((.*?)\)",fn)
@@ -301,7 +367,7 @@ def remove_withtemplate(fn):
         pass
     
 
-def construct_gnrl_scwg_grp(scw,children):
+def construct_gnrl_scwg_grp(scw,children=[]):
     dc=heatool("dal_create")
     dc['obj_name']="!og.fits"
     dc['template']="GNRL-SCWG-GRP.tpl"
@@ -312,7 +378,7 @@ def construct_gnrl_scwg_grp(scw,children):
     da['keynam']="REVOL"
     da['action']="WRITE"
     da['type']="DAL_INT"
-    da['value_i']=scw.input_scwid[:4]
+    da['value_i']=scw.revid
     da.run()
     
     if children!=[]:
@@ -344,3 +410,61 @@ def set_attr(attrs):
         da['type']=pt2dt[type(v)]
         da['value_'+pt2k[type(v)]]=v
         da.run()
+        
+def construct_empty_shadidx(bins,fn="og.fits",levl="BIN_I"):
+    import pyfits # why now? its expensive and done only if needed
+
+    remove_withtemplate(fn+"(ISGR-DETE-SHD-IDX.tpl)")
+
+    ht=heatool("dal_create")
+    ht['obj_name']=fn
+    ht['template']="ISGR-DETE-SHD-IDX.tpl"
+    ht.run()
+
+    for e1,e2 in bins:
+        tshad="shad_%.5lg_%.5lg.fits"%(e1,e2)
+        remove_withtemplate(tshad)
+
+        ht=heatool("dal_create")
+        ht['obj_name']=tshad
+        ht['template']="ISGR-DETE-SHD.tpl"
+        ht.run()
+
+        da=heatool("dal_attr")
+        da['indol']=ht['obj_name'].value
+        da['keynam']="E_MIN"
+        da['action']="WRITE"
+        da['type']="DAL_DOUBLE"
+        da['value_r']=e1
+        da.run()
+
+        da=heatool("dal_attr")
+        da['indol']=ht['obj_name'].value
+        da['keynam']="E_MAX"
+        da['action']="WRITE"
+        da['type']="DAL_DOUBLE"
+        da['value_r']=e2
+        da.run()
+        
+        da=heatool("dal_attr")
+        da['indol']=ht['obj_name'].value
+        da['keynam']="ISDCLEVL"
+        da['action']="WRITE"
+        da['type']="DAL_CHAR"
+        da['value_s']="BIN_I"
+        da.run()
+
+        da=heatool("dal_attach")
+        da['Parent']=fn
+        da['Child1']=ht['obj_name'].value
+        da.run()
+
+    # attaching does not create necessary fields
+    
+    og=pyfits.open(fn) 
+    for i,(e1,e2) in enumerate(bins):
+        og[1].data[i]['E_MIN']=e1
+        og[1].data[i]['E_MAX']=e2
+        og[1].data[i]['ISDCLEVL']=levl
+    og.writeto(fn,clobber=True)
+
