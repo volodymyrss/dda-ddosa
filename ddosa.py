@@ -8,8 +8,23 @@
 
 # evaluate time, estimate time to do
 
+# gzip files always
+
+# simlink import
+
+# avoid optional caches
+
+# deep cacges
+
+# asynch logs
+#
+# there are two ways to define common origin:
+#   define during class declaratopm
+# dynamic redefinition of the classes, like ScWData, will invalidate (hopefully) the get call, so it should be reexecuted
+
+# there is special treatement
+
 from dataanalysis import DataFile
-#from dataanalysis import DataAnalysis,DataFile,Cache
 import dataanalysis 
 
 from pilton import heatool
@@ -22,12 +37,6 @@ mcg=dataanalysis.MemCache('/sps/integral/analysis/cache/dda_global')
 class DataAnalysis(dataanalysis.DataAnalysis):
     cache=mcg
 
-#
-# there are two ways to define common origin:
-#   define during class declaratopm
-# dynamic redefinition of the classes, like ScWData, will invalidate (hopefully) the get call, so it should be reexecuted
-
-# there is special treatement
 class ScWData(DataAnalysis):
     input_scwid=None
 
@@ -240,25 +249,38 @@ class ImageBins(DataAnalysis):
     def main(self):
         self.bins=[(25,80)]
 
+class SpectraBins(DataAnalysis):
+    input_binsname="g62"
+
+    version="v1"
+    def main(self):
+        self.binrmf="/sps/integral/analysis/savchenk/lut2tests/test_05351/single_scw/resources/rmf/rmf_62bands.fits" # noo!!!
+        import pyfits
+        e=pyfits.open(self.binrmf)[3].data
+        self.bins=zip(e['E_MIN'],e['E_MAX'])
+
 class ListBins(DataAnalysis):
     input_bins=ImageBins
 
     def main(self):
         open("f.txt","w").write(str(self.input_bins.bins))
 
-class BinEventsImage(DataAnalysis):
-    # how do we guarantee the same ScW is used?..
-    input_bins=ImageBins
-
+class BinEventsVirtual(DataAnalysis):
     input_scw=ScWData()
 
     input_events=ISGRIEvents()
     input_gti=ibis_gti()
     input_dead=ibis_dead()
 
-    version="v5"
+    target_level=None
+    input_bins=None
+
+    version="v2"
 
     def main(self):
+        if self.target_level is None or self.input_bins is None:
+            raise Exception("VirtualAnalysis: please inherit!")
+
         # ask stephane why need raw events
         construct_gnrl_scwg_grp(self.input_scw,[\
             self.input_events.events.path, \
@@ -268,10 +290,15 @@ class BinEventsImage(DataAnalysis):
         ]) # get separately tc etc
 
         import_attr(self.input_scw.scwpath+"/swg.fits",['OBTSTART','OBTEND'])
-        set_attr({'ISDCLEVL':"BIN_I"})
+        set_attr({'ISDCLEVL':self.target_level})
 
-        remove_withtemplate("isgri_detector_shadowgram.fits(ISGR-DETE-SHD-IDX.tpl)")
-        remove_withtemplate("isgri_efficiency_shadowgram.fits(ISGR-EFFI-SHD-IDX.tpl)")
+        det_fn="isgri_detector_shadowgram_%s.fits"%self.target_level
+        det_tpl="(ISGR-DETE-SHD-IDX.tpl)"
+        eff_fn="isgri_efficiency_shadowgram_%s.fits"%self.target_level
+        eff_tpl="(ISGR-EFFI-SHD-IDX.tpl)"
+
+        remove_withtemplate(det_fn+det_tpl)
+        remove_withtemplate(eff_fn+eff_tpl)
 
         bin="ii_shadow_build"
         ht=heatool(bin)
@@ -279,77 +306,134 @@ class BinEventsImage(DataAnalysis):
         ht['inDead']=self.input_dead.output_dead.path
         ht['inGTI']=self.input_gti.output_gti.path
         ht['gti_name'] = 'MERGED_ISGRI'
-        ht['isgri_e_num'] = len(self.input_bins.bins)
-        ht['isgri_e_min'] = " ".join([str(a[0]) for a in self.input_bins.bins])
-        ht['isgri_e_max'] = " ".join([str(a[1]) for a in self.input_bins.bins])
+        ht['outputLevel'] = self.target_level
+
+        if self.target_level=="BIN_I":
+            ht['isgri_e_num'] = len(self.input_bins.bins)
+            ht['isgri_e_min'] = " ".join([str(a[0]) for a in self.input_bins.bins])
+            ht['isgri_e_max'] = " ".join([str(a[1]) for a in self.input_bins.bins])
+        elif self.target_level=="BIN_S":
+            ht['isgri_e_num'] = -1
+            ht['inEnergyValues'] = self.input_bins.binrmf+"[3]"
+        else:
+            raise Exception("neither bins given!")
+
         ht['isgri_min_rise'] = 16
         ht['isgri_max_rise'] = 116
         ht['isgri_t_len'] = 10000000
         ht['idxLowThre']=self.input_scw.revdirpath+"/idx/isgri_context_index.fits[1]"
         ht['idxNoisy']=self.input_scw.revdirpath+"/idx/isgri_prp_noise_index.fits[1]"
-        ht['outRawShadow']="isgri_detector_shadowgram.fits(ISGR-DETE-SHD-IDX.tpl)"
-        ht['outEffShadow']="isgri_efficiency_shadowgram.fits(ISGR-EFFI-SHD-IDX.tpl)"
+        ht['outRawShadow']=det_fn+det_tpl
+        ht['outEffShadow']=eff_fn+eff_tpl
         ht.run()
 
-        self.shadow_detector=DataFile("isgri_detector_shadowgram.fits")
-        self.shadow_efficiency=DataFile("isgri_efficiency_shadowgram.fits")
+        self.shadow_detector=DataFile(det_fn)
+        self.shadow_efficiency=DataFile(eff_fn)
 
-class BinMapsImage(DataAnalysis):
+
+class BinEventsImage(BinEventsVirtual):
+    target_level="BIN_I"
+    input_bins=ImageBins
+
+class BinEventsSpectra(BinEventsVirtual):
+    target_level="BIN_S"
+    input_bins=SpectraBins
+
+class BinMapsVirtual(DataAnalysis):
     input_bins=ImageBins
     input_ic=IBIS_ICRoot
     # and dependency on bkg!
+    
+    target_level=None
+    input_bins=None
 
+    version="v2"
     def main(self):
         #construct_gnrl_scwg_grp(self.input_scw,[\
         #        ])
+        if self.target_level is None or self.input_bins is None:
+            raise Exception("VirtualAnalysis: please inherit!")
 
-        construct_empty_shadidx(self.input_bins.bins)
+        construct_empty_shadidx(self.input_bins.bins,levl=self.target_level)
 
         maps={
                 'back':('Bkg','bkg/isgr_back_bkg_0007.fits[1]'),
                 'corr':('Corr','mod/isgr_effi_mod_0011.fits[1]'),
                 'unif':('Uni','bkg/isgr_unif_bkg_0002.fits[1]')
                 }
+
+        level2key={
+                'BIN_I':'ima',
+                'BIN_S':'spe'
+                }
+        
+        lk=level2key[self.target_level]
         
         for k,(k2,m) in maps.items():
-            fn="rebinned_"+k+"_ima.fits"
+            fn="rebinned_"+k+"_"+lk+".fits"
 
             remove_withtemplate(fn) # again
 
             bin="ii_map_rebin"
             ht=heatool(bin)
             ht['outSwg']='og.fits[GROUPING,1,BINTABLE]'
-            ht['OutType']='BIN_I'
+            ht['OutType']=self.target_level
             ht['slope']='-2'
             ht['arfDol']=self.input_ic.ibisicroot+'/mod//isgr_effi_mod_0011.fits[ISGR-ARF.-RSP]'
             ht['inp'+k2+'Dol']=self.input_ic.ibisicroot+"/"+m 
             ht['reb'+k2+'Dol']=fn
             ht.run()
 
-            setattr(self,k+'_ima',DataFile(fn))
+            setattr(self,k,DataFile(fn))
 
-class ShadowUBC(DataAnalysis):
+class BinMapsImage(BinMapsVirtual):
+    target_level="BIN_I"
+    input_bins=ImageBins
+
+class BinMapsSpectra(BinMapsVirtual):
+    target_level="BIN_S"
+    input_bins=SpectraBins
+
+class ShadowUBCVirtual(DataAnalysis):
     input_scw=ScWData
-    input_shadows=BinEventsImage
-    input_maps=BinMapsImage
+    level=None
+    input_shadows=None
+    input_maps=None
+
+    version="v3"
 
     def main(self):
         construct_gnrl_scwg_grp(self.input_scw,[\
                 self.input_shadows.shadow_detector.path,
                 self.input_shadows.shadow_efficiency.path,
             ])
+        
+        keys=["SWID","SW_TYPE","REVOL","EXPID","OBTSTART","OBTEND","TSTART","TSTOP","SWBOUND"]
+        import_attr(self.input_scw.scwpath+"/swg.fits",keys)
 
-        remove_withtemplate("isgri_cor_shad.fits(ISGR-CEXP-SHD-IDX.tpl)")
+        fn,tpl="isgri_cor_shad_%s.fits"%self.level,"(ISGR-CEXP-SHD-IDX.tpl)"
+        remove_withtemplate(fn+tpl)
         
         ht=heatool("ii_shadow_ubc")
         ht['outSWGRP']="og.fits"
-        ht['outCorShadow']="isgri_cor_shad.fits(ISGR-CEXP-SHD-IDX.tpl)"
-        ht['isgrUnifDol']=self.input_maps.unif_ima.path
-        ht['isgrBkgDol']=self.input_maps.back_ima.path
-        ht['method_cor']=1
+        ht['OutType']=self.level
+        ht['outCorShadow']=fn+tpl
+        ht['isgrUnifDol']=self.input_maps.unif.path
+        ht['isgrBkgDol']=self.input_maps.back.path
+        ht['method_cor']=1 # keep separately background correction routines
         ht.run()
 
-        self.corshad=DataFile("isgri_cor_shad.fits")
+        self.corshad=DataFile(fn)
+
+class ShadowUBCImage(ShadowUBCVirtual):
+    level="BIN_I"
+    input_shadows=BinEventsImage
+    input_maps=BinMapsImage
+
+class ShadowUBCSpectra(ShadowUBCVirtual):
+    level="BIN_S"
+    input_shadows=BinEventsSpectra
+    input_maps=BinMapsSpectra
 
 class GRcat(DataAnalysis):
     input="gnrl_ref_cat_33"
@@ -365,15 +449,19 @@ class GBcat(DataAnalysis):
     def main(self):
         self.cat=self.input.cat+"[ISGRI_FLAG2==5]"
 
-class ghost_busters(DataAnalysis):
-    input=ShadowUBC
+class ghost_bustersVirtual(DataAnalysis):
+    input_shadow=None
+    level=None
+
     input_ic=IBIS_ICRoot
     input_scw=ScWData
     input_cat=GBcat
 
+    version="v2"
+
     def main(self):
         construct_gnrl_scwg_grp(self.input_scw,[\
-                self.input.corshad.path,
+                self.input_shadow.corshad.path,
                 self.input_scw.auxadppath+"/attitude_historic.fits[AUXL-ATTI-HIS,1,BINTABLE]" \
             ])
 
@@ -386,9 +474,18 @@ class ghost_busters(DataAnalysis):
         ht['inDOL']="og.fits"
         ht.run()
 
-        os.rename(self.input.corshad.path,"isgri_cor_shad_gb.fits")
+        r="isgri_cor_shad_%s_gb.fits"%self.level
+        shutil.copyfile(self.input_shadow.corshad.path,r)
 
-        self.corshad=DataFile("isgri_cor_shad_gb.fits")
+        self.corshad=DataFile(r)
+ 
+class ghost_bustersImage(ghost_bustersVirtual):
+    input_shadow=ShadowUBCImage
+    level="BIN_I"
+
+class ghost_bustersSpectra(ghost_bustersVirtual):
+    input_shadow=ShadowUBCSpectra
+    level="BIN_S"
 
 class ISGRIRefCat(DataAnalysis):
     input=GRcat
@@ -431,7 +528,7 @@ class ImagingConfig(DataAnalysis):
         self.NegModels=0
 
 class ii_skyimage(DataAnalysis):
-    input_gb=ghost_busters
+    input_gb=ghost_bustersImage
     input_maps=BinMapsImage
     input_bins=ImageBins
     input_cat=CatExtract
@@ -440,6 +537,8 @@ class ii_skyimage(DataAnalysis):
     input_scw=ScWData
     input_gti=ibis_gti
 
+
+    version="v2"
     def main(self):
         construct_gnrl_scwg_grp(self.input_scw,[\
                     self.input_gb.corshad.path,
@@ -487,12 +586,94 @@ class ii_skyimage(DataAnalysis):
         ht['E_band_max'] = " ".join([str(a[1]) for a in self.input_bins.bins])
         for k in ['SearchMode','ToSearch','CleanMode','MinCatSouSnr','MinNewSouSnr','NegModels','DoPart2']: # dopart2 is flow control, separately
             ht[k]=getattr(self.input_imgconfig,k)
-        ht['corrDol'] = self.input_maps.corr_ima.path
+        ht['corrDol'] = self.input_maps.corr.path
         ht.run()
 
+        self.srclres=DataFile("isgri_srcl_res.fits")
         self.skyima=DataFile("isgri_sky_ima.fits")
         self.skyres=DataFile("isgri_sky_res.fits")
 
+class CatForSpectraFromImaging(DataAnalysis):
+    input_imaging=ii_skyimage
+
+    def main(self):
+        shutil.copyfile(self.input_imaging.srclres.path,"cat4spectra.fits")
+        self.cat=DataFile("cat4spectra.fits")
+
+class CatForSpectra(CatForSpectraFromImaging):
+    pass
+
+class ISGRIResponse(DataAnalysis):
+    path="/sps/integral/analysis/savchenk/lut2tests/test_05351/single_scw/resources/rmf/rmf_62bands.fits"
+
+class ii_spectra_extract(DataAnalysis):
+    input_gb=ghost_bustersSpectra
+    input_cat=CatForSpectra # or virtual
+    input_ic=IBIS_ICRoot
+    input_response=ISGRIResponse
+    input_scw=ScWData
+    input_maps=BinMapsSpectra
+
+    input_gti=ibis_gti
+
+    version="v2"
+
+    #input_bins=SpectraBins
+    #input_cat=CatExtract
+    #input_imgconfig=ImagingConfig
+
+    def main(self):
+        construct_gnrl_scwg_grp(self.input_scw,[\
+                    self.input_gb.corshad.path,
+                    self.input_scw.auxadppath+"/time_correlation.fits[AUXL-TCOR-HIS]",
+                    self.input_scw.auxadppath+"/attitude_historic.fits[AUXL-ATTI-HIS,1,BINTABLE]",
+                    self.input_gti.output_gti.path
+                ])
+                    #self.input_cat.cat.path,
+        
+        import_attr(self.input_scw.scwpath+"/swg.fits",["OBTSTART","OBTEND","TSTART","TSTOP","SW_TYPE","TELAPSE","SWID"])
+        set_attr({'ISDCLEVL':"BIN_S"})
+        #set_attr({'INSTRUME':"IBIS"},"og.fits")
+
+        #construct_gnrl_scwg_grp_idx(self.input_scw,[\
+        #            "og.fits",
+        #        ])
+        #set_attr({'ISDCLEVL':"BIN_I"},"og_idx.fits")
+        
+      #  construct_og(self.input_scw,[\
+      #              "og_idx.fits",
+      #          ])
+      #  set_attr({'ISDCLEVL':"BIN_I"},"ogg.fits")
+        
+        #remove_withtemplate("isgri_srcl_res.fits(ISGR-SRCL-RES.tpl)")
+
+        pif_fn,pif_tpl="isgri_pif.fits","(ISGR-PIF.-SHD-IDX.tpl)"
+        spec_fn,spec_tpl="isgri_spectrum.fits","(ISGR-EVTS-SPE-IDX.tpl)"
+
+        remove_withtemplate(pif_fn+pif_tpl)
+        remove_withtemplate(spec_fn+spec_tpl)
+
+        ht=heatool("ii_spectra_extract")
+        ht['outSwg']="og.fits"
+        ht['inCat']=self.input_cat.cat.path
+        ht['outPif']=pif_fn+pif_tpl
+        ht['outSpec']=spec_fn+spec_tpl
+        ht['mask']=self.input_ic.ibisicroot+"/mod/isgr_mask_mod_0003.fits[ISGR-MASK-MOD,1,IMAGE]"
+        ht['tungAtt']=self.input_ic.ibisicroot+"/mod/isgr_attn_mod_0010.fits[ISGR-ATTN-MOD,1,BINTABLE]"
+        ht['aluAtt']=self.input_ic.ibisicroot+"/mod/isgr_attn_mod_0011.fits[ISGR-ATTN-MOD,1,BINTABLE]"
+        ht['leadAtt']=self.input_ic.ibisicroot+"/mod/isgr_attn_mod_0012.fits[ISGR-ATTN-MOD,1,BINTABLE]"
+        ht['idx_isgrResp']=self.input_response.path
+        ht['isgrUnifDol']=self.input_maps.unif.path
+        ht['isgrBkgDol']=self.input_maps.back.path
+        ht['corrDol']=self.input_maps.corr.path
+        ht['method_cor']=1
+
+        #for k in ['SearchMode','ToSearch','CleanMode','MinCatSouSnr','MinNewSouSnr','NegModels','DoPart2']: # dopart2 is flow control, separately
+        #    ht[k]=getattr(self.input_imgconfig,k)
+
+        ht.run()
+
+        self.skyima=DataFile(spec_fn)
 
 class root(DataAnalysis):
     input=[ibis_gti()]
@@ -519,6 +700,11 @@ def remove_withtemplate(fn):
     
 
 def construct_gnrl_scwg_grp(scw,children=[],fn="og.fits"):
+    try:
+        os.remove(fn)
+    except OSError:
+        pass
+
     dc=heatool("dal_create")
     dc['obj_name']="!"+fn
     dc['template']="GNRL-SCWG-GRP.tpl"
@@ -633,7 +819,7 @@ def construct_empty_shadidx(bins,fn="og.fits",levl="BIN_I"):
         da['Child1']=ht['obj_name'].value
         da.run()
 
-    # attaching does not create necessary fields
+    # attaching does not create necessary fields: use txt2idx instead
     
     og=pyfits.open(fn) 
     for i,(e1,e2) in enumerate(bins):
