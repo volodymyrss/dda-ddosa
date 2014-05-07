@@ -40,6 +40,8 @@ class DataAnalysis(dataanalysis.DataAnalysis):
 class ScWData(DataAnalysis):
     input_scwid=None
 
+    schema_hidden=True
+
     def __init__(self,scwid=None):
         if scwid is not None:
             self.input_scwid=scwid
@@ -74,6 +76,7 @@ class GetEcorrCalDB(DataAnalysis):
         self.risedol=self.input_lut2.datafile
 
 class ibis_isgr_energy(DataAnalysis):
+    cached=False
     
     input_scw=ScWData()
     #input_raw_events=None
@@ -111,21 +114,26 @@ class ibis_isgr_energy(DataAnalysis):
             
 
 class ibis_isgr_evts_tag(DataAnalysis):
+    cached=False
     
     input_events_corrected=ibis_isgr_energy()
     input_scw=ScWData() # again, can get separate
 
     #input_ecorrdata=GetEcorrCalDB()
 
-    version="v0"
+    version="v2"
    
     def main(self):
 
         #remove_withtemplate("isgri_events_corrected.fits(ISGR-EVTS-COR.tpl)")
+
+        cte="isgri_events_corrected_tagged.fits"
+        
+        shutil.copyfile(self.input_events_corrected.output_events.path,cte)
     
         construct_gnrl_scwg_grp(self.input_scw,[\
             self.input_scw.scwpath+"/isgri_events.fits[3]", \
-            self.input_events_corrected.output_events.path \
+            cte \
         ])
             #self.input_scw.scwpath+"/ibis_hk.fits[IBIS-DPE.-CNV]" \
 
@@ -138,11 +146,12 @@ class ibis_isgr_evts_tag(DataAnalysis):
         ht['seleEXT']="ISGR-EVTS-COR"
         ht.run()
 
-        self.output_events=DataFile("isgri_events_corrected.fits")
+        self.output_events=DataFile(cte)
 
 class ICRoot(DataAnalysis):
     input="standard_IC"
 
+    schema_hidden=True
     version="v1"
 
     def main(self):
@@ -151,7 +160,8 @@ class ICRoot(DataAnalysis):
 
 
 class IBIS_ICRoot(DataAnalysis):
-    input="standard IC"
+    schema_hidden=True
+    input="standard_IC"
 
     def main(self):
         self.ibisicroot=os.environ['REP_BASE_PROD']+"/ic/ic_10/ic/ibis"
@@ -237,9 +247,9 @@ class ibis_dead(DataAnalysis):
         self.output_dead=DataFile("isgri_dead.fits")
 
 class ISGRIEvents(DataAnalysis):
-    input_evttag=ibis_isgr_evts_tag()
+    input_evttag=ibis_isgr_evts_tag
 
-    version="v2"
+    version="v3"
     def main(self):
         self.events=self.input_evttag.output_events
 
@@ -250,7 +260,7 @@ class ImageBins(DataAnalysis):
         self.bins=[(25,80)]
 
 class SpectraBins(DataAnalysis):
-    input_binsname="g62"
+    input_binsname="spectral_bins_62"
 
     version="v1"
     def main(self):
@@ -266,16 +276,18 @@ class ListBins(DataAnalysis):
         open("f.txt","w").write(str(self.input_bins.bins))
 
 class BinEventsVirtual(DataAnalysis):
-    input_scw=ScWData()
+    input_scw=ScWData
 
-    input_events=ISGRIEvents()
-    input_gti=ibis_gti()
-    input_dead=ibis_dead()
+    input_events=ISGRIEvents
+    input_gti=ibis_gti
+    input_dead=ibis_dead
 
     target_level=None
     input_bins=None
 
     version="v2"
+
+    default_log_level="binevents"
 
     def main(self):
         if self.target_level is None or self.input_bins is None:
@@ -379,7 +391,7 @@ class BinMapsVirtual(DataAnalysis):
             ht['outSwg']='og.fits[GROUPING,1,BINTABLE]'
             ht['OutType']=self.target_level
             ht['slope']='-2'
-            ht['arfDol']=self.input_ic.ibisicroot+'/mod//isgr_effi_mod_0011.fits[ISGR-ARF.-RSP]'
+            ht['arfDol']=self.input_ic.ibisicroot+'/mod/isgr_effi_mod_0011.fits[ISGR-ARF.-RSP]'
             ht['inp'+k2+'Dol']=self.input_ic.ibisicroot+"/"+m 
             ht['reb'+k2+'Dol']=fn
             ht.run()
@@ -604,6 +616,8 @@ class CatForSpectra(CatForSpectraFromImaging):
     pass
 
 class ISGRIResponse(DataAnalysis):
+    input_ecorrdata=GetEcorrCalDB
+
     path="/sps/integral/analysis/savchenk/lut2tests/test_05351/single_scw/resources/rmf/rmf_62bands.fits"
 
 class ii_spectra_extract(DataAnalysis):
