@@ -24,7 +24,7 @@
 
 # there is special treatement
 
-from dataanalysis import DataFile
+from dataanalysis import DataFile,shhash
 import dataanalysis 
 
 from pilton import heatool
@@ -32,15 +32,72 @@ from pilton import heatool
 import os,shutil,re,time
 
 
-mcg=dataanalysis.MemCache('/sps/integral/analysis/cache/dda_global')
+class MemCacheIntegral(dataanalysis.MemCacheSqlite):
+    def get_scw(self,hashe):                                                                                                                                       
+        print("search for scw in",hashe)
+        if isinstance(hashe,tuple):                                                                                                                                
+            if hashe[0]=="analysis": # more universaly                                                                                                             
+                if hashe[2].startswith('ScWData'):
+                    return hashe[1]
+                return self.get_scw(hashe[1])
+            if hashe[0]=="list": # more universaly                                                                                                                 
+                for k in hashe[1:]:
+                    r=self.get_scw(k)
+                    if r is not None:
+                        return r
+                return None
+            raise Exception("unknown tuple in the hash:"+str(hashe))                                                                                               
+        if isinstance(hashe,str):                                                                                                                                  
+            return None                                                                                                                                           
+        raise Exception("unknown class in the hash:"+str(hashe))                                                                                                   
+
+    def hashe2signature(self,hashe):                                                                                                           
+        scw=self.get_scw(hashe)
+
+        if scw is None:
+            return hashe[2]+":"+shhash(hashe)[:16]                                               
+
+        if isinstance(hashe,tuple):          
+            if hashe[0]=="analysis":                                                                                                           
+                return hashe[2]+":"+scw+":"+shhash(hashe)[:8]                                                                                          
+        return shhash(hashe)[:8]                                                                                                               
+
+    def construct_cached_file_path(self,hashe):                                                                                                                        
+        scw=self.get_scw(hashe)
+            
+        def hash_to_path2(hashe):                                                                                                                                      
+            return hashe[2]+"/"+dataanalysis.shhash(repr(hashe[1]))[:8]                                                                                                           
+
+        if scw is None:
+            print("not scw-grouped cache")
+            r=self.filecacheroot+"/global/"+hash_to_path2(hashe)+"/"
+        else:
+            print("cached scw:",scw)
+                                                                                                                                                                           
+
+            r=self.filecacheroot+"/byscw/"+scw[:4]+"/"+scw+"/"+hash_to_path2(hashe)+"/" # choose to avoid overlapp    
+
+        print("cached path:",r)
+                                                                                                                                                                       
+        return r # choose to avoid overlapp    
+
+mc=dataanalysis.TransientCache()
+mcg=MemCacheIntegral('/sps/integral/analysis/cache/dda_global')
+mc.parent=mcg
 
 class DataAnalysis(dataanalysis.DataAnalysis):
-    cache=mcg
+    cache=mc
+
+    cached=False
 
 class ScWData(DataAnalysis):
     input_scwid=None
 
+    cached=False # how do we implment that this can change?
+
     schema_hidden=True
+
+    version="v1"
 
     def __init__(self,scwid=None):
         if scwid is not None:
@@ -58,21 +115,53 @@ class ScWData(DataAnalysis):
         if not os.path.exists(self.scwpath+"/swg.fits"):
             raise Exception("no scw data!")
 
-class GetLUT2(DataAnalysis):
-    input="LUT2_standard"
+class ICRoot(DataAnalysis):
+    input="standard_IC"
+
+    cached=False # level!
+
+    schema_hidden=True
+    version="v1"
 
     def main(self):
-        self.datafile=os.environ['REP_BASE_PROD']+"/ic/ic_10/ic/ibis/mod/isgr_3dl2_mod_0001.fits"
+        self.icroot=os.environ['CURRENT_IC']
+        self.icindex=self.icroot+"/idx/ic/ic_master_file.fits[1]"
+
+        print('current IC:',self.icroot)
+
+
+class IBIS_ICRoot(DataAnalysis):
+    schema_hidden=True
+    input="standard_IC"
+    
+    cached=False # level!
+
+    def main(self):
+        self.ibisicroot=os.environ['CURRENT_IC']+"/ic/ibis"
+        print("current IBIS ic root is:"),self.ibisicroot
+
+class GetLUT2(DataAnalysis):
+    input="LUT2_standard"
+    input_ibisic=IBIS_ICRoot
+
+    cached=False
+
+    def main(self):
+        self.datafile=self.input_ibisic.ibisicroot+"/mod/isgr_3dl2_mod_0001.fits"
+        #self.datafile=os.environ['REP_BASE_PROD']+"/ic/ibis/mod/isgr_3dl2_mod_0001.fits"
         #self.datafile=DataFile(os.environ['REP_BASE_PROD']+"/ic/ic_10/ic/ibis/mod/isgr_3dl2_mod_0001.fits")
 
 class GetEcorrCalDB(DataAnalysis):
     input=["ecorr_standard_OSA10"]
     input_lut2=GetLUT2
+    input_ibisic=IBIS_ICRoot
+    
+    cached=False
 
     def main(self):
-        self.godol=os.environ['REP_BASE_PROD']+"/ic/ic_10/ic/ibis/cal/ibis_isgr_gain_offset_0010.fits"
-        self.supgdol=os.environ['REP_BASE_PROD']+"/ic/ic_10/ic/ibis/mod/isgr_gain_mod_0001.fits[ISGR-GAIN-MOD,1,BINTABLE]"
-        self.supodol=os.environ['REP_BASE_PROD']+"/ic/ic_10/ic/ibis/mod/isgr_off2_mod_0001.fits[ISGR-OFF2-MOD,1,BINTABLE]"
+        self.godol=self.input_ibisic.ibisicroot+"/cal/ibis_isgr_gain_offset_0010.fits"
+        self.supgdol=self.input_ibisic.ibisicroot+"/mod/isgr_gain_mod_0001.fits[ISGR-GAIN-MOD,1,BINTABLE]"
+        self.supodol=self.input_ibisic.ibisicroot+"/mod/isgr_off2_mod_0001.fits[ISGR-OFF2-MOD,1,BINTABLE]"
         self.risedol=self.input_lut2.datafile
 
 class ibis_isgr_energy(DataAnalysis):
@@ -83,7 +172,7 @@ class ibis_isgr_energy(DataAnalysis):
     #input_ibis_hk=None
     # can also take only isgri events
 
-    input_ecorrdata=GetEcorrCalDB()
+    input_ecorrdata=GetEcorrCalDB
 
     version="v3"
    
@@ -148,29 +237,14 @@ class ibis_isgr_evts_tag(DataAnalysis):
 
         self.output_events=DataFile(cte)
 
-class ICRoot(DataAnalysis):
-    input="standard_IC"
-
-    schema_hidden=True
-    version="v1"
-
-    def main(self):
-        self.icroot=os.environ['REP_BASE_PROD']+"/ic/ic_10/"
-        self.icindex=os.environ['REP_BASE_PROD']+"/ic/ic_10/idx/ic/ic_master_file.fits[1]"
-
-
-class IBIS_ICRoot(DataAnalysis):
-    schema_hidden=True
-    input="standard_IC"
-
-    def main(self):
-        self.ibisicroot=os.environ['REP_BASE_PROD']+"/ic/ic_10/ic/ibis"
 
 # maybe split indeed,but try to show another case
 class ibis_gti(DataAnalysis):
     input_scw=ScWData()
     input_ic=ICRoot()
     #input_gticreate=gti_create()
+
+    cached=True
     
     version="v2"
     def main(self):
@@ -211,6 +285,8 @@ class ibis_gti(DataAnalysis):
 class ibis_dead(DataAnalysis):
     input_scw=ScWData()
     input_ic=ICRoot()
+
+    cached=True
     
     version="v2"
     def main(self):
@@ -248,6 +324,8 @@ class ibis_dead(DataAnalysis):
 
 class ISGRIEvents(DataAnalysis):
     input_evttag=ibis_isgr_evts_tag
+    
+    cached=True
 
     version="v3"
     def main(self):
@@ -286,6 +364,8 @@ class BinEventsVirtual(DataAnalysis):
     input_bins=None
 
     version="v2"
+    
+    cached=True
 
     default_log_level="binevents"
 
@@ -358,6 +438,8 @@ class BinMapsVirtual(DataAnalysis):
     
     target_level=None
     input_bins=None
+    
+    cached=True
 
     version="v2"
     def main(self):
@@ -413,6 +495,8 @@ class ShadowUBCVirtual(DataAnalysis):
     input_maps=None
 
     version="v3"
+    
+    cached=True
 
     def main(self):
         construct_gnrl_scwg_grp(self.input_scw,[\
@@ -451,12 +535,16 @@ class GRcat(DataAnalysis):
     input="gnrl_ref_cat_33"
     input_ic=ICRoot
 
+    cached=False # again, this is transient-level cache
+
     def main(self):
         self.cat=os.environ['REP_BASE_PROD']+"/cat/gnrl_refr_cat_0033_FLAG1.fits[1]"
 
 class GBcat(DataAnalysis):
     input=GRcat
     input_selection="flag5"
+
+    cached=False
 
     def main(self):
         self.cat=self.input.cat+"[ISGRI_FLAG2==5]"
@@ -470,6 +558,8 @@ class ghost_bustersVirtual(DataAnalysis):
     input_cat=GBcat
 
     version="v2"
+    
+    cached=True
 
     def main(self):
         construct_gnrl_scwg_grp(self.input_scw,[\
@@ -503,12 +593,16 @@ class ISGRIRefCat(DataAnalysis):
     input=GRcat
     input_selection="onlyisgri33"
 
+    cached=False # since the path is transient
+
     def main(self):
         self.cat=self.input.cat+"[ISGRI_FLAG==1 || ISGRI_FLAG==2]"
 
 class CatExtract(DataAnalysis):
     input_cat=ISGRIRefCat
     input_scw=ScWData
+    
+    cached=True
 
     def main(self):
         construct_gnrl_scwg_grp(self.input_scw,[\
@@ -549,6 +643,7 @@ class ii_skyimage(DataAnalysis):
     input_scw=ScWData
     input_gti=ibis_gti
 
+    cached=True
 
     version="v2"
     def main(self):
@@ -629,6 +724,8 @@ class ii_spectra_extract(DataAnalysis):
     input_maps=BinMapsSpectra
 
     input_gti=ibis_gti
+    
+    cached=True
 
     version="v2"
 
@@ -687,7 +784,7 @@ class ii_spectra_extract(DataAnalysis):
 
         ht.run()
 
-        self.skyima=DataFile(spec_fn)
+        self.spectrum=DataFile(spec_fn)
 
 class root(DataAnalysis):
     input=[ibis_gti()]
@@ -735,6 +832,9 @@ def construct_gnrl_scwg_grp(scw,children=[],fn="og.fits"):
     if children!=[]:
         dac=heatool("dal_attach")
         dac['Parent']=fn
+        for i in range(4):
+            dac['Child%i'%(i+1)]=""
+
         for i,c in enumerate(children):
             dac['Child%i'%(i+1)]=c
             if i>3:
