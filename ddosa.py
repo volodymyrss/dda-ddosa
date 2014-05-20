@@ -174,7 +174,7 @@ class ibis_isgr_energy(DataAnalysis):
 
     input_ecorrdata=GetEcorrCalDB
 
-    version="v3"
+    version="v4_extras"
    
     def main(self):
 
@@ -205,7 +205,7 @@ class ibis_isgr_energy(DataAnalysis):
 class ibis_isgr_evts_tag(DataAnalysis):
     cached=False
     
-    input_events_corrected=ibis_isgr_energy()
+    input_events_corrected=ibis_isgr_energy
     input_scw=ScWData() # again, can get separate
 
     #input_ecorrdata=GetEcorrCalDB()
