@@ -354,7 +354,7 @@ class ListBins(DataAnalysis):
         open("f.txt","w").write(str(self.input_bins.bins))
 
 class BinEventsVirtual(DataAnalysis):
-    input_scw=ScWData
+    input_scw=ScWData()
 
     input_events=ISGRIEvents
     input_gti=ibis_gti
@@ -362,6 +362,8 @@ class BinEventsVirtual(DataAnalysis):
 
     target_level=None
     input_bins=None
+
+    maxrisetime=116
 
     version="v2"
     
@@ -411,7 +413,7 @@ class BinEventsVirtual(DataAnalysis):
             raise Exception("neither bins given!")
 
         ht['isgri_min_rise'] = 16
-        ht['isgri_max_rise'] = 116
+        ht['isgri_max_rise'] = self.maxrisetime
         ht['isgri_t_len'] = 10000000
         ht['idxLowThre']=self.input_scw.revdirpath+"/idx/isgri_context_index.fits[1]"
         ht['idxNoisy']=self.input_scw.revdirpath+"/idx/isgri_prp_noise_index.fits[1]"
@@ -489,7 +491,7 @@ class BinMapsSpectra(BinMapsVirtual):
     input_bins=SpectraBins
 
 class ShadowUBCVirtual(DataAnalysis):
-    input_scw=ScWData
+    input_scw=ScWData()
     level=None
     input_shadows=None
     input_maps=None
@@ -554,7 +556,7 @@ class ghost_bustersVirtual(DataAnalysis):
     level=None
 
     input_ic=IBIS_ICRoot
-    input_scw=ScWData
+    input_scw=ScWData()
     input_cat=GBcat
 
     version="v2"
@@ -600,7 +602,7 @@ class ISGRIRefCat(DataAnalysis):
 
 class CatExtract(DataAnalysis):
     input_cat=ISGRIRefCat
-    input_scw=ScWData
+    input_scw=ScWData()
     
     cached=True
 
@@ -640,7 +642,7 @@ class ii_skyimage(DataAnalysis):
     input_cat=CatExtract
     input_ic=IBIS_ICRoot
     input_imgconfig=ImagingConfig
-    input_scw=ScWData
+    input_scw=ScWData()
     input_gti=ibis_gti
 
     cached=True
@@ -720,7 +722,7 @@ class ii_spectra_extract(DataAnalysis):
     input_cat=CatForSpectra # or virtual
     input_ic=IBIS_ICRoot
     input_response=ISGRIResponse
-    input_scw=ScWData
+    input_scw=ScWData()
     input_maps=BinMapsSpectra
 
     input_gti=ibis_gti
