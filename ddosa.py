@@ -99,10 +99,6 @@ class ScWData(DataAnalysis):
 
     version="v1"
 
-    def __init__(self,scwid=None):
-        if scwid is not None:
-            self.input_scwid=scwid
-
     def main(self):
         self.scwid=self.input_scwid.handle
         self.scwver=self.scwid[-3:]
@@ -114,6 +110,9 @@ class ScWData(DataAnalysis):
 
         if not os.path.exists(self.scwpath+"/swg.fits"):
             raise Exception("no scw data!")
+
+    def __repr__(self):
+        return "[ScWData:%s]"%self.input_scwid
 
 class ICRoot(DataAnalysis):
     input="standard_IC"
