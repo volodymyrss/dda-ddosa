@@ -82,7 +82,7 @@ class MemCacheIntegral(dataanalysis.MemCacheSqlite):
         return r # choose to avoid overlapp    
 
 mc=dataanalysis.TransientCache()
-mcg=MemCacheIntegral('/sps/integral/analysis/cache/dda_global')
+mcg=MemCacheIntegral('/Integral/data/reduced/ddcache/')
 mc.parent=mcg
 
 class DataAnalysis(dataanalysis.DataAnalysis):
@@ -185,7 +185,7 @@ class ibis_isgr_energy(DataAnalysis):
             self.input_scw.scwpath+"/ibis_hk.fits[IBIS-DPE.-CNV]" \
         ])
 
-        bin="/afs/in2p3.fr/throng/integral/software/spectral/ibis_isgr_energy/ibis_isgr_energy_pha2/ibis_isgr_energy"
+        bin="ibis_isgr_energy"
         ht=heatool(bin)
         ht['inGRP']="og.fits"
         ht['outCorEvts']="isgri_events_corrected.fits(ISGR-EVTS-COR.tpl)"
@@ -599,6 +599,8 @@ class ISGRIRefCat(DataAnalysis):
 
     def main(self):
         self.cat=self.input.cat+"[ISGRI_FLAG==1 || ISGRI_FLAG==2]"
+        import time
+        time.sleep(3) # expensive to search for cat: test
 
 class CatExtract(DataAnalysis):
     input_cat=ISGRIRefCat
