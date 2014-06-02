@@ -249,7 +249,7 @@ class ibis_gti(DataAnalysis):
     def main(self):
         # horrible horrible full OSA
 
-        open("scw.list","w").write(self.input_scw.scwid)
+        open("scw.list","w").write(self.input_scw.scwpath+"/swg.fits[1]")
 
         if os.path.exists("obs"):
             os.rename("obs","obs."+str(time.time()))
@@ -259,7 +259,7 @@ class ibis_gti(DataAnalysis):
         ogc['idxSwg']="scw.list"
         ogc['instrument']="IBIS"
         ogc['ogid']="scw_"+self.input_scw.scwid
-        ogc['baseDir']="./"
+        ogc['baseDir']=os.getcwd().replace("[","_").replace("]","_") # dangerous
         ogc.run()
         
         scwroot="scw/"+self.input_scw.scwid
@@ -291,23 +291,29 @@ class ibis_dead(DataAnalysis):
     def main(self):
         # horrible horrible full OSA
 
-        open("scw.list","w").write(self.input_scw.scwid)
+        #open("scw.list","w").write(self.input_scw.scwid)
+        open("scw.list","w").write(self.input_scw.scwpath+"/swg.fits[1]")
+
+        print("scw path:",self.input_scw.scwpath+"/swg.fits[1]")
+        if not os.path.exists(self.input_scw.scwpath+"/swg.fits"):
+            raise Exception("no scw? broken!")
 
         if os.path.exists("obs"):
             os.rename("obs","obs."+str(time.time()))
         
+        wd=os.getcwd().replace("[","_").replace("]","_")
         bin="og_create"
         ogc=heatool(bin)
         ogc['idxSwg']="scw.list"
         ogc['instrument']="IBIS"
         ogc['ogid']="scw_"+self.input_scw.scwid
-        ogc['baseDir']="./"
+        ogc['baseDir']=wd # dangerous
         ogc.run()
         
         scwroot="scw/"+self.input_scw.scwid
 
         bin="ibis_dead"
-        ht=heatool(bin,wd="obs/"+ogc['ogid'].value) 
+        ht=heatool(bin,wd=wd+"/obs/"+ogc['ogid'].value) 
         ht['swgDOL']=scwroot+"/swg_ibis.fits"
         ht['IC_Group']=self.input_ic.icindex
         ht['IC_Alias']="OSA"
@@ -533,13 +539,13 @@ class ShadowUBCSpectra(ShadowUBCVirtual):
     input_maps=BinMapsSpectra
 
 class GRcat(DataAnalysis):
-    input="gnrl_ref_cat_33"
+    input="gnrl_ref_cat_34"
     input_ic=ICRoot
 
     cached=False # again, this is transient-level cache
 
     def main(self):
-        self.cat=os.environ['REP_BASE_PROD']+"/cat/gnrl_refr_cat_0033_FLAG1.fits[1]"
+        self.cat=os.environ['REP_BASE_PROD']+"/cat/hec/gnrl_refr_cat_0034.fits[1]"
 
 class GBcat(DataAnalysis):
     input=GRcat
@@ -635,6 +641,7 @@ class ImagingConfig(DataAnalysis):
         self.MinCatSouSnr=4
         self.MinNewSouSnr=5
         self.NegModels=0
+        self.DoPart2=1
 
 class ii_skyimage(DataAnalysis):
     input_gb=ghost_bustersImage
