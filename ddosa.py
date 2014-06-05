@@ -50,6 +50,25 @@ class MemCacheIntegral(dataanalysis.MemCacheSqlite):
         if isinstance(hashe,str):                                                                                                                                  
             return None                                                                                                                                           
         raise Exception("unknown class in the hash:"+str(hashe))                                                                                                   
+    
+    def get_marked(self,hashe):                                                                                                                                       
+        print("search for marked in",hashe)
+        if isinstance(hashe,tuple):                                                                                                                                
+            if hashe[0]=="analysis": # more universaly                                                                                                             
+                r=[]
+                if hashe[2].endswith('..'):
+                    r.append(hashe[2][:-2])
+                r+=self.get_marked(hashe[1])
+                return r
+            if hashe[0]=="list": # more universaly                                                                                                                 
+                r=[]
+                for k in hashe[1:]:
+                    r+=self.get_marked(k)
+                return r
+            raise Exception("unknown tuple in the hash:"+str(hashe))                                                                                               
+        if isinstance(hashe,str):                                                                                                                                  
+            return []                                                                                                                                   
+        raise Exception("unknown class in the hash:"+str(hashe))                                                                                                   
 
     def hashe2signature(self,hashe):                                                                                                           
         scw=self.get_scw(hashe)
@@ -66,16 +85,18 @@ class MemCacheIntegral(dataanalysis.MemCacheSqlite):
         scw=self.get_scw(hashe)
             
         def hash_to_path2(hashe):                                                                                                                                      
-            return hashe[2]+"/"+dataanalysis.shhash(repr(hashe[1]))[:8]                                                                                                           
+            return dataanalysis.shhash(repr(hashe[1]))[:8]                                                                                                           
 
         if scw is None:
             print("not scw-grouped cache")
             r=self.filecacheroot+"/global/"+hash_to_path2(hashe)+"/"
         else:
             print("cached scw:",scw)
-                                                                                                                                                                           
-
-            r=self.filecacheroot+"/byscw/"+scw[:4]+"/"+scw+"/"+hash_to_path2(hashe)+"/" # choose to avoid overlapp    
+            
+            marked=self.get_marked(hashe[1])
+            print("marked",marked)
+        
+            r=self.filecacheroot+"/byscw/"+scw[:4]+"/"+scw+"/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/" # choose to avoid overlapp    
 
         print("cached path:",r)
                                                                                                                                                                        
@@ -345,12 +366,13 @@ class ImageBins(DataAnalysis):
 class SpectraBins(DataAnalysis):
     input_binsname="spectral_bins_62"
 
-    version="v1"
+    version="v3"
     def main(self):
-        self.binrmf="/sps/integral/analysis/savchenk/lut2tests/test_05351/single_scw/resources/rmf/rmf_62bands.fits" # noo!!!
+        self.binrmf=os.environ['INTEGRAL_DATA']+"/resources/rmf_62bands.fits" # noo!!!
         import pyfits
         e=pyfits.open(self.binrmf)[3].data
         self.bins=zip(e['E_MIN'],e['E_MAX'])
+        self.binrmfext=self.binrmf+'[3]'
 
 class ListBins(DataAnalysis):
     input_bins=ImageBins
@@ -413,7 +435,7 @@ class BinEventsVirtual(DataAnalysis):
             ht['isgri_e_max'] = " ".join([str(a[1]) for a in self.input_bins.bins])
         elif self.target_level=="BIN_S":
             ht['isgri_e_num'] = -1
-            ht['inEnergyValues'] = self.input_bins.binrmf+"[3]"
+            ht['inEnergyValues'] = self.input_bins.binrmfext #  +"[1]" will this work?
         else:
             raise Exception("neither bins given!")
 
@@ -609,7 +631,7 @@ class ISGRIRefCat(DataAnalysis):
 
 class CatExtract(DataAnalysis):
     input_cat=ISGRIRefCat
-    input_scw=ScWData()
+    input_scw=ScWData
     
     cached=True
 
@@ -895,7 +917,7 @@ def set_attr(attrs,fn="og.fits"):
         da['value_'+pt2k[type(v)]]=v
         da.run()
         
-def construct_empty_shadidx(bins,fn="og.fits",levl="BIN_I"):
+def construct_empty_shadidx_old(bins,fn="og.fits",levl="BIN_I"):
     import pyfits # why now? its expensive and done only if needed
 
     remove_withtemplate(fn+"(ISGR-DETE-SHD-IDX.tpl)")
@@ -950,5 +972,32 @@ def construct_empty_shadidx(bins,fn="og.fits",levl="BIN_I"):
         og[1].data[i]['E_MIN']=e1
         og[1].data[i]['E_MAX']=e2
         og[1].data[i]['ISDCLEVL']=levl
+    og.writeto(fn,clobber=True)
+
+def construct_empty_shadidx(bins,fn="og.fits",levl="BIN_I"):
+    import pyfits # why now? its expensive and done only if needed
+
+    remove_withtemplate(fn+"(ISGR-DETE-SHD-IDX.tpl)")
+
+    ht=heatool("dal_create")
+    ht['obj_name']=fn
+    ht['template']="ISGR-DETE-SHD-IDX.tpl"
+    ht.run()
+
+    for e1,e2 in bins:
+        print "appending",e1,e2
+        dc=heatool('dal_append')
+        dc['grpDOL']=fn
+        dc['element']='ISGR-DETE-SHD.tpl'
+        dc.run()
+
+    og=pyfits.open(fn) 
+    for i,(e1,e2) in enumerate(bins):
+        og[1].data[i]['E_MIN']=e1
+        og[1].data[i]['E_MAX']=e2
+        og[1].data[i]['ISDCLEVL']=levl
+        og[2+i].header['E_MIN']=e1
+        og[2+i].header['E_MAX']=e2
+        og[2+i].header['ISDCLEVL']=levl
     og.writeto(fn,clobber=True)
 
