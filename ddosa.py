@@ -86,16 +86,15 @@ class MemCacheIntegral(dataanalysis.MemCacheSqlite):
             
         def hash_to_path2(hashe):                                                                                                                                      
             return dataanalysis.shhash(repr(hashe[1]))[:8]                                                                                                           
+            
+        marked=self.get_marked(hashe[1])
+        print("marked",marked)
 
         if scw is None:
             print("not scw-grouped cache")
-            r=self.filecacheroot+"/global/"+hash_to_path2(hashe)+"/"
+            r=self.filecacheroot+"/global/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/"
         else:
             print("cached scw:",scw)
-            
-            marked=self.get_marked(hashe[1])
-            print("marked",marked)
-        
             r=self.filecacheroot+"/byscw/"+scw[:4]+"/"+scw+"/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/" # choose to avoid overlapp    
 
         print("cached path:",r)
@@ -654,7 +653,7 @@ class CatExtract(DataAnalysis):
         self.cat=DataFile("isgri_catalog.fits")
 
 class ImagingConfig(DataAnalysis):
-    input="default"
+    input="onesource"
 
     def main(self):
         self.SearchMode=3
@@ -759,7 +758,7 @@ class ii_spectra_extract(DataAnalysis):
     
     cached=True
 
-    version="v2"
+    version="v3"
 
     #input_bins=SpectraBins
     #input_cat=CatExtract
@@ -817,6 +816,7 @@ class ii_spectra_extract(DataAnalysis):
         ht.run()
 
         self.spectrum=DataFile(spec_fn)
+        self.pifs=DataFile(pif_fn)
 
 class root(DataAnalysis):
     input=[ibis_gti()]
