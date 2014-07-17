@@ -24,15 +24,18 @@
 
 # there is special treatement
 
+# import as
+
 from dataanalysis import DataFile,shhash
 import dataanalysis 
 
 from pilton import heatool
 
-import os,shutil,re,time
+import os,shutil,re,time,glob
 
 
-class MemCacheIntegral(dataanalysis.MemCacheSqlite):
+class MemCacheIntegralBase: 
+#class MemCacheIntegral(dataanalysis.MemCacheSqlite):
     def get_scw(self,hashe):                                                                                                                                       
         print("search for scw in",hashe)
         if isinstance(hashe,tuple):                                                                                                                                
@@ -81,9 +84,11 @@ class MemCacheIntegral(dataanalysis.MemCacheSqlite):
                 return hashe[2]+":"+scw+":"+shhash(hashe)[:8]                                                                                          
         return shhash(hashe)[:8]                                                                                                               
 
-    def construct_cached_file_path(self,hashe):                                                                                                                        
+    def construct_cached_file_path(self,hashe,obj=None):                                                                                                                        
+        print "will construct INTEGRAL cached file path for",hashe
+
         scw=self.get_scw(hashe)
-            
+
         def hash_to_path2(hashe):                                                                                                                                      
             return dataanalysis.shhash(repr(hashe[1]))[:8]                                                                                                           
             
@@ -101,9 +106,22 @@ class MemCacheIntegral(dataanalysis.MemCacheSqlite):
                                                                                                                                                                        
         return r # choose to avoid overlapp    
 
+class MemCacheIntegral(MemCacheIntegralBase,dataanalysis.MemCacheMySQL):
+    pass
+
+class MemCacheIntegralLegacy(MemCacheIntegralBase,dataanalysis.MemCacheSqlite):
+    pass
+
+class MemCacheIntegralFallback(MemCacheIntegralBase,dataanalysis.MemCacheNoIndex):
+    pass
+
 mc=dataanalysis.TransientCache()
 mcg=MemCacheIntegral('/Integral/data/reduced/ddcache/')
 mc.parent=mcg
+mcgl=MemCacheIntegralLegacy('/Integral/data/reduced/ddcache/')
+mcg.parent=mcgl
+mcgfb=MemCacheIntegralFallback('/Integral/data/reduced/ddcache/')
+mcgl.parent=mcgfb
 
 class DataAnalysis(dataanalysis.DataAnalysis):
     cache=mc
@@ -129,10 +147,20 @@ class ScWData(DataAnalysis):
         self.auxadppath=os.environ['REP_BASE_PROD']+"/aux/adp/"+self.revid+".001"
 
         if not os.path.exists(self.scwpath+"/swg.fits"):
-            raise Exception("no scw data!")
+            if not os.path.exists(self.scwpath+"/swg.fits.gz"):
+                print "searching for",self.scwpath+"/swg.fits"
+                raise Exception("no scw data!")
 
     def __repr__(self):
         return "[ScWData:%s]"%self.input_scwid
+
+class Revolution(DataAnalysis):
+    input_revid=None
+
+    def main(self):
+        rbp=os.environ["REP_BASE_PROD"]
+        self.revroot=rbp+"/scw/%s/"%self.input_revid.handle
+        self.revdir=self.revroot+"/rev.001/"
 
 class ICRoot(DataAnalysis):
     input="standard_IC"
@@ -183,7 +211,7 @@ class GetEcorrCalDB(DataAnalysis):
         self.supodol=self.input_ibisic.ibisicroot+"/mod/isgr_off2_mod_0001.fits[ISGR-OFF2-MOD,1,BINTABLE]"
         self.risedol=self.input_lut2.datafile
 
-class ibis_isgr_energy(DataAnalysis):
+class ibis_isgr_energy_standard(DataAnalysis):
     cached=False
     
     input_scw=ScWData()
@@ -217,6 +245,38 @@ class ibis_isgr_energy(DataAnalysis):
         ht['chatter']="4"
         ht.run()
 
+
+        self.output_events=DataFile("isgri_events_corrected.fits")
+
+class ibis_isgr_energy(DataAnalysis):
+    cached=True
+
+    input_scw=ScWData()
+    input_ecorrdata=GetEcorrCalDB
+
+    version="v5_extras"
+
+    def main(self):
+
+        remove_withtemplate("isgri_events_corrected.fits(ISGR-EVTS-COR.tpl)")
+
+        construct_gnrl_scwg_grp(self.input_scw,[\
+            self.input_scw.scwpath+"/isgri_events.fits[3]", \
+            self.input_scw.scwpath+"/ibis_hk.fits[IBIS-DPE.-CNV]" \
+        ])
+
+        bin=os.environ['COMMON_INTEGRAL_SOFTDIR']+"/spectral/ibis_isgr_energy/ibis_isgr_energy_pha2/ibis_isgr_energy"
+        ht=heatool(bin)
+        ht['inGRP']="og.fits"
+        ht['outCorEvts']="isgri_events_corrected.fits(ISGR-EVTS-COR.tpl)"
+        ht['useGTI']="n"
+        ht['randSeed']=500
+        ht['riseDOL']=self.input_ecorrdata.risedol
+        ht['GODOL']=self.input_ecorrdata.godol
+        ht['supGDOL']=self.input_ecorrdata.supgdol
+        ht['supODOL']=self.input_ecorrdata.supodol
+        ht['chatter']="4"
+        ht.run()
 
         self.output_events=DataFile("isgri_events_corrected.fits")
             
@@ -397,6 +457,8 @@ class BinEventsVirtual(DataAnalysis):
 
     default_log_level="binevents"
 
+    ii_shadow_build_binary="ii_shadow_build"
+
     def main(self):
         if self.target_level is None or self.input_bins is None:
             raise Exception("VirtualAnalysis: please inherit!")
@@ -420,7 +482,7 @@ class BinEventsVirtual(DataAnalysis):
         remove_withtemplate(det_fn+det_tpl)
         remove_withtemplate(eff_fn+eff_tpl)
 
-        bin="ii_shadow_build"
+        bin=self.ii_shadow_build_binary
         ht=heatool(bin)
         ht['outSWGGRP']="og.fits[GROUPING,1,BINTABLE]"
         ht['inDead']=self.input_dead.output_dead.path
@@ -841,6 +903,11 @@ def remove_withtemplate(fn):
     except OSError:
         pass
     
+    try:
+        os.remove(fn+".gz")
+    except OSError:
+        pass
+    
 
 def construct_gnrl_scwg_grp(scw,children=[],fn="og.fits"):
     try:
@@ -1001,3 +1068,44 @@ def construct_empty_shadidx(bins,fn="og.fits",levl="BIN_I"):
         og[2+i].header['ISDCLEVL']=levl
     og.writeto(fn,clobber=True)
 
+
+class BinnedDataProcessingSummary(DataAnalysis):
+    run_for_hashe=True
+
+    def main(self):
+        mf=BinEventsImage(assume=ScWData(input_scwid="055500100010.001")) # arbitrary choice of scw, should be the same: assumption of course
+        ahash=mf.process(output_required=False,run_if_haveto=False)[0]
+        print "one scw hash:",ahash
+        ahash=dataanalysis.hashe_replace_object(ahash,'055500100010.001','None')
+        print "generalized hash:",ahash
+        rh=dataanalysis.shhash(ahash)
+        print "reduced hash",rh
+        return [dataanalysis.DataHandle('processing_definition:'+rh[:8])]
+
+class RevScWList(DataAnalysis):
+    input_rev=Revolution
+    allow_alias=True
+
+    def main(self):
+        import os
+
+        event_files=glob.glob(self.input_rev.revroot+"/*/isgri_events.fits*")
+
+        scwids=[fn.split("/")[-2] for fn in event_files]
+
+        self.scwlistdata=[ScWData(input_scwid=s) for s in scwids]
+
+class FileScWList(DataAnalysis):
+    input_file=None
+    allow_alias=True
+
+    def main(self):
+        self.scwlistdata=[ScWData(input_scwid=s.strip()) for s in open(self.input_file.handle.split(":",1)[0])] # omg!!
+
+
+class ScWList(DataAnalysis):
+    input_list=None
+    allow_alias=True
+
+    def main(self):
+        self.scwlistdata=self.input_list.scwlistdata
