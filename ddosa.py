@@ -32,7 +32,19 @@ import dataanalysis
 from pilton import heatool
 
 import os,shutil,re,time,glob
+import pyfits
 
+def remove_repeating(inlist):
+    if inlist==[]:
+        return inlist
+
+    outlist=[inlist[0]]
+    for l in inlist[1:]:
+        if l in outlist:
+            print("repearing item:",l)
+        else:
+            outlist.append(l)
+    return outlist
 
 class MemCacheIntegralBase: 
 #class MemCacheIntegral(dataanalysis.MemCacheSqlite):
@@ -46,6 +58,24 @@ class MemCacheIntegralBase:
             if hashe[0]=="list": # more universaly                                                                                                                 
                 for k in hashe[1:]:
                     r=self.get_scw(k)
+                    if r is not None:
+                        return r
+                return None
+            raise Exception("unknown tuple in the hash:"+str(hashe))                                                                                               
+        if isinstance(hashe,str):                                                                                                                                  
+            return None                                                                                                                                           
+        raise Exception("unknown class in the hash:"+str(hashe))                                                                                                   
+    
+    def get_rev(self,hashe):                                                                                                                                       
+        print("search for rev in",hashe)
+        if isinstance(hashe,tuple):                                                                                                                                
+            if hashe[0]=="analysis": # more universaly                                                                                                             
+                if hashe[2].startswith('Revolution'):
+                    return hashe[1]
+                return self.get_rev(hashe[1])
+            if hashe[0]=="list": # more universaly                                                                                                                 
+                for k in hashe[1:]:
+                    r=self.get_rev(k)
                     if r is not None:
                         return r
                 return None
@@ -75,29 +105,44 @@ class MemCacheIntegralBase:
 
     def hashe2signature(self,hashe):                                                                                                           
         scw=self.get_scw(hashe)
+        if scw is not None:
+            if isinstance(hashe,tuple):          
+                if hashe[0]=="analysis":                                                                                                           
+                    return hashe[2]+":"+scw+":"+shhash(hashe)[:8]                                                                                          
+            return shhash(hashe)[:8]                                                                                                               
+        
+        rev=self.get_rev(hashe)
+        if rev is not None:
+            if isinstance(hashe,tuple):          
+                if hashe[0]=="analysis":                                                                                                           
+                    return hashe[2]+":"+rev+":"+shhash(hashe)[:8]                                                                                          
+            return shhash(hashe)[:8]                                                                                                               
 
-        if scw is None:
-            return hashe[2]+":"+shhash(hashe)[:16]                                               
+        return hashe[2]+":"+shhash(hashe)[:16]                                               
+        
 
-        if isinstance(hashe,tuple):          
-            if hashe[0]=="analysis":                                                                                                           
-                return hashe[2]+":"+scw+":"+shhash(hashe)[:8]                                                                                          
-        return shhash(hashe)[:8]                                                                                                               
 
     def construct_cached_file_path(self,hashe,obj=None):                                                                                                                        
         print "will construct INTEGRAL cached file path for",hashe
 
         scw=self.get_scw(hashe)
+        rev=self.get_rev(hashe)
 
         def hash_to_path2(hashe):                                                                                                                                      
             return dataanalysis.shhash(repr(hashe[1]))[:8]                                                                                                           
             
         marked=self.get_marked(hashe[1])
+        marked=remove_repeating(marked)
         print("marked",marked)
 
         if scw is None:
             print("not scw-grouped cache")
-            r=self.filecacheroot+"/global/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/"
+            if rev is None:
+                print("not rev-grouped cache")
+                r=self.filecacheroot+"/global/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/"
+            else:
+                print("cached rev:",rev)
+                r=self.filecacheroot+"/byrev/"+rev+"/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/" # choose to avoid overlapp    
         else:
             print("cached scw:",scw)
             r=self.filecacheroot+"/byscw/"+scw[:4]+"/"+scw+"/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/" # choose to avoid overlapp    
@@ -115,9 +160,10 @@ class MemCacheIntegralLegacy(MemCacheIntegralBase,dataanalysis.MemCacheSqlite):
 class MemCacheIntegralFallback(MemCacheIntegralBase,dataanalysis.MemCacheNoIndex):
     pass
 
-mc=dataanalysis.TransientCache()
+#mc=dataanalysis.TransientCacheInstance
 mcg=MemCacheIntegral('/Integral/data/reduced/ddcache/')
-mc.parent=mcg
+mc=mcg
+#mc.parent=mcg
 mcgl=MemCacheIntegralLegacy('/Integral/data/reduced/ddcache/')
 mcg.parent=mcgl
 mcgfb=MemCacheIntegralFallback('/Integral/data/reduced/ddcache/')
@@ -150,6 +196,13 @@ class ScWData(DataAnalysis):
             if not os.path.exists(self.scwpath+"/swg.fits.gz"):
                 print "searching for",self.scwpath+"/swg.fits"
                 raise Exception("no scw data!")
+            else:
+                self.swgpath=self.scwpath+"/swg.fits.gz"
+        else:
+            self.swgpath=self.scwpath+"/swg.fits"
+
+    def get_telapse(self):
+        return pyfits.open(self.swgpath)[1].header['TELAPSE']
 
     def __repr__(self):
         return "[ScWData:%s]"%self.input_scwid
@@ -161,6 +214,15 @@ class Revolution(DataAnalysis):
         rbp=os.environ["REP_BASE_PROD"]
         self.revroot=rbp+"/scw/%s/"%self.input_revid.handle
         self.revdir=self.revroot+"/rev.001/"
+
+class RevForScW(DataAnalysis):
+    input_scw=ScWData    
+    run_for_hashe=True
+
+    def main(self):
+        revid=self.input_scw.input_scwid.handle[:4]
+        print "revolution id for scw:",revid
+        return Revolution(input_revid=revid)
 
 class ICRoot(DataAnalysis):
     input="standard_IC"
@@ -249,7 +311,7 @@ class ibis_isgr_energy_standard(DataAnalysis):
         self.output_events=DataFile("isgri_events_corrected.fits")
 
 class ibis_isgr_energy(DataAnalysis):
-    cached=True
+    #cached=True
 
     input_scw=ScWData()
     input_ecorrdata=GetEcorrCalDB
@@ -428,7 +490,6 @@ class SpectraBins(DataAnalysis):
     version="v3"
     def main(self):
         self.binrmf=os.environ['INTEGRAL_DATA']+"/resources/rmf_62bands.fits" # noo!!!
-        import pyfits
         e=pyfits.open(self.binrmf)[3].data
         self.bins=zip(e['E_MIN'],e['E_MAX'])
         self.binrmfext=self.binrmf+'[3]'
@@ -511,6 +572,11 @@ class BinEventsVirtual(DataAnalysis):
 
         self.shadow_detector=DataFile(det_fn)
         self.shadow_efficiency=DataFile(eff_fn)
+        
+        self.post_process()
+
+    def post_process(self):
+        pass
 
 
 class BinEventsImage(BinEventsVirtual):
@@ -586,7 +652,7 @@ class ShadowUBCVirtual(DataAnalysis):
 
     version="v3"
     
-    cached=True
+    cached=False
 
     def main(self):
         construct_gnrl_scwg_grp(self.input_scw,[\
@@ -725,6 +791,7 @@ class ImagingConfig(DataAnalysis):
         self.MinNewSouSnr=5
         self.NegModels=0
         self.DoPart2=1
+        self.SouFit=0
 
 class ii_skyimage(DataAnalysis):
     input_gb=ghost_bustersImage
@@ -737,6 +804,8 @@ class ii_skyimage(DataAnalysis):
     input_gti=ibis_gti
 
     cached=True
+
+    ii_skyimage_binary=None
 
     version="v2"
     def main(self):
@@ -767,7 +836,12 @@ class ii_skyimage(DataAnalysis):
         remove_withtemplate("isgri_sky_ima.fits")
         remove_withtemplate("isgri_sky_res.fits")
 
-        ht=heatool("ii_skyimage")
+        if self.ii_skyimage_binary is None:
+            ii_skyimage_binary="ii_skyimage"
+        else:
+            ii_skyimage_binary=self.ii_skyimage_binary
+
+        ht=heatool(ii_skyimage_binary)
         ht['outOG']="ogg.fits[1]"
         ht['outCat']="isgri_srcl_res.fits(ISGR-SRCL-RES.tpl)"
         ht['mask']=self.input_ic.ibisicroot+"/mod/isgr_mask_mod_0003.fits[ISGR-MASK-MOD,1,IMAGE]"
@@ -784,7 +858,7 @@ class ii_skyimage(DataAnalysis):
         ht['num_band'] = len(self.input_bins.bins)
         ht['E_band_min'] = " ".join([str(a[0]) for a in self.input_bins.bins])
         ht['E_band_max'] = " ".join([str(a[1]) for a in self.input_bins.bins])
-        for k in ['SearchMode','ToSearch','CleanMode','MinCatSouSnr','MinNewSouSnr','NegModels','DoPart2']: # dopart2 is flow control, separately
+        for k in ['SouFit','SearchMode','ToSearch','CleanMode','MinCatSouSnr','MinNewSouSnr','NegModels','DoPart2']: # dopart2 is flow control, separately
             ht[k]=getattr(self.input_imgconfig,k)
         ht['corrDol'] = self.input_maps.corr.path
         ht.run()
@@ -1082,8 +1156,42 @@ class BinnedDataProcessingSummary(DataAnalysis):
         print "reduced hash",rh
         return [dataanalysis.DataHandle('processing_definition:'+rh[:8])]
 
+class BasicEventProcessingSummary(DataAnalysis):
+    run_for_hashe=True
+
+    def main(self):
+        mf=ISGRIEvents(assume=ScWData(input_scwid="055500100010.001")) # arbitrary choice of scw, should be the same: assumption of course
+        ahash=mf.process(output_required=False,run_if_haveto=False)[0]
+        print "one scw hash:",ahash
+        ahash=dataanalysis.hashe_replace_object(ahash,'055500100010.001','None')
+        print "generalized hash:",ahash
+        rh=dataanalysis.shhash(ahash)
+        print "reduced hash",rh
+        return [dataanalysis.DataHandle('processing_definition:'+rh[:8])]
+
 class RevScWList(DataAnalysis):
     input_rev=Revolution
+    allow_alias=True
+
+    def main(self):
+        import os
+
+        event_files=glob.glob(self.input_rev.revroot+"/*/isgri_events.fits*")
+
+        scwids=[fn.split("/")[-2] for fn in event_files]
+
+        self.scwlistdata=[ScWData(input_scwid=s) for s in scwids]
+
+class ScWFilter(DataAnalysis):
+    input="badlist"
+    #input_lists
+
+    def main(self):
+        open(os.environ['REP_BASE_PROD_global']+"/")
+
+class RevScWListFiltered(DataAnalysis):
+    input_rev=Revolution
+    input_filter=ScWFilter
     allow_alias=True
 
     def main(self):
