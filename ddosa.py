@@ -863,6 +863,12 @@ class ii_skyimage(DataAnalysis):
         ht['corrDol'] = self.input_maps.corr.path
         ht.run()
 
+
+        if not os.path.exists("isgri_sky_ima.fits"):
+            print "no image produced: since there was no exception in the binary, assuming empty results"
+            self.empty_results=True
+            return
+
         self.srclres=DataFile("isgri_srcl_res.fits")
         self.skyima=DataFile("isgri_sky_ima.fits")
         self.skyres=DataFile("isgri_sky_res.fits")
@@ -1161,6 +1167,19 @@ class BasicEventProcessingSummary(DataAnalysis):
 
     def main(self):
         mf=ISGRIEvents(assume=ScWData(input_scwid="055500100010.001")) # arbitrary choice of scw, should be the same: assumption of course
+        ahash=mf.process(output_required=False,run_if_haveto=False)[0]
+        print "one scw hash:",ahash
+        ahash=dataanalysis.hashe_replace_object(ahash,'055500100010.001','None')
+        print "generalized hash:",ahash
+        rh=dataanalysis.shhash(ahash)
+        print "reduced hash",rh
+        return [dataanalysis.DataHandle('processing_definition:'+rh[:8])]
+
+class ImageProcessingSummary(DataAnalysis):
+    run_for_hashe=True
+
+    def main(self):
+        mf=ii_skyimage(assume=ScWData(input_scwid="055500100010.001")) # arbitrary choice of scw, should be the same: assumption of course
         ahash=mf.process(output_required=False,run_if_haveto=False)[0]
         print "one scw hash:",ahash
         ahash=dataanalysis.hashe_replace_object(ahash,'055500100010.001','None')
