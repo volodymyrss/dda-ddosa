@@ -161,13 +161,14 @@ class MemCacheIntegralFallback(MemCacheIntegralBase,dataanalysis.MemCacheNoIndex
     pass
 
 #mc=dataanalysis.TransientCacheInstance
-mcg=MemCacheIntegral('/Integral/data/reduced/ddcache/')
-mc=mcg
+#mcg=MemCacheIntegral('/Integral/data/reduced/ddcache/')
+#mc=mcg
 #mc.parent=mcg
 #mcgl=MemCacheIntegralLegacy('/Integral/data/reduced/ddcache/')
 #mcg.parent=mcgl
-mcgfb=MemCacheIntegralFallback('/Integral/data/reduced/ddcache/')
-mcg.parent=mcgfb
+mcgfb=MemCacheIntegralFallback('/sps/integral/data/reduced/ddcache/')
+#mcg.parent=mcgfb
+mc=mcgfb
 
 class DataAnalysis(dataanalysis.DataAnalysis):
     cache=mc
@@ -830,12 +831,12 @@ class ii_skyimage(DataAnalysis):
         set_attr({'ISDCLEVL':"BIN_I"})
         set_attr({'INSTRUME':"IBIS"},"og.fits")
 
-        construct_gnrl_scwg_grp_idx(self.input_scw,[\
+        construct_gnrl_scwg_grp_idx([\
                     "og.fits",
                 ])
         set_attr({'ISDCLEVL':"BIN_I"},"og_idx.fits")
         
-        construct_og(self.input_scw,[\
+        construct_og([\
                     "og_idx.fits",
                 ])
         set_attr({'ISDCLEVL':"BIN_I"},"ogg.fits")
@@ -886,17 +887,37 @@ class ii_skyimage(DataAnalysis):
 class CatForSpectraFromImaging(DataAnalysis):
     input_imaging=ii_skyimage
 
+    minsig=None
+    maxsources=None
+
+    def get_version(self):
+        return self.get_signature()+"."+self.version+("" if self.minsig is None else "minsig%.3lg"%self.minsig)
+
     def main(self):
         if hasattr(self.input_imaging,'empty_results'):
             print "no results here"
             self.empty_results=True
             return
 
-        shutil.copyfile(self.input_imaging.srclres.path,"cat4spectra.fits")
-        self.cat=DataFile("cat4spectra.fits")
+        catfn="cat4spectra.fits"
 
-class CatForSpectra(CatForSpectraFromImaging):
-    pass
+        f=pyfits.open(self.input_imaging.srclres.path)
+
+        print "image catalog contains",len(f[1].data)
+
+        if self.minsig is not None:
+            f[1].data=f[1].data[f[1].data['DETSIG']>self.minsig]
+            print "selecting by significance",len(f[1].data)
+        
+        if self.maxsources is not None:
+            raise Exception("not implemented")
+
+        f.writeto(catfn,clobber=True)
+
+        self.cat=DataFile(catfn)
+
+#class CatForSpectra(da.DataAnalysis):
+#    pass
 
 class ISGRIResponse(DataAnalysis):
     input_ecorrdata=GetEcorrCalDB
@@ -905,7 +926,7 @@ class ISGRIResponse(DataAnalysis):
 
 class ii_spectra_extract(DataAnalysis):
     input_gb=ghost_bustersSpectra
-    input_cat=CatForSpectra # or virtual
+    input_cat=CatForSpectraFromImaging # or virtual
     input_ic=IBIS_ICRoot
     input_response=ISGRIResponse
     input_scw=ScWData()
@@ -1040,7 +1061,7 @@ def construct_gnrl_scwg_grp(scw,children=[],fn="og.fits"):
                 raise Exception("can not attach more than 4 children to the group!")
         dac.run()
 
-def construct_gnrl_scwg_grp_idx(scw,children=[],fn="og_idx.fits"):
+def construct_gnrl_scwg_grp_idx(children=[],fn="og_idx.fits"):
     open("swgs.txt","w").write("\n".join(children))
     dc=heatool("txt2idx")
     dc['element']="swgs.txt"
@@ -1048,7 +1069,7 @@ def construct_gnrl_scwg_grp_idx(scw,children=[],fn="og_idx.fits"):
     dc['template']="GNRL-SCWG-GRP-IDX.tpl"
     dc.run()
 
-def construct_og(scw,children=[],fn="ogg.fits"):
+def construct_og(children=[],fn="ogg.fits"):
     dc=heatool("dal_create")
     dc['obj_name']="!"+fn
     dc['template']="GNRL-OBSG-GRP.tpl"
@@ -1063,10 +1084,10 @@ def construct_og(scw,children=[],fn="ogg.fits"):
                 raise Exception("can not attach more than 4 children to the group!")
         dac.run()
 
-def import_attr(obj,attr):
+def import_attr(obj,attr,target="og.fits"):
     da=heatool("dal_attr_copy")
     da['indol']=obj
-    da['outdol']="og.fits"
+    da['outdol']=target
     da['keylist']=",".join(attr)
     da.run()
     
