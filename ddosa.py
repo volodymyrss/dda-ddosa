@@ -49,7 +49,7 @@ def remove_repeating(inlist):
 class MemCacheIntegralBase: 
 #class MemCacheIntegral(dataanalysis.MemCacheSqlite):
     def get_scw(self,hashe):                                                                                                                                       
-        print("search for scw in",hashe)
+        if dataanalysis.global_log_enabled: print("search for scw in",hashe)
         if isinstance(hashe,tuple):                                                                                                                                
             if hashe[0]=="analysis": # more universaly                                                                                                             
                 if hashe[2].startswith('ScWData'):
@@ -67,7 +67,7 @@ class MemCacheIntegralBase:
         raise Exception("unknown class in the hash:"+str(hashe))                                                                                                   
     
     def get_rev(self,hashe):                                                                                                                                       
-        print("search for rev in",hashe)
+        if dataanalysis.global_log_enabled: print("search for rev in",hashe)
         if isinstance(hashe,tuple):                                                                                                                                
             if hashe[0]=="analysis": # more universaly                                                                                                             
                 if hashe[2].startswith('Revolution'):
@@ -85,7 +85,7 @@ class MemCacheIntegralBase:
         raise Exception("unknown class in the hash:"+str(hashe))                                                                                                   
     
     def get_marked(self,hashe):                                                                                                                                       
-        print("search for marked in",hashe)
+        if dataanalysis.global_log_enabled: print("search for marked in",hashe)
         if isinstance(hashe,tuple):                                                                                                                                
             if hashe[0]=="analysis": # more universaly                                                                                                             
                 r=[]
@@ -133,21 +133,21 @@ class MemCacheIntegralBase:
             
         marked=self.get_marked(hashe[1])
         marked=remove_repeating(marked)
-        print("marked",marked)
+        if dataanalysis.global_log_enabled: print("marked",marked)
 
         if scw is None:
-            print("not scw-grouped cache")
+            if dataanalysis.global_log_enabled: print("not scw-grouped cache")
             if rev is None:
-                print("not rev-grouped cache")
+                if dataanalysis.global_log_enabled: print("not rev-grouped cache")
                 r=self.filecacheroot+"/global/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/"
             else:
-                print("cached rev:",rev)
+                if dataanalysis.global_log_enabled: print("cached rev:",rev)
                 r=self.filecacheroot+"/byrev/"+rev+"/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/" # choose to avoid overlapp    
         else:
-            print("cached scw:",scw)
+            if dataanalysis.global_log_enabled: print("cached scw:",scw)
             r=self.filecacheroot+"/byscw/"+scw[:4]+"/"+scw+"/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/" # choose to avoid overlapp    
 
-        print("cached path:",r)
+        if dataanalysis.global_log_enabled: print("cached path:",r)
                                                                                                                                                                        
         return r # choose to avoid overlapp    
 
@@ -164,10 +164,10 @@ class MemCacheIntegralFallback(MemCacheIntegralBase,dataanalysis.MemCacheNoIndex
 mcg=MemCacheIntegral('/Integral/data/reduced/ddcache/')
 mc=mcg
 #mc.parent=mcg
-mcgl=MemCacheIntegralLegacy('/Integral/data/reduced/ddcache/')
-mcg.parent=mcgl
+#mcgl=MemCacheIntegralLegacy('/Integral/data/reduced/ddcache/')
+#mcg.parent=mcgl
 mcgfb=MemCacheIntegralFallback('/Integral/data/reduced/ddcache/')
-mcgl.parent=mcgfb
+mcg.parent=mcgfb
 
 class DataAnalysis(dataanalysis.DataAnalysis):
     cache=mc
@@ -214,10 +214,14 @@ class Revolution(DataAnalysis):
         rbp=os.environ["REP_BASE_PROD"]
         self.revroot=rbp+"/scw/%s/"%self.input_revid.handle
         self.revdir=self.revroot+"/rev.001/"
+    
+    def __repr__(self):
+        return "[Revolution:%s]"%self.input_revid
 
 class RevForScW(DataAnalysis):
     input_scw=ScWData    
     run_for_hashe=True
+    allow_alias=False
 
     def main(self):
         revid=self.input_scw.input_scwid.handle[:4]
@@ -519,6 +523,12 @@ class BinEventsVirtual(DataAnalysis):
     default_log_level="binevents"
 
     ii_shadow_build_binary="ii_shadow_build"
+
+    def get_version(self):
+        if self.maxrisetime==116:
+            return self.get_signature()+"."+self.version
+        else:
+            return self.get_signature()+"."+self.version+".lrt%i"%self.maxrisetime
 
     def main(self):
         if self.target_level is None or self.input_bins is None:
@@ -877,6 +887,11 @@ class CatForSpectraFromImaging(DataAnalysis):
     input_imaging=ii_skyimage
 
     def main(self):
+        if hasattr(self.input_imaging,'empty_results'):
+            print "no results here"
+            self.empty_results=True
+            return
+
         shutil.copyfile(self.input_imaging.srclres.path,"cat4spectra.fits")
         self.cat=DataFile("cat4spectra.fits")
 
@@ -907,6 +922,11 @@ class ii_spectra_extract(DataAnalysis):
     #input_imgconfig=ImagingConfig
 
     def main(self):
+        if hasattr(self.input_cat,'empty_results'):
+            print "empty here"
+            self.empty_results=True
+            return
+
         construct_gnrl_scwg_grp(self.input_scw,[\
                     self.input_gb.corshad.path,
                     self.input_scw.auxadppath+"/time_correlation.fits[AUXL-TCOR-HIS]",
@@ -1188,6 +1208,19 @@ class ImageProcessingSummary(DataAnalysis):
         print "reduced hash",rh
         return [dataanalysis.DataHandle('processing_definition:'+rh[:8])]
 
+class SpectraProcessingSummary(DataAnalysis):
+    run_for_hashe=True
+
+    def main(self):
+        mf=ii_spectra_extract(assume=[ScWData(input_scwid="055500100010.001"),Revolution(input_revid="0555")]) # arbitrary choice of scw, should be the same: assumption of course
+        ahash=mf.process(output_required=False,run_if_haveto=False)[0]
+        print "one scw hash:",ahash
+        ahash=dataanalysis.hashe_replace_object(ahash,'055500100010.001','None')
+        print "generalized hash:",ahash
+        rh=dataanalysis.shhash(ahash)
+        print "reduced hash",rh
+        return [dataanalysis.DataHandle('processing_definition:'+rh[:8])]
+
 class RevScWList(DataAnalysis):
     input_rev=Revolution
     allow_alias=True
@@ -1197,9 +1230,19 @@ class RevScWList(DataAnalysis):
 
         event_files=glob.glob(self.input_rev.revroot+"/*/isgri_events.fits*")
 
-        scwids=[fn.split("/")[-2] for fn in event_files]
+        scwids=sorted([fn.split("/")[-2] for fn in event_files])
 
-        self.scwlistdata=[ScWData(input_scwid=s) for s in scwids]
+        self.scwlistdata=[ScWData(input_scwid=s) for s in scwids if s.endswith("0010.001")]
+
+    def __repr__(self):
+        return "[RevScWList:%s]"%repr(self.input_rev)
+
+class ScWFilter(DataAnalysis):
+    input="badlist"
+    #input_lists
+
+    def main(self):
+        open(os.environ['REP_BASE_PROD_global']+"/")
 
 class ScWFilter(DataAnalysis):
     input="badlist"
