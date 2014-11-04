@@ -225,6 +225,22 @@ class MemCacheIntegralBase:
         raise Exception("unknown class in the hash:"+str(hashe))                                                                                                   
 
         
+    def hashe2signature(self,hashe):                                                                                                           
+        scw=self.get_scw(hashe)
+        if scw is not None:
+            if isinstance(hashe,tuple):          
+                if hashe[0]=="analysis":                                                                                                           
+                    return hashe[2]+":"+scw+":"+shhash(hashe)[:8]                                                                                          
+            return shhash(hashe)[:8]                                                                                                               
+        
+        rev=self.get_rev(hashe)
+        if rev is not None:
+            if isinstance(hashe,tuple):          
+                if hashe[0]=="analysis":                                                                                                           
+                    return hashe[2]+":"+rev+":"+shhash(hashe)[:8]                                                                                          
+            return shhash(hashe)[:8]                                                                                                               
+
+        return hashe[2]+":"+shhash(hashe)[:16]                                               
 
 
     def construct_cached_file_path(self,hashe,obj=None):                                                                                                                        
@@ -306,15 +322,15 @@ class DataAnalysis(dataanalysis.DataAnalysis):
 
     def get_scw(self):
         if self._da_locally_complete is not None:
-            return "(complete:%s)"%self.cache.get_scw(self._da_locally_complete)
+            return "(completescw:%s)"%self.cache.get_scw(self._da_locally_complete)
         for a in self.assumptions:
             if isinstance(a,ScWData):
-                return "(assume:%s)"%str(a.input_scwid)
+                return "(assumescw:%s)"%str(a.input_scwid)
 
         return ""
 
     def __repr__(self):
-        return "[%s%s%s%i]"%(self.get_version(),self.get_scw(),";Virtual" if self.virtual else "",id(self))
+        return "[%s%s%s%s%i]"%(self.get_version(),self.get_scw(),";Virtual" if self.virtual else "",";Complete" if self._da_locally_complete else "",id(self))
 
 
 class ScWData(DataAnalysis):
