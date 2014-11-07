@@ -302,9 +302,10 @@ class MemCacheIntegralIRODS(MemCacheIntegralBase,dataanalysis.MemCacheIRODS):
 #mcgl=MemCacheIntegralLegacy('/Integral/data/reduced/ddcache/')
 #mcg.parent=mcgl
 
-mcgfb=MemCacheIntegralFallback('/sps/integral/data/reduced/ddcache/')
+IntegralCacheRoot=os.environ['INTEGRAL_DDCACHE_ROOT']#'/sps/integral/data/reduced/ddcache/'
+mcgfb=MemCacheIntegralFallback(IntegralCacheRoot)
 
-mcgfb_oldp=MemCacheIntegralFallbackOldPath('/sps/integral/data/reduced/ddcache/')
+mcgfb_oldp=MemCacheIntegralFallbackOldPath(IntegralCacheRoot)
 mcgfb.parent=mcgfb_oldp
 
 mcgirods=MemCacheIntegralIRODS('/tempZone/home/integral/data/reduced/ddcache/')
@@ -856,7 +857,7 @@ class BrightPIFImage(DataAnalysis):
     input_bins=ImageBins
     input_gti=ibis_gti
 
-    #copy_cached_input=False
+    copy_cached_input=True
 
 
     def main(self):
@@ -987,6 +988,8 @@ class ghost_bustersVirtual(DataAnalysis):
     
     cached=True
 
+    gb_binary=None
+
     def main(self):
         construct_gnrl_scwg_grp(self.input_scw,[\
                 self.input_shadow.corshad.path,
@@ -995,7 +998,10 @@ class ghost_bustersVirtual(DataAnalysis):
 
         import_attr(self.input_scw.scwpath+"/swg.fits",["TSTART","TSTOP"])
         
-        ht=heatool("ghost_busters")
+        if self.gb_binary is not None:
+            ht=heatool(self.gb_binary)
+        else:
+            ht=heatool("ghost_busters")
         ht['ogDOL']=""
         ht['sourcecat']=self.input_cat.cat
         ht['maskmod']=self.input_ic.ibisicroot+"/mod/isgr_ghos_mod_001.fits[ISGR-GHOS-MOD,1,IMAGE]"
@@ -1535,6 +1541,9 @@ class RevScWList(DataAnalysis):
         import os
 
         event_files=glob.glob(self.input_rev.revroot+"/*/isgri_events.fits*")
+
+        print "event files in",self.input_rev.revroot
+        print "found event files",event_files
 
         scwids=sorted([fn.split("/")[-2] for fn in event_files])
 
