@@ -323,7 +323,11 @@ class DataAnalysis(dataanalysis.DataAnalysis):
 
     def get_scw(self):
         if self._da_locally_complete is not None:
-            return "(completescw:%s)"%self.cache.get_scw(self._da_locally_complete)
+            try:
+                return "(completescw:%s)"%self.cache.get_scw(self._da_locally_complete)
+            except:
+                return "(complete)"
+
         for a in self.assumptions:
             if isinstance(a,ScWData):
                 return "(assumescw:%s)"%str(a.input_scwid)
@@ -355,7 +359,8 @@ class ScWData(DataAnalysis):
         if not os.path.exists(self.scwpath+"/swg.fits"):
             if not os.path.exists(self.scwpath+"/swg.fits.gz"):
                 print "searching for",self.scwpath+"/swg.fits"
-                raise Exception("no scw data!")
+                raise dataanalysis.AnalysisException("no scw data for: "+repr(self.input_scwid.handle))
+                #raise Exception("no scw data!")
             else:
                 self.swgpath=self.scwpath+"/swg.fits.gz"
         else:
@@ -374,6 +379,14 @@ class Revolution(DataAnalysis):
         rbp=os.environ["REP_BASE_PROD"]
         self.revroot=rbp+"/scw/%s/"%self.input_revid.handle
         self.revdir=self.revroot+"/rev.001/"
+
+    def get_ijd(self):
+        r1100=4306.5559396296
+        r100=1315.4808007407
+
+        r=int(self.input_revid.handle)
+        return r100+(r1100-r100)/1000*(r-100)
+
     
     def __repr__(self):
         return "[Revolution:%s]"%self.input_revid
@@ -673,7 +686,7 @@ class ListBins(DataAnalysis):
         open("f.txt","w").write(str(self.input_bins.bins))
 
 class BinEventsVirtual(DataAnalysis):
-    input_scw=ScWData()
+    input_scw=ScWData
 
     input_events=ISGRIEvents
     input_gti=ibis_gti
@@ -746,12 +759,18 @@ class BinEventsVirtual(DataAnalysis):
         ht['idxNoisy']=self.input_scw.revdirpath+"/idx/isgri_prp_noise_index.fits[1]"
         ht['outRawShadow']=det_fn+det_tpl
         ht['outEffShadow']=eff_fn+eff_tpl
+
+        self.extra_pars(ht)
+
         ht.run()
 
         self.shadow_detector=DataFile(det_fn)
         self.shadow_efficiency=DataFile(eff_fn)
         
         self.post_process()
+
+    def extra_pars(selt,ht):
+        pass
 
     def post_process(self):
         pass
@@ -784,11 +803,16 @@ class BinMapsVirtual(DataAnalysis):
 
         construct_empty_shadidx(self.input_bins.bins,levl=self.target_level)
 
+
         maps={
-                'back':('Bkg','bkg/isgr_back_bkg_0007.fits[1]'),
-                'corr':('Corr','mod/isgr_effi_mod_0011.fits[1]'),
-                'unif':('Uni','bkg/isgr_unif_bkg_0002.fits[1]')
+                'back':('Bkg',self.input_ic.ibisicroot+"/"+'bkg/isgr_back_bkg_0007.fits[1]'),
+                'corr':('Corr',self.input_ic.ibisicroot+"/"+'mod/isgr_effi_mod_0011.fits[1]'),
+                'unif':('Uni',self.input_ic.ibisicroot+"/"+'bkg/isgr_unif_bkg_0002.fits[1]')
                 }
+
+        if hasattr(self,'input_unif'):
+            maps['unif']=('Uni',self.input_unif.unif.get_path()+"[1]")
+            print "will use uniformity:",maps['unif']
 
         level2key={
                 'BIN_I':'ima',
@@ -808,7 +832,7 @@ class BinMapsVirtual(DataAnalysis):
             ht['OutType']=self.target_level
             ht['slope']='-2'
             ht['arfDol']=self.input_ic.ibisicroot+'/mod/isgr_effi_mod_0011.fits[ISGR-ARF.-RSP]'
-            ht['inp'+k2+'Dol']=self.input_ic.ibisicroot+"/"+m 
+            ht['inp'+k2+'Dol']=m 
             ht['reb'+k2+'Dol']=fn
             ht.run()
 
