@@ -66,7 +66,7 @@ class MemCacheIntegralBaseOldPath:
                 return None
             raise Exception("unknown tuple in the hash:"+str(hashe))                                                                                               
         if hashe is None:
-            return 'Any'
+            return None # 'Any'
         if isinstance(hashe,str):                                                                                                                                  
             return None                                                                                                                                           
         raise Exception("unknown class in the hash:"+str(hashe))                                                                                                   
@@ -143,6 +143,15 @@ class MemCacheIntegralBaseOldPath:
         marked=self.get_marked(hashe[1])
         marked=remove_repeating(marked)
         if dataanalysis.global_log_enabled: print("marked",marked)
+        
+        if not isinstance(scw,str):
+            print("emergent scw:",scw)
+            scw=None
+        
+        if scw=="Any":
+            print("any scw:",scw,hashe)
+            scw=None
+
 
         if scw is None:
             if dataanalysis.global_log_enabled: print("not scw-grouped cache")
@@ -178,7 +187,7 @@ class MemCacheIntegralBase:
                 return None
             raise Exception("unknown tuple in the hash:"+str(hashe))                                                                                               
         if hashe is None:
-            return 'Any'
+            return None #'Any'
         if isinstance(hashe,str):                                                                                                                                  
             return None                                                                                                                                           
         raise Exception("unknown class in the hash:"+str(hashe))                                                                                                   
@@ -256,6 +265,14 @@ class MemCacheIntegralBase:
         marked=remove_repeating(marked)
         if dataanalysis.global_log_enabled: print("marked",marked)
 
+        if not isinstance(scw,str):
+            print("emergent scw:",scw)
+            scw=None
+        
+        if scw=="Any":
+            print("any scw:",scw,hashe)
+            scw=None
+
         if scw is None:
             if dataanalysis.global_log_enabled: print("not scw-grouped cache")
             if rev is None:
@@ -271,6 +288,8 @@ class MemCacheIntegralBase:
             #print "reduced hashe",hashe
             if dataanalysis.global_log_enabled: print("cached scw:",scw)
             print(scw,hashe[2],marked)
+        
+
             r=self.filecacheroot+"/byscw/"+scw[:4]+"/"+scw+"/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/" # choose to avoid overlapp    
 
         if dataanalysis.global_log_enabled: print("cached path:",r)
@@ -347,14 +366,15 @@ class ScWData(DataAnalysis):
 
     version="v1"
 
+
     def main(self):
         self.scwid=self.input_scwid.handle
         self.scwver=self.scwid[-3:]
         self.revid=self.scwid[:4]
 
         self.scwpath=os.environ['REP_BASE_PROD']+"/scw/"+self.revid+"/"+self.scwid #!!!!
-        self.revdirpath=os.environ['REP_BASE_PROD']+"/scw/"+self.revid+"/rev.001" # ver?
-        self.auxadppath=os.environ['REP_BASE_PROD']+"/aux/adp/"+self.revid+".001"
+        self.revdirpath=os.environ['REP_BASE_PROD']+"/scw/"+self.revid+"/rev."+self.scwver # ver?
+        self.auxadppath=os.environ['REP_BASE_PROD']+"/aux/adp/"+self.revid+"."+self.scwver
 
         if not os.path.exists(self.scwpath+"/swg.fits"):
             if not os.path.exists(self.scwpath+"/swg.fits.gz"):
@@ -366,25 +386,37 @@ class ScWData(DataAnalysis):
         else:
             self.swgpath=self.scwpath+"/swg.fits"
 
+    def get_isgri_events(self):
+        if hasattr(self,'isgrievents'):
+            return self.isgrievents.get_path()
+        return self.scwpath+"/isgri_events.fits.gz"
+
     def get_telapse(self):
         return pyfits.open(self.swgpath)[1].header['TELAPSE']
+    
+    def get_t(self):
+        h=pyfits.open(self.swgpath)[1].header
+        return (h['TSTOP']+h['TSTART'])/2.,(h['TSTOP']-h['TSTART'])/2.
 
     def __repr__(self):
-        return "[ScWData:%s]"%self.input_scwid
+        return "[%s:%s]"%(self.__class__.__name__,self.input_scwid)
 
 class Revolution(DataAnalysis):
     input_revid=None
 
+    def get_revid(self):
+        return self.input_revid.handle
+
     def main(self):
         rbp=os.environ["REP_BASE_PROD"]
-        self.revroot=rbp+"/scw/%s/"%self.input_revid.handle
+        self.revroot=rbp+"/scw/%s/"%self.get_revid()
         self.revdir=self.revroot+"/rev.001/"
 
     def get_ijd(self):
         r1100=4306.5559396296
         r100=1315.4808007407
 
-        r=int(self.input_revid.handle)
+        r=int(self.get_revid())
         return r100+(r1100-r100)/1000*(r-100)
 
     
@@ -403,6 +435,18 @@ class RevForScW(DataAnalysis):
         revid=self.input_scw.input_scwid.handle[:4]
         print "revolution id for scw:",revid
         return Revolution(input_revid=revid)
+
+class Rev4ScW(Revolution):
+    input_scw=ScWData    
+    input_revid=dataanalysis.NoAnalysis
+
+    def __repr__(self):
+        return "[Rev4ScW:for %s]"%repr(self.input_scw)
+
+    def get_revid(self):
+        revid=self.input_scw.input_scwid.handle[:4]
+        print "revolution id for scw:",revid
+        return revid
 
 class ICRoot(DataAnalysis):
     input="standard_IC"
@@ -650,10 +694,17 @@ class ibis_dead(DataAnalysis):
         shutil.copy(ht.cwd+"/isgri_dead.fits","./isgri_dead.fits")
         self.output_dead=DataFile("isgri_dead.fits")
 
+cache_local=MemCacheIntegralFallback()
+cache_local.filecacheroot=os.getcwd()
 class ISGRIEvents(DataAnalysis):
     input_evttag=ibis_isgr_evts_tag
     
-    #cached=True
+    cached=True
+    cache=cache_local
+
+    read_caches=[cache_local.__class__]
+    write_caches=[cache_local.__class__]
+
 
     version="v3"
     def main(self):
@@ -813,6 +864,10 @@ class BinMapsVirtual(DataAnalysis):
         if hasattr(self,'input_unif'):
             maps['unif']=('Uni',self.input_unif.unif.get_path()+"[1]")
             print "will use uniformity:",maps['unif']
+        
+        if hasattr(self,'input_bkg'):
+            maps['back']=('Bkg',self.input_bkg.bkg.get_path()+"[1]")
+            print "will use background:",maps['back']
 
         level2key={
                 'BIN_I':'ima',
@@ -964,7 +1019,7 @@ class ShadowUBCVirtual(DataAnalysis):
         fn,tpl="isgri_cor_shad_%s.fits"%self.level,"(ISGR-CEXP-SHD-IDX.tpl)"
         remove_withtemplate(fn+tpl)
         
-        ht=heatool("ii_shadow_ubc")
+        ht=heatool("/workdir/lin/soft/ii_shadow_ubc_bestim/ii_shadow_ubc")
         ht['outSWGRP']="og.fits"
         ht['OutType']=self.level
         ht['outCorShadow']=fn+tpl
@@ -1015,9 +1070,19 @@ class ghost_bustersVirtual(DataAnalysis):
     gb_binary=None
 
     def main(self):
+
+        att=self.input_scw.auxadppath+"/attitude_historic.fits"
+        if os.path.exists(att):
+            att=self.input_scw.auxadppath+"/attitude_historic.fits[AUXL-ATTI-HIS,1,BINTABLE]"
+        else:
+            att=self.input_scw.auxadppath+"/attitude_snapshot.fits[AUXL-ATTI-SNA,1,BINTABLE]"
+            attp_g=glob.glob(self.input_scw.auxadppath+"/attitude_predicted_*.fits*")
+            attp=attp_g[0]+"[AUXL-ATTI-PRE,1,BINTABLE]"
+
         construct_gnrl_scwg_grp(self.input_scw,[\
                 self.input_shadow.corshad.path,
-                self.input_scw.auxadppath+"/attitude_historic.fits[AUXL-ATTI-HIS,1,BINTABLE]" \
+                att, \
+                attp \
             ])
 
         import_attr(self.input_scw.scwpath+"/swg.fits",["TSTART","TSTOP"])
@@ -1099,7 +1164,7 @@ class ii_skyimage(DataAnalysis):
     input_cat=CatExtract
     input_ic=IBIS_ICRoot
     input_imgconfig=ImagingConfig
-    input_scw=ScWData()
+    input_scw=ScWData
     input_gti=ibis_gti
 
     cached=True
@@ -1230,16 +1295,29 @@ class ii_spectra_extract(DataAnalysis):
     #input_cat=CatExtract
     #input_imgconfig=ImagingConfig
 
+    shdtype="BIN_S"
+    binary="ii_spectra_extract"
+
     def main(self):
         if hasattr(self.input_cat,'empty_results'):
             print "empty here"
             self.empty_results=True
             return
 
+        att=self.input_scw.auxadppath+"/attitude_historic.fits"
+        if os.path.exists(att):
+            att=self.input_scw.auxadppath+"/attitude_historic.fits[AUXL-ATTI-HIS,1,BINTABLE]"
+        else:
+            att=self.input_scw.auxadppath+"/attitude_snapshot.fits[AUXL-ATTI-SNA,1,BINTABLE]"
+            attp_fn=glob.glob(self.input_scw.auxadppath+"/attitude_predicted_*.fits*")[0]
+            attp=attp_fn+"[AUXL-ATTI-PRE,1,BINTABLE]"
+            
+
         construct_gnrl_scwg_grp(self.input_scw,[\
                     self.input_gb.corshad.path,
                     self.input_scw.auxadppath+"/time_correlation.fits[AUXL-TCOR-HIS]",
-                    self.input_scw.auxadppath+"/attitude_historic.fits[AUXL-ATTI-HIS,1,BINTABLE]",
+                    att,
+                    attp,
                     self.input_gti.output_gti.path
                 ])
                     #self.input_cat.cat.path,
@@ -1266,7 +1344,7 @@ class ii_spectra_extract(DataAnalysis):
         remove_withtemplate(pif_fn+pif_tpl)
         remove_withtemplate(spec_fn+spec_tpl)
 
-        ht=heatool("ii_spectra_extract")
+        ht=heatool(self.binary)
         ht['outSwg']="og.fits"
         ht['inCat']=self.input_cat.cat.path
         ht['outPif']=pif_fn+pif_tpl
@@ -1279,6 +1357,7 @@ class ii_spectra_extract(DataAnalysis):
         ht['isgrUnifDol']=self.input_maps.unif.path
         ht['isgrBkgDol']=self.input_maps.back.path
         ht['corrDol']=self.input_maps.corr.path
+        ht['OutType']=self.shdtype
         ht['method_cor']=1
 
         #for k in ['SearchMode','ToSearch','CleanMode','MinCatSouSnr','MinNewSouSnr','NegModels','DoPart2']: # dopart2 is flow control, separately
@@ -1540,7 +1619,10 @@ class ImageProcessingSummary(DataAnalysis):
         print "generalized hash:",ahash
         rh=dataanalysis.shhash(ahash)
         print "reduced hash",rh
-        return [dataanalysis.DataHandle('processing_definition:'+rh[:8])]
+        d=dataanalysis.DataHandle('processing_definition:'+rh[:8])
+        dataanalysis.AnalysisFactory.register_definition(d.handle,ahash)
+        d.hash=ahash
+        return [d]
 
 class SpectraProcessingSummary(DataAnalysis):
     run_for_hashe=True
@@ -1571,7 +1653,7 @@ class RevScWList(DataAnalysis):
 
         scwids=sorted([fn.split("/")[-2] for fn in event_files])
 
-        self.scwlistdata=[ScWData(input_scwid=s) for s in scwids if s.endswith("0010.001")]
+        self.scwlistdata=[ScWData(input_scwid=s) for s in scwids if s[:-1].endswith("0010.00")]
 
     def __repr__(self):
         return "[RevScWList:%s]"%repr(self.input_rev)
@@ -1607,12 +1689,24 @@ class ScWListFiltered(DataAnalysis):
 
 class PickFewScWList(DataAnalysis):
     nscw=10
+    firstscws=True
 
     input_list=RevScWList
     allow_alias=True
 
+    version="v2.."
+
+    def get_version(self):
+        if self.firstscws:
+            return self.get_signature()+".firstscw.%i"%self.nscw+"."+self.version
+        else:
+            return self.get_signature()+".lastscw.%i"%self.nscw+"."+self.version
+
     def main(self):
-        self.scwlistdata=self.input_list.scwlistdata[:self.nscw]
+        if self.firstscws:
+            self.scwlistdata=sorted(self.input_list.scwlistdata,key=lambda x:x.input_scwid.handle)[:self.nscw]
+        else:
+            self.scwlistdata=sorted(self.input_list.scwlistdata,key=lambda x:x.input_scwid.handle)[-self.nscw:]
 
 class FileScWList(DataAnalysis):
     input_fn=None
@@ -1632,3 +1726,15 @@ class ScWList(DataAnalysis):
 
     def main(self):
         self.scwlistdata=self.input_list.scwlistdata
+
+def fromUTC(utc):                                                                                                                                                                                              
+    r=subprocess.check_output(["converttime","UTC",utc,""])                                                                                                                                                    
+    d={}                                                                                                                                                                                                       
+    for l in r.split("\n"):                                                                                                                                                                                    
+        t=re.search("Output Time\((.*?)\): (.*?)$",l,re.S)                                                                                                                                                     
+        #print l,t                                                                                                                                                                                             
+        if t:                                                                                                                                                                                                  
+            g=t.groups()                                                                                                                                                                                       
+            d[g[0]]=g[1]                                                                                                                                                                                       
+            #print g                                                                                                                                                                                           
+    return d    
