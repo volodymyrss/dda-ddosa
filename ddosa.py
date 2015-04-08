@@ -152,6 +152,9 @@ class MemCacheIntegralBaseOldPath:
             print("any scw:",scw,hashe)
             scw=None
 
+        print "scw:",scw
+        print "rev:",rev
+
 
         if scw is None:
             if dataanalysis.global_log_enabled: print("not scw-grouped cache")
