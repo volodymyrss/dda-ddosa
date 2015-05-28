@@ -717,6 +717,8 @@ class ImageBins(DataAnalysis):
     input_binsname="g25-80"
     ebins=None
 
+    rmfbins=False
+
     def main(self):
         if self.ebins is None:
             self.bins=[(25,80)]
@@ -725,6 +727,8 @@ class ImageBins(DataAnalysis):
 
 class SpectraBins(DataAnalysis):
     input_binsname="spectral_bins_62"
+    
+    rmfbins=True
 
     version="v3"
     def main(self):
@@ -759,6 +763,7 @@ class BinEventsVirtual(DataAnalysis):
 
     ii_shadow_build_binary="ii_shadow_build"
 
+
     def get_version(self):
         if self.maxrisetime==116:
             return self.get_signature()+"."+self.version
@@ -771,7 +776,7 @@ class BinEventsVirtual(DataAnalysis):
 
         # ask stephane why need raw events
         construct_gnrl_scwg_grp(self.input_scw,[\
-            self.input_events.events.path, \
+            self.input_events.events.get_path(), \
             self.input_scw.scwpath+"/isgri_events.fits[3]", \
             self.input_scw.scwpath+"/ibis_hk.fits[IBIS-DPE.-CNV]", \
             self.input_scw.auxadppath+"/time_correlation.fits[AUXL-TCOR-HIS]" \
@@ -791,16 +796,21 @@ class BinEventsVirtual(DataAnalysis):
         bin=self.ii_shadow_build_binary
         ht=heatool(bin)
         ht['outSWGGRP']="og.fits[GROUPING,1,BINTABLE]"
-        ht['inDead']=self.input_dead.output_dead.path
-        ht['inGTI']=self.input_gti.output_gti.path
+        ht['inDead']=self.input_dead.output_dead.get_path()
+        ht['inGTI']=self.input_gti.output_gti.get_path()
         ht['gti_name'] = 'MERGED_ISGRI'
         ht['outputLevel'] = self.target_level
 
-        if self.target_level=="BIN_I":
+        print "target_level",self.target_level
+
+        print "has rmfbins "+str(self.input_bins.rmfbins) if hasattr(self.input_bins,'rmfbins') else "no rmfbins"
+        print "has binrmfext" if hasattr(self.input_bins,'binrmfext') else "no binrmfext"
+
+        if ( self.target_level=="BIN_I" or not hasattr(self.input_bins,'rmfbins') or not self.input_bins.rmfbins or not hasattr(self.input_bins,'binrmfext') ) and not ( hasattr(self.input_bins,'rmfbins') and self.input_bins.rmfbins ): # fix!!
             ht['isgri_e_num'] = len(self.input_bins.bins)
             ht['isgri_e_min'] = " ".join([str(a[0]) for a in self.input_bins.bins])
             ht['isgri_e_max'] = " ".join([str(a[1]) for a in self.input_bins.bins])
-        elif self.target_level=="BIN_S":
+        elif self.target_level=="BIN_S" or ( hasattr(self.input_bins,'rmfbins') and self.input_bins.rmfbins ) or hasattr(self.input_bins,'binrmfext'):
             ht['isgri_e_num'] = -1
             ht['inEnergyValues'] = self.input_bins.binrmfext #  +"[1]" will this work?
         else:
@@ -976,9 +986,11 @@ class BrightPIFImage(DataAnalysis):
         ht['aluAtt']=self.input_ic.ibisicroot+"/mod/isgr_attn_mod_0011.fits[ISGR-ATTN-MOD,1,BINTABLE]"
         ht['leadAtt']=self.input_ic.ibisicroot+"/mod/isgr_attn_mod_0012.fits[ISGR-ATTN-MOD,1,BINTABLE]"
  #       ht['covrMod']=self.input_ic.ibisicroot+"/mod/isgr_covr_mod_0002.fits[1]"
+
         ht['num_band'] = len(self.input_bins.bins)
         ht['E_band_min'] = " ".join([str(a[0]) for a in self.input_bins.bins])
         ht['E_band_max'] = " ".join([str(a[1]) for a in self.input_bins.bins])
+        
         ht['AllowOffEdge'] = 100
         ht.run()
 
@@ -1012,8 +1024,8 @@ class ShadowUBCVirtual(DataAnalysis):
 
     def main(self):
         construct_gnrl_scwg_grp(self.input_scw,[\
-                self.input_shadows.shadow_detector.path,
-                self.input_shadows.shadow_efficiency.path,
+                self.input_shadows.shadow_detector.get_path(),
+                self.input_shadows.shadow_efficiency.get_path(),
             ])
         
         keys=["SWID","SW_TYPE","REVOL","EXPID","OBTSTART","OBTEND","TSTART","TSTOP","SWBOUND"]
@@ -1026,15 +1038,20 @@ class ShadowUBCVirtual(DataAnalysis):
         ht['outSWGRP']="og.fits"
         ht['OutType']=self.level
         ht['outCorShadow']=fn+tpl
-        ht['isgrUnifDol']=self.input_maps.unif.path
-        ht['isgrBkgDol']=self.input_maps.back.path
+        ht['isgrUnifDol']=self.input_maps.unif.get_path()
+        ht['isgrBkgDol']=self.input_maps.back.get_path()
         if hasattr(self,'input_brpif'):
-            ht['brPif']=self.input_brpif.pifs.path
+            ht['brPif']=self.input_brpif.pifs.get_path()
             ht['brPifThreshold']=self.brPifThreshold
         ht['method_cor']=1 # keep separately background correction routines
         ht.run()
 
         self.corshad=DataFile(fn)
+
+        self.post_process()
+    
+    def post_process(self):
+        pass
 
 class ShadowUBCImage(ShadowUBCVirtual):
     level="BIN_I"
@@ -1124,6 +1141,30 @@ class ISGRIRefCat(DataAnalysis):
         import time
         time.sleep(3) # expensive to search for cat: test
 
+class CatExtractEmpty(DataAnalysis):
+    input_cat=GRcat
+    input_scw=ScWData
+    
+    cached=True
+
+    def main(self):
+        construct_gnrl_scwg_grp(self.input_scw,[\
+                ])
+        import_attr(self.input_scw.scwpath+"/swg.fits",["RA_SCX","DEC_SCX"])
+
+        remove_withtemplate("isgri_catalog.fits(ISGR-SRCL-CAT.tpl)")
+
+        ht=heatool("cat_extract")
+        ht['outGRP']="og.fits[1]"
+        ht['outCat']="isgri_catalog.fits(ISGR-SRCL-CAT.tpl)"
+        ht['outExt']='ISGR-SRCL-CAT'
+        ht['instrument']='ISGRI'
+        ht['clobber']='yes'
+        ht['refCat']=self.input_cat.cat+"[ISGRI_FLAG==-1]"
+        ht.run()
+
+        self.cat=DataFile("isgri_catalog.fits")
+
 class CatExtract(DataAnalysis):
     input_cat=ISGRIRefCat
     input_scw=ScWData
@@ -1149,14 +1190,14 @@ class CatExtract(DataAnalysis):
         self.cat=DataFile("isgri_catalog.fits")
 
 class ImagingConfig(DataAnalysis):
-    input="onesource"
+    input="onesource_negmod"
 
     SearchMode=3
     ToSearch=5
     CleanMode=1
     MinCatSouSnr=4
     MinNewSouSnr=5
-    NegModels=0
+    NegModels=1
     DoPart2=1
     SouFit=0
 
@@ -1174,7 +1215,17 @@ class ii_skyimage(DataAnalysis):
 
     ii_skyimage_binary=None
 
+    image_tag=None
+
     version="v2"
+
+    def get_version(self):
+        v=self.get_signature()+"."+self.version
+        for k in ['SouFit','SearchMode','ToSearch','CleanMode','MinCatSouSnr','MinNewSouSnr','NegModels','DoPart2']: # dopart2 is flow control, separately
+            if hasattr(self,'ii_'+k):
+                v+="_"+k+"_"+str(getattr(self,'ii_'+k))
+        return v
+
     def main(self):
         construct_gnrl_scwg_grp(self.input_scw,[\
                     self.input_gb.corshad.path,
@@ -1227,6 +1278,7 @@ class ii_skyimage(DataAnalysis):
         ht['E_band_max'] = " ".join([str(a[1]) for a in self.input_bins.bins])
         for k in ['SouFit','SearchMode','ToSearch','CleanMode','MinCatSouSnr','MinNewSouSnr','NegModels','DoPart2']: # dopart2 is flow control, separately
             ht[k]=getattr(self.input_imgconfig,k)
+            if hasattr(self,'ii_'+k): ht[k]=getattr(self,'ii_'+k)
         ht['corrDol'] = self.input_maps.corr.path
         ht.run()
 
@@ -1239,6 +1291,20 @@ class ii_skyimage(DataAnalysis):
         self.srclres=DataFile("isgri_srcl_res.fits")
         self.skyima=DataFile("isgri_sky_ima.fits")
         self.skyres=DataFile("isgri_sky_res.fits")
+
+        if self.image_tag is not None:      
+            try:
+                tag=str(self.image_tag)
+                shutil.copyfile("isgri_sky_res.fits","isgri_sky_res_%s.fits"%tag)
+                shutil.copyfile("isgri_sky_ima.fits","isgri_sky_ima_%s.fits"%tag)
+            except:
+                print "something went wrong"
+    
+        self.post_process()
+
+    def post_process(self):
+        pass
+            
 
 class CatForSpectraFromImaging(DataAnalysis):
     input_imaging=ii_skyimage
@@ -1301,6 +1367,8 @@ class ii_spectra_extract(DataAnalysis):
     shdtype="BIN_S"
     binary="ii_spectra_extract"
 
+    usebkg=True
+
     def main(self):
         if hasattr(self.input_cat,'empty_results'):
             print "empty here"
@@ -1349,7 +1417,7 @@ class ii_spectra_extract(DataAnalysis):
 
         ht=heatool(self.binary)
         ht['outSwg']="og.fits"
-        ht['inCat']=self.input_cat.cat.path
+        ht['inCat']=self.input_cat.cat.get_path()
         ht['outPif']=pif_fn+pif_tpl
         ht['outSpec']=spec_fn+spec_tpl
         ht['mask']=self.input_ic.ibisicroot+"/mod/isgr_mask_mod_0003.fits[ISGR-MASK-MOD,1,IMAGE]"
@@ -1358,10 +1426,23 @@ class ii_spectra_extract(DataAnalysis):
         ht['leadAtt']=self.input_ic.ibisicroot+"/mod/isgr_attn_mod_0012.fits[ISGR-ATTN-MOD,1,BINTABLE]"
         ht['idx_isgrResp']=self.input_response.path
         ht['isgrUnifDol']=self.input_maps.unif.path
-        ht['isgrBkgDol']=self.input_maps.back.path
+        if self.usebkg:
+            ht['isgrBkgDol']=self.input_maps.back.path
+        else:
+            ht['isgrBkgDol']="-"
         ht['corrDol']=self.input_maps.corr.path
         ht['OutType']=self.shdtype
         ht['method_cor']=1
+        
+        if hasattr(self,'input_bins') and not self.input_bins.rmfbins:
+            ebins=self.input_bins.bins
+            ht['num_band']=len(ebins)
+            ht['E_band_min'],ht['E_band_max']=[" ".join(["%.5lg"%b for b in a]) for a in zip(*ebins)]
+        else:
+            rmf=self.input_bins.binrmfext if hasattr(self,'input_bins') else self.input_response.path
+            ht['num_band'] = -1
+            ht['idx_isgrResp'] = rmf #  +"[1]" will this work?
+
 
         #for k in ['SearchMode','ToSearch','CleanMode','MinCatSouSnr','MinNewSouSnr','NegModels','DoPart2']: # dopart2 is flow control, separately
         #    ht[k]=getattr(self.input_imgconfig,k)
@@ -1370,6 +1451,7 @@ class ii_spectra_extract(DataAnalysis):
 
         self.spectrum=DataFile(spec_fn)
         self.pifs=DataFile(pif_fn)
+
 
 class root(DataAnalysis):
     input=[ibis_gti()]
