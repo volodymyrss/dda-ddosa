@@ -613,6 +613,28 @@ class ibis_isgr_evts_tag(DataAnalysis):
 
         self.output_events=DataFile(cte)
 
+class UserGTI(DataAnalysis):
+    pass
+
+class gti_user(DataAnalysis):
+    input_gti=UserGTI
+
+    cached=True
+
+    def main(self):
+        fn="gti_user.fits"
+        remove_withtemplate(fn)
+
+        t1,t2=self.input_gti.gti
+
+        bin="gti_user"
+        ogc=heatool(bin)
+        ogc['begin']=t1
+        ogc['end']=t2
+        ogc['gti']=fn
+        ogc.run()
+
+        self.gti=da.DataFile(fn)
 
 # maybe split indeed,but try to show another case
 class ibis_gti(DataAnalysis):
@@ -652,6 +674,18 @@ class ibis_gti(DataAnalysis):
         ht['GTI_attTolerance_Z']="0.2"
         ht['GTI_BTI_Dol']=self.input_ic.icroot+"/ic/ibis/lim/isgr_gnrl_bti_0012.fits"
         ht['GTI_BTI_Names']="IBIS_CONFIGURATION IBIS_BOOT ISGRI_RISE_TIME VETO_PROBLEM SOLAR_FLARE BELT_CROSSING"
+
+        if hasattr(self,'input_usergti'):
+            path=self.input_usergti.gti.get_path()
+            if os.path.abspath(path)==os.path.normpath(path):
+                print "full path",path
+            else:
+                print "not a full path",path
+                path="../../"+path
+            ht['GTI_gtiUserI']=path
+            ht['GTI_TimeFormat']='UTC'
+
+
         ht.run()
 
         shutil.copy(ht.cwd+"/ibis_gti.fits","./ibis_gti.fits")
@@ -963,8 +997,13 @@ class BrightPIFImage(DataAnalysis):
 
 
     def main(self):
+        if isinstance(self.input_cat.cat,str):
+            catfn=self.input_cat.cat
+        else:
+            catfn=self.input_cat.cat.get_path()
+
         construct_gnrl_scwg_grp(self.input_scw,[\
-                    self.input_cat.cat,
+                    catfn,
                     self.input_scw.auxadppath+"/time_correlation.fits[AUXL-TCOR-HIS]",
                     self.input_gti.output_gti.path
                 ])
@@ -986,10 +1025,12 @@ class BrightPIFImage(DataAnalysis):
 
         remove_withtemplate("isgri_model.fits(ISGR-PIF.-SHD.tpl)")
 
+
+
         ht=heatool(os.environ['COMMON_INTEGRAL_SOFTDIR']+"/ii_pif/ii_pif_oof/ii_pif")
         ht['inOG']=""
         ht['outOG']="ogg.fits[1]"
-        ht['inCat']=self.input_cat.cat
+        ht['inCat']=catfn
         ht['mask']=self.input_ic.ibisicroot+"/mod/isgr_mask_mod_0003.fits[ISGR-MASK-MOD,1,IMAGE]"
 #        ht['deco']=self.input_ic.ibisicroot+"/mod/isgr_deco_mod_0008.fits[ISGR-DECO-MOD,1,IMAGE]"
         ht['tungAtt']=self.input_ic.ibisicroot+"/mod/isgr_attn_mod_0010.fits[ISGR-ATTN-MOD,1,BINTABLE]"
@@ -1044,7 +1085,8 @@ class ShadowUBCVirtual(DataAnalysis):
         fn,tpl="isgri_cor_shad_%s.fits"%self.level,"(ISGR-CEXP-SHD-IDX.tpl)"
         remove_withtemplate(fn+tpl)
         
-        ht=heatool("/workdir/lin/soft/ii_shadow_ubc_bestim/ii_shadow_ubc")
+        ht=heatool("ii_shadow_ubc")
+        #ht=heatool("/workdir/lin/soft/ii_shadow_ubc_bestim/ii_shadow_ubc")
         ht['outSWGRP']="og.fits"
         ht['OutType']=self.level
         ht['outCorShadow']=fn+tpl
