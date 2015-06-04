@@ -546,16 +546,23 @@ class ibis_isgr_energy(DataAnalysis):
 
     version="v5_extras"
 
+    binary=None
+
     def main(self):
 
         remove_withtemplate("isgri_events_corrected.fits(ISGR-EVTS-COR.tpl)")
 
         construct_gnrl_scwg_grp(self.input_scw,[\
             self.input_scw.scwpath+"/isgri_events.fits[3]", \
-            self.input_scw.scwpath+"/ibis_hk.fits[IBIS-DPE.-CNV]" \
+            self.input_scw.scwpath+"/ibis_hk.fits[IBIS-DPE.-CNV]", \
+            self.input_scw.auxadppath+"/time_correlation.fits[AUXL-TCOR-HIS]" \
         ])
 
         bin=os.environ['COMMON_INTEGRAL_SOFTDIR']+"/spectral/ibis_isgr_energy/ibis_isgr_energy_pha2/ibis_isgr_energy"
+
+        if self.binary is not None:
+            bin=self.binary
+
         ht=heatool(bin)
         ht['inGRP']="og.fits"
         ht['outCorEvts']="isgri_events_corrected.fits(ISGR-EVTS-COR.tpl)"
@@ -754,6 +761,7 @@ class BinEventsVirtual(DataAnalysis):
     input_bins=None
 
     maxrisetime=116
+    minrisetime=16
 
     version="v2"
     
@@ -765,10 +773,12 @@ class BinEventsVirtual(DataAnalysis):
 
 
     def get_version(self):
-        if self.maxrisetime==116:
-            return self.get_signature()+"."+self.version
-        else:
-            return self.get_signature()+"."+self.version+".lrt%i"%self.maxrisetime
+        v=self.get_signature()+"."+self.version
+        if self.maxrisetime!=116:
+            v+=".lrt%i"%self.maxrisetime
+        if self.minrisetime!=16:
+            v+=".hrt%i"%self.minrisetime
+        return v
 
     def main(self):
         if self.target_level is None or self.input_bins is None:
@@ -816,7 +826,7 @@ class BinEventsVirtual(DataAnalysis):
         else:
             raise Exception("neither bins given!")
 
-        ht['isgri_min_rise'] = 16
+        ht['isgri_min_rise'] = self.minrisetime
         ht['isgri_max_rise'] = self.maxrisetime
         ht['isgri_t_len'] = 10000000
         ht['idxLowThre']=self.input_scw.revdirpath+"/idx/isgri_context_index.fits[1]"
