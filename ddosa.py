@@ -1146,6 +1146,7 @@ class ghost_bustersVirtual(DataAnalysis):
         att=self.input_scw.auxadppath+"/attitude_historic.fits"
         if os.path.exists(att):
             att=self.input_scw.auxadppath+"/attitude_historic.fits[AUXL-ATTI-HIS,1,BINTABLE]"
+            attp=att
         else:
             att=self.input_scw.auxadppath+"/attitude_snapshot.fits[AUXL-ATTI-SNA,1,BINTABLE]"
             attp_g=glob.glob(self.input_scw.auxadppath+"/attitude_predicted_*.fits*")
@@ -1430,6 +1431,7 @@ class ii_spectra_extract(DataAnalysis):
         att=self.input_scw.auxadppath+"/attitude_historic.fits"
         if os.path.exists(att):
             att=self.input_scw.auxadppath+"/attitude_historic.fits[AUXL-ATTI-HIS,1,BINTABLE]"
+            attp=att
         else:
             att=self.input_scw.auxadppath+"/attitude_snapshot.fits[AUXL-ATTI-SNA,1,BINTABLE]"
             attp_fn=glob.glob(self.input_scw.auxadppath+"/attitude_predicted_*.fits*")[0]
