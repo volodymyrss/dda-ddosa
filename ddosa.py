@@ -268,12 +268,13 @@ class MemCacheIntegralBase:
         marked=remove_repeating(marked)
         if dataanalysis.global_log_enabled: print("marked",marked)
 
+        for mark in marked:
+            hashe=dataanalysis.hashe_replace_object(hashe,mark+"..","any")
+
         if not isinstance(scw,str):
-            print("emergent scw:",scw)
             scw=None
         
         if scw=="Any":
-            print("any scw:",scw,hashe)
             scw=None
 
         if scw is None:
@@ -288,10 +289,10 @@ class MemCacheIntegralBase:
                 r=self.filecacheroot+"/byrev/"+rev+"/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/" # choose to avoid overlapp    
         else:
             hashe=dataanalysis.hashe_replace_object(hashe,scw,"any")
-            #print "reduced hashe",hashe
-            if dataanalysis.global_log_enabled: print("cached scw:",scw)
+            hashe=dataanalysis.hashe_replace_object(hashe,('analysis', scw[:4], 'Revolution.v0'),('analysis', 'any', 'Revolution.v0'))
+            print("reduced hashe:",hashe,hash_to_path2(hashe))
+            #if dataanalysis.global_log_enabled: print("reduced hashe:",hashe,hash_to_path2(hashe))
             print(scw,hashe[2],marked)
-        
 
             r=self.filecacheroot+"/byscw/"+scw[:4]+"/"+scw+"/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/" # choose to avoid overlapp    
 
@@ -324,16 +325,36 @@ class MemCacheIntegralIRODS(MemCacheIntegralBase,dataanalysis.MemCacheIRODS):
 #mcgl=MemCacheIntegralLegacy('/Integral/data/reduced/ddcache/')
 #mcg.parent=mcgl
 
-IntegralCacheRoot=os.environ['INTEGRAL_DDCACHE_ROOT']#'/sps/integral/data/reduced/ddcache/'
-mcgfb=MemCacheIntegralFallback(IntegralCacheRoot)
+IntegralCacheRoots=os.environ['INTEGRAL_DDCACHE_ROOT']#'/sps/integral/data/reduced/ddcache/'
 
-mcgfb_oldp=MemCacheIntegralFallbackOldPath(IntegralCacheRoot)
-mcgfb.parent=mcgfb_oldp
+CacheStack=[]
+
+for IntegralCacheRoot in IntegralCacheRoots.split(":"):
+    ro_flag=False
+    if IntegralCacheRoot.startswith("ro="):
+        ro_flag=True
+        IntegralCacheRoot=IntegralCacheRoot.replace("ro=","")
+
+    mcgfb=MemCacheIntegralFallback(IntegralCacheRoot)
+    mcgfb.readonly_cache=ro_flag
+    if CacheStack==[]:
+        CacheStack=[mcgfb]
+    else:
+        CacheStack[-1].parent=mcgfb
+        CacheStack.append(mcgfb)
+
+    mcgfb_oldp=MemCacheIntegralFallbackOldPath(IntegralCacheRoot)
+    mcgfb_oldp.readonly_cache=ro_flag
+    mcgfb.parent=mcgfb_oldp
+    CacheStack.append(mcgfb_oldp)
 
 mcgirods=MemCacheIntegralIRODS('/tempZone/home/integral/data/reduced/ddcache/')
-mcgfb_oldp.parent=mcgirods
+CacheStack[-1].parent=mcgirods
+CacheStack.append(mcgirods)
 
-mc=mcgfb
+mc=CacheStack[0]
+
+print "cache stack:",CacheStack
 
 class DataAnalysis(dataanalysis.DataAnalysis):
     cache=mc
@@ -400,6 +421,10 @@ class ScWData(DataAnalysis):
     def get_t(self):
         h=pyfits.open(self.swgpath)[1].header
         return (h['TSTOP']+h['TSTART'])/2.,(h['TSTOP']-h['TSTART'])/2.
+    
+    def get_t1_t2(self):
+        h=pyfits.open(self.swgpath)[1].header
+        return h['TSTART'],h['TSTOP']
 
     def __repr__(self):
         return "[%s:%s]"%(self.__class__.__name__,self.input_scwid)
@@ -691,6 +716,10 @@ class ibis_gti(DataAnalysis):
         shutil.copy(ht.cwd+"/ibis_gti.fits","./ibis_gti.fits")
         self.output_gti=DataFile("ibis_gti.fits")
 
+        gti=pyfits.open("ibis_gti.fits")[-1].data
+        print gti
+        
+
 # maybe split indeed,but try to show another way
 class ibis_dead(DataAnalysis):
     input_scw=ScWData()
@@ -968,11 +997,22 @@ import pyfits,pywcs
 class GRcat(DataAnalysis):
     input="gnrl_ref_cat_38m"
     input_ic=ICRoot
+    
+    suffix=None
 
     cached=False # again, this is transient-level cache
 
+    def get_version(self):
+        v=self.get_signature()+"."+self.version
+        if self.suffix is not None:
+            v=v+"."+self.suffix
+        return v
+
     def main(self):
-        self.cat=os.environ['REP_BASE_PROD']+"/cat/hec/gnrl_refr_cat_0038m.fits[1]"
+        if self.suffix is None:
+            self.cat=os.environ['REP_BASE_PROD']+"/cat/hec/gnrl_refr_cat_0038m.fits[1]"
+        else:
+            self.cat=os.environ['REP_BASE_PROD']+"/cat/hec/gnrl_refr_cat_0038m_%s.fits[1]"%self.suffix
 
 
 class BrightCat(DataAnalysis):
