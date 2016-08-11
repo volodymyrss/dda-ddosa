@@ -32,8 +32,10 @@
 from dataanalysis import DataFile,shhash
 import dataanalysis 
 
+
 from pilton import heatool
 
+import pprint
 import os,shutil,re,time,glob
 import pyfits
 
@@ -52,7 +54,7 @@ def remove_repeating(inlist):
 class MemCacheIntegralBaseOldPath: 
 #class MemCacheIntegral(dataanalysis.MemCacheSqlite):
     def get_scw(self,hashe):                                                                                                                                       
-        #if dataanalysis.global_log_enabled: print("search for scw in",hashe)
+        #if dataanalysis.printhook.global_log_enabled: print("search for scw in",hashe)
         if isinstance(hashe,tuple):                                                                                                                                
             if hashe[0]=="analysis": # more universaly                                                                                                             
                 if hashe[2].startswith('ScWData'):
@@ -72,7 +74,7 @@ class MemCacheIntegralBaseOldPath:
         raise Exception("unknown class in the hash:"+str(hashe))                                                                                                   
     
     def get_rev(self,hashe):                                                                                                                                       
-        #if dataanalysis.global_log_enabled: print("search for rev in",hashe)
+        #if dataanalysis.printhook.global_log_enabled: print("search for rev in",hashe)
         if isinstance(hashe,tuple):                                                                                                                                
             if hashe[0]=="analysis": # more universaly                                                                                                             
                 if hashe[2].startswith('Revolution'):
@@ -92,7 +94,7 @@ class MemCacheIntegralBaseOldPath:
         raise Exception("unknown class in the hash:"+str(hashe))                                                                                                   
     
     def get_marked(self,hashe):                                                                                                                                       
-        #if dataanalysis.global_log_enabled: print("search for marked in",hashe)
+        #if dataanalysis.printhook.global_log_enabled: print("search for marked in",hashe)
         if isinstance(hashe,tuple):                                                                                                                                
             if hashe[0]=="analysis": # more universaly                                                                                                             
                 r=[]
@@ -142,7 +144,7 @@ class MemCacheIntegralBaseOldPath:
             
         marked=self.get_marked(hashe[1])
         marked=remove_repeating(marked)
-        if dataanalysis.global_log_enabled: print("marked",marked)
+        if dataanalysis.printhook.global_log_enabled: print("marked",marked)
         
         if not isinstance(scw,str):
             print("emergent scw:",scw)
@@ -157,21 +159,21 @@ class MemCacheIntegralBaseOldPath:
 
 
         if scw is None:
-            if dataanalysis.global_log_enabled: print("not scw-grouped cache")
+            if dataanalysis.printhook.global_log_enabled: print("not scw-grouped cache")
             if rev is None:
-                if dataanalysis.global_log_enabled: print("not rev-grouped cache")
+                if dataanalysis.printhook.global_log_enabled: print("not rev-grouped cache")
                 r=self.filecacheroot+"/global/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/"
             else:
-                if dataanalysis.global_log_enabled: print("cached rev:",rev)
+                if dataanalysis.printhook.global_log_enabled: print("cached rev:",rev)
                 r=self.filecacheroot+"/byrev/"+rev+"/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/" # choose to avoid overlapp    
         else:
-            if dataanalysis.global_log_enabled: print("cached scw:",scw)
+            if dataanalysis.printhook.global_log_enabled: print("cached scw:",scw)
             print(scw,hashe[2],marked)
             r=self.filecacheroot+"/byscw/"+scw[:4]+"/"+scw+"/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/" # choose to avoid overlapp    
 
-        if dataanalysis.global_log_enabled: print("cached path:",r)
+        #if dataanalysis.printhook.global_log_enabled: print("cached path:",r)
 
-        print "cached path:",r
+        print self,"cached path:",r
                                                                                                                                                                        
         return r # choose to avoid overlapp    
 
@@ -196,7 +198,7 @@ class MemCacheIntegralBase:
         raise Exception("unknown class in the hash:"+str(hashe))                                                                                                   
     
     def get_rev(self,hashe):                                                                                                                                       
-        #if dataanalysis.global_log_enabled: print("search for rev in",hashe)
+        #if dataanalysis.printhook.global_log_enabled: print("search for rev in",hashe)
         if isinstance(hashe,tuple):                                                                                                                                
             if hashe[0]=="analysis": # more universaly                                                                                                             
                 if hashe[2].startswith('Revolution'):
@@ -216,7 +218,7 @@ class MemCacheIntegralBase:
         raise Exception("unknown class in the hash:"+str(hashe))                                                                                                   
     
     def get_marked(self,hashe):                                                                                                                                       
-        #if dataanalysis.global_log_enabled: print("search for marked in",hashe)
+        #if dataanalysis.printhook.global_log_enabled: print("search for marked in",hashe)
         if isinstance(hashe,tuple):                                                                                                                                
             if hashe[0]=="analysis": # more universaly                                                                                                             
                 r=[]
@@ -266,7 +268,7 @@ class MemCacheIntegralBase:
             
         marked=self.get_marked(hashe[1])
         marked=remove_repeating(marked)
-        if dataanalysis.global_log_enabled: print("marked",marked)
+        if dataanalysis.printhook.global_log_enabled: print("marked",marked)
 
         for mark in marked:
             hashe=dataanalysis.hashe_replace_object(hashe,mark+"..","any")
@@ -278,27 +280,29 @@ class MemCacheIntegralBase:
             scw=None
 
         if scw is None:
-            if dataanalysis.global_log_enabled: print("not scw-grouped cache")
+            if dataanalysis.printhook.global_log_enabled: print("not scw-grouped cache")
             if rev is None:
-                if dataanalysis.global_log_enabled: print("not rev-grouped cache")
+                if dataanalysis.printhook.global_log_enabled: print("not rev-grouped cache")
                 r=self.filecacheroot+"/global/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/"
             else:
                 hashe=dataanalysis.hashe_replace_object(hashe,rev,"any")
                 #print "reduced hashe",hashe
-                if dataanalysis.global_log_enabled: print("cached rev:",rev)
+                if dataanalysis.printhook.global_log_enabled: print("cached rev:",rev)
                 r=self.filecacheroot+"/byrev/"+rev+"/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/" # choose to avoid overlapp    
         else:
             hashe=dataanalysis.hashe_replace_object(hashe,scw,"any")
             hashe=dataanalysis.hashe_replace_object(hashe,('analysis', scw[:4], 'Revolution.v0'),('analysis', 'any', 'Revolution.v0'))
-            print("reduced hashe:",hashe,hash_to_path2(hashe))
-            #if dataanalysis.global_log_enabled: print("reduced hashe:",hashe,hash_to_path2(hashe))
+
+            #str("reduced hashe:",hashe,hash_to_path2(hashe))
+            #if dataanalysis.printhook.global_log_enabled: print("reduced hashe:",hashe,hash_to_path2(hashe))
+            open("reduced_hashe.txt","w").write(hash_to_path2(hashe)+"\n\n"+pprint.pformat(hashe)+"\n")
             print(scw,hashe[2],marked)
 
             r=self.filecacheroot+"/byscw/"+scw[:4]+"/"+scw+"/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/" # choose to avoid overlapp    
 
-        if dataanalysis.global_log_enabled: print("cached path:",r)
+        #if dataanalysis.printhook.global_log_enabled: print("cached path:",r)
 
-        print "cached path:",r
+        print self,"cached path:",r
                                                                                                                                                                        
         return r # choose to avoid overlapp    
 
@@ -380,6 +384,9 @@ class DataAnalysis(dataanalysis.DataAnalysis):
     def __repr__(self):
         return "[%s%s%s%s%i]"%(self.get_version(),self.get_scw(),";Virtual" if self.virtual else "",";Complete" if self._da_locally_complete else "",id(self))
 
+class NoScWData(dataanalysis.AnalysisException):
+    pass
+    
 
 class ScWData(DataAnalysis):
     input_scwid=None
@@ -395,20 +402,32 @@ class ScWData(DataAnalysis):
         self.scwid=self.input_scwid.handle
         self.scwver=self.scwid[-3:]
         self.revid=self.scwid[:4]
+        
+        try:
+            print "searching in "+os.environ['REP_BASE_PROD']
+            self.assume_rbp(os.environ['REP_BASE_PROD'])
+        except dataanalysis.AnalysisException:
+            if self.scwver=="000":
+                print "searching in "+os.environ['REP_BASE_PROD']+"/nrt"
+                self.assume_rbp(os.environ['REP_BASE_PROD']+"/nrt")
+            else:
+                raise
 
-        self.scwpath=os.environ['REP_BASE_PROD']+"/scw/"+self.revid+"/"+self.scwid #!!!!
-        self.revdirpath=os.environ['REP_BASE_PROD']+"/scw/"+self.revid+"/rev."+self.scwver # ver?
-        self.auxadppath=os.environ['REP_BASE_PROD']+"/aux/adp/"+self.revid+"."+self.scwver
+    def assume_rbp(self,rbp):
+        self.scwpath=rbp+"/scw/"+self.revid+"/"+self.scwid #!!!!
+        self.revdirpath=rbp+"/scw/"+self.revid+"/rev."+self.scwver # ver?
+        self.auxadppath=rbp+"/aux/adp/"+self.revid+"."+self.scwver
 
         if not os.path.exists(self.scwpath+"/swg.fits"):
             if not os.path.exists(self.scwpath+"/swg.fits.gz"):
-                print "searching for",self.scwpath+"/swg.fits"
-                raise dataanalysis.AnalysisException("no scw data for: "+repr(self.input_scwid.handle))
+                print "failed searching for",self.scwpath+"/swg.fits"
+                raise NoScWData("no scw data for: "+repr(self.input_scwid.handle))
                 #raise Exception("no scw data!")
             else:
                 self.swgpath=self.scwpath+"/swg.fits.gz"
         else:
             self.swgpath=self.scwpath+"/swg.fits"
+        print "swgpath:",self.swgpath
 
     def get_isgri_events(self):
         if hasattr(self,'isgrievents'):
@@ -513,16 +532,34 @@ class GetLUT2(DataAnalysis):
         #self.datafile=DataFile(os.environ['REP_BASE_PROD']+"/ic/ic_10/ic/ibis/mod/isgr_3dl2_mod_0001.fits")
 
 class GetEcorrCalDB(DataAnalysis):
-    input=["ecorr_standard_OSA10"]
+    input=["ecorr_standard_OSA10.2"]
     input_lut2=GetLUT2
     input_ibisic=IBIS_ICRoot
+    input_scw=ScWData
     
     cached=False
 
+    #ignore_input=["input"]
+
+
     def main(self):
+        newest_ver="0001"
+        newest_vstart=-1000
+
+        t,dt=self.input_scw.get_t()
+
+        for gmfile in sorted(glob.glob(self.input_ibisic.ibisicroot+"/mod/isgr_gain_mod_*.fits")): # by name?..
+            ver=re.match(self.input_ibisic.ibisicroot+"/mod/isgr_gain_mod_(.*?).fits",gmfile).group(1)
+            vstart=pyfits.open(gmfile)[1].header['VSTART']
+        
+            print vstart,ver
+            if vstart>newest_vstart and t>vstart:
+                newest_vstart=vstart
+                newest_ver=ver
+
         self.godol=self.input_ibisic.ibisicroot+"/cal/ibis_isgr_gain_offset_0010.fits"
-        self.supgdol=self.input_ibisic.ibisicroot+"/mod/isgr_gain_mod_0001.fits[ISGR-GAIN-MOD,1,BINTABLE]"
-        self.supodol=self.input_ibisic.ibisicroot+"/mod/isgr_off2_mod_0001.fits[ISGR-OFF2-MOD,1,BINTABLE]"
+        self.supgdol=self.input_ibisic.ibisicroot+"/mod/isgr_gain_mod_"+newest_ver+".fits[ISGR-GAIN-MOD,1,BINTABLE]"
+        self.supodol=self.input_ibisic.ibisicroot+"/mod/isgr_off2_mod_"+newest_ver+".fits[ISGR-OFF2-MOD,1,BINTABLE]"
         self.risedol=self.input_lut2.datafile
 
 
@@ -583,7 +620,7 @@ class ibis_isgr_energy(DataAnalysis):
             self.input_scw.auxadppath+"/time_correlation.fits[AUXL-TCOR-HIS]" \
         ])
 
-        bin=os.environ['COMMON_INTEGRAL_SOFTDIR']+"/spectral/ibis_isgr_energy/ibis_isgr_energy_pha2/ibis_isgr_energy"
+        bin=os.environ['COMMON_INTEGRAL_SOFTDIR']+"/spectral/ibis_isgr_energy/ibis_isgr_energy_102_pha2/ibis_isgr_energy"
 
         if self.binary is not None:
             bin=self.binary
@@ -697,7 +734,7 @@ class ibis_gti(DataAnalysis):
         ht['disablePICsIT']="YES"
         ht['GTI_attTolerance_X']="0.05"
         ht['GTI_attTolerance_Z']="0.2"
-        ht['GTI_BTI_Dol']=self.input_ic.icroot+"/ic/ibis/lim/isgr_gnrl_bti_0012.fits"
+        ht['GTI_BTI_Dol']=self.input_ic.icroot+"/ic/ibis/lim/isgr_gnrl_bti_0016.fits"
         ht['GTI_BTI_Names']="IBIS_CONFIGURATION IBIS_BOOT ISGRI_RISE_TIME VETO_PROBLEM SOLAR_FLARE BELT_CROSSING"
 
         if hasattr(self,'input_usergti'):
@@ -807,6 +844,9 @@ class SpectraBins(DataAnalysis):
         self.bins=zip(e['E_MIN'],e['E_MAX'])
         self.binrmfext=self.binrmf+'[3]'
 
+    def get_binrmfext(self):
+        return self.binrmfext
+
 class ListBins(DataAnalysis):
     input_bins=ImageBins
 
@@ -846,6 +886,8 @@ class BinEventsVirtual(DataAnalysis):
     def main(self):
         if self.target_level is None or self.input_bins is None:
             raise Exception("VirtualAnalysis: please inherit!")
+        
+        self.pre_process()
 
         # ask stephane why need raw events
         construct_gnrl_scwg_grp(self.input_scw,[\
@@ -885,7 +927,12 @@ class BinEventsVirtual(DataAnalysis):
             ht['isgri_e_max'] = " ".join([str(a[1]) for a in self.input_bins.bins])
         elif self.target_level=="BIN_S" or ( hasattr(self.input_bins,'rmfbins') and self.input_bins.rmfbins ) or hasattr(self.input_bins,'binrmfext'):
             ht['isgri_e_num'] = -1
-            ht['inEnergyValues'] = self.input_bins.binrmfext #  +"[1]" will this work?
+
+            rmf=self.input_bins.binrmfext
+            if isinstance(rmf,DataFile):
+                ht['inEnergyValues'] = rmf.get_path()  #  +"[1]" will this work?
+            else:
+                ht['inEnergyValues'] = rmf #  +"[1]" will this work?
         else:
             raise Exception("neither bins given!")
 
@@ -910,6 +957,9 @@ class BinEventsVirtual(DataAnalysis):
         pass
 
     def post_process(self):
+        pass
+    
+    def pre_process(self):
         pass
 
 
@@ -1110,6 +1160,8 @@ class ShadowUBCVirtual(DataAnalysis):
     
     cached=False
 
+    binary="ii_shadow_ubc"
+
     def get_version(self):
         return self.get_signature()+"."+self.version+(".brthr%.5lg"%self.brPifThreshold if self.brPifThreshold!=1e-4 else "")
 
@@ -1125,7 +1177,7 @@ class ShadowUBCVirtual(DataAnalysis):
         fn,tpl="isgri_cor_shad_%s.fits"%self.level,"(ISGR-CEXP-SHD-IDX.tpl)"
         remove_withtemplate(fn+tpl)
         
-        ht=heatool("ii_shadow_ubc")
+        ht=heatool(self.binary)
         #ht=heatool("/workdir/lin/soft/ii_shadow_ubc_bestim/ii_shadow_ubc")
         ht['outSWGRP']="og.fits"
         ht['OutType']=self.level
@@ -1291,7 +1343,7 @@ class ImagingConfig(DataAnalysis):
     MinCatSouSnr=4
     MinNewSouSnr=5
     NegModels=1
-    DoPart2=1
+    DoPart2=0
     SouFit=0
 
 class ii_skyimage(DataAnalysis):
@@ -1308,9 +1360,13 @@ class ii_skyimage(DataAnalysis):
 
     ii_skyimage_binary=None
 
+    save_image=True
+
     image_tag=None
 
     version="v2"
+
+    outtype="BIN_I"
 
     def get_version(self):
         v=self.get_signature()+"."+self.version
@@ -1328,18 +1384,18 @@ class ii_skyimage(DataAnalysis):
                 ])
         
         import_attr(self.input_scw.scwpath+"/swg.fits",["OBTSTART","OBTEND","TSTART","TSTOP","SW_TYPE","TELAPSE","SWID","SWBOUND"])
-        set_attr({'ISDCLEVL':"BIN_I"})
+        set_attr({'ISDCLEVL':self.outtype})
         set_attr({'INSTRUME':"IBIS"},"og.fits")
 
         construct_gnrl_scwg_grp_idx([\
                     "og.fits",
                 ])
-        set_attr({'ISDCLEVL':"BIN_I"},"og_idx.fits")
+        set_attr({'ISDCLEVL':self.outtype},"og_idx.fits")
         
         construct_og([\
                     "og_idx.fits",
                 ])
-        set_attr({'ISDCLEVL':"BIN_I"},"ogg.fits")
+        set_attr({'ISDCLEVL':self.outtype},"ogg.fits")
         
         remove_withtemplate("isgri_srcl_res.fits(ISGR-SRCL-RES.tpl)")
         remove_withtemplate("isgri_mosa_ima.fits(ISGR-MOSA-IMA-IDX.tpl)")
@@ -1366,6 +1422,7 @@ class ii_skyimage(DataAnalysis):
         ht['ScwDir'] = './'
         ht['ScwType'] = 'pointing'
         ht['ExtenType'] = 2
+        ht['OutType']=self.outtype
         ht['num_band'] = len(self.input_bins.bins)
         ht['E_band_min'] = " ".join([str(a[0]) for a in self.input_bins.bins])
         ht['E_band_max'] = " ".join([str(a[1]) for a in self.input_bins.bins])
@@ -1382,14 +1439,17 @@ class ii_skyimage(DataAnalysis):
             return
 
         self.srclres=DataFile("isgri_srcl_res.fits")
-        self.skyima=DataFile("isgri_sky_ima.fits")
+
+        if self.save_image:
+            self.skyima=DataFile("isgri_sky_ima.fits")
         self.skyres=DataFile("isgri_sky_res.fits")
 
         if self.image_tag is not None:      
             try:
                 tag=str(self.image_tag)
                 shutil.copyfile("isgri_sky_res.fits","isgri_sky_res_%s.fits"%tag)
-                shutil.copyfile("isgri_sky_ima.fits","isgri_sky_ima_%s.fits"%tag)
+                if self.save_image:
+                    shutil.copyfile("isgri_sky_ima.fits","isgri_sky_ima_%s.fits"%tag)
             except:
                 print "something went wrong"
     
@@ -1462,6 +1522,8 @@ class ii_spectra_extract(DataAnalysis):
 
     usebkg=True
 
+    report_runtime_destination="mysql://pixels.runtime"
+
     def main(self):
         if hasattr(self.input_cat,'empty_results'):
             print "empty here"
@@ -1533,7 +1595,7 @@ class ii_spectra_extract(DataAnalysis):
             ht['num_band']=len(ebins)
             ht['E_band_min'],ht['E_band_max']=[" ".join(["%.5lg"%b for b in a]) for a in zip(*ebins)]
         else:
-            rmf=self.input_bins.binrmfext if hasattr(self,'input_bins') else self.input_response.path
+            rmf=self.input_bins.get_binrmfext() if hasattr(self,'input_bins') else self.input_response.path
             ht['num_band'] = -1
             ht['idx_isgrResp'] = rmf #  +"[1]" will this work?
 
@@ -1820,6 +1882,8 @@ class SpectraProcessingSummary(DataAnalysis):
 
 class RevScWList(DataAnalysis):
     input_rev=Revolution
+
+    run_for_hashe=False
     allow_alias=True
 
     def main(self):
@@ -1833,6 +1897,9 @@ class RevScWList(DataAnalysis):
         scwids=sorted([fn.split("/")[-2] for fn in event_files])
 
         self.scwlistdata=[ScWData(input_scwid=s) for s in scwids if s[:-1].endswith("0010.00")]
+
+    def __iter__(self):
+        return iter(self.scwlistdata)
 
     def __repr__(self):
         return "[RevScWList:%s]"%repr(self.input_rev)
@@ -1870,6 +1937,9 @@ class PickFewScWList(DataAnalysis):
     nscw=10
     firstscws=True
 
+    firstscw=0
+    step=1
+
     input_list=RevScWList
     allow_alias=True
 
@@ -1877,15 +1947,26 @@ class PickFewScWList(DataAnalysis):
 
     def get_version(self):
         if self.firstscws:
-            return self.get_signature()+".firstscw.%i"%self.nscw+"."+self.version
+            v=self.get_signature()+".firstscw.%i"%self.nscw+"."+self.version
         else:
-            return self.get_signature()+".lastscw.%i"%self.nscw+"."+self.version
+            v=self.get_signature()+".lastscw.%i"%self.nscw+"."+self.version
+        if self.firstscw>0:
+            v=v+".from.%i"%self.firstscw
+        if self.step>1:
+            v=v+".step.%i"%self.step
+        return v
 
     def main(self):
+        thelist=sorted(self.input_list.scwlistdata,key=lambda x:x.input_scwid.handle)
+        print "available list",len(thelist),thelist
+        print "first scw:",self.firstscw
         if self.firstscws:
-            self.scwlistdata=sorted(self.input_list.scwlistdata,key=lambda x:x.input_scwid.handle)[:self.nscw]
+            self.scwlistdata=thelist[self.firstscw:self.nscw+self.firstscw]
         else:
-            self.scwlistdata=sorted(self.input_list.scwlistdata,key=lambda x:x.input_scwid.handle)[-self.nscw:]
+            self.scwlistdata=thelist[-self.nscw:]
+        if self.step!=1:
+            self.scwlistdata=self.scwlistdata[::self.step]
+        print "resulting list:",len(self.scwlistdata),self.scwlistdata
 
 class FileScWList(DataAnalysis):
     input_fn=None
@@ -1896,7 +1977,7 @@ class FileScWList(DataAnalysis):
         if self.maxscw is not None:
             self.scwlistdata=[ScWData(input_scwid=s.strip()) for s in open(self.input_fn.handle.split(":",1)[0]).readlines()[:self.maxscw]] # omg!!
         else:
-           self.scwlistdata=[ScWData(input_scwid=s.strip()) for s in open(self.input_fn.handle.split(":",1)[0])]
+            self.scwlistdata=[ScWData(input_scwid=s.strip()) for s in open(self.input_fn.handle.split(":",1)[0])]
 
 
 class ScWList(DataAnalysis):
@@ -1905,6 +1986,7 @@ class ScWList(DataAnalysis):
 
     def main(self):
         self.scwlistdata=self.input_list.scwlistdata
+
 
 def fromUTC(utc):                                                                                                                                                                                              
     r=subprocess.check_output(["converttime","UTC",utc,""])                                                                                                                                                    
@@ -1917,3 +1999,4 @@ def fromUTC(utc):
             d[g[0]]=g[1]                                                                                                                                                                                       
             #print g                                                                                                                                                                                           
     return d    
+
