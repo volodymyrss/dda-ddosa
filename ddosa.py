@@ -399,7 +399,10 @@ class ScWData(DataAnalysis):
 
 
     def main(self):
-        self.scwid=self.input_scwid.handle
+        try:
+            self.scwid=self.input_scwid.handle
+        except:
+            self.scwid=self.input_scwid
         self.scwver=self.scwid[-3:]
         self.revid=self.scwid[:4]
         
@@ -421,7 +424,7 @@ class ScWData(DataAnalysis):
         if not os.path.exists(self.scwpath+"/swg.fits"):
             if not os.path.exists(self.scwpath+"/swg.fits.gz"):
                 print "failed searching for",self.scwpath+"/swg.fits"
-                raise NoScWData("no scw data for: "+repr(self.input_scwid.handle))
+                raise NoScWData("no scw data for: "+repr(self.scwid))
                 #raise Exception("no scw data!")
             else:
                 self.swgpath=self.scwpath+"/swg.fits.gz"
