@@ -329,7 +329,10 @@ class MemCacheIntegralIRODS(MemCacheIntegralBase,dataanalysis.MemCacheIRODS):
 #mcgl=MemCacheIntegralLegacy('/Integral/data/reduced/ddcache/')
 #mcg.parent=mcgl
 
-IntegralCacheRoots=os.environ['INTEGRAL_DDCACHE_ROOT']#'/sps/integral/data/reduced/ddcache/'
+try:
+    IntegralCacheRoots=os.environ['INTEGRAL_DDCACHE_ROOT']
+except:
+    IntegralCacheRoots='/sps/integral/data/reduced/ddcache/'
 
 CacheStack=[]
 
@@ -623,7 +626,8 @@ class ibis_isgr_energy(DataAnalysis):
             self.input_scw.auxadppath+"/time_correlation.fits[AUXL-TCOR-HIS]" \
         ])
 
-        bin=os.environ['COMMON_INTEGRAL_SOFTDIR']+"/spectral/ibis_isgr_energy/ibis_isgr_energy_102_pha2/ibis_isgr_energy"
+        #bin=os.environ['COMMON_INTEGRAL_SOFTDIR']+"/spectral/ibis_isgr_energy/ibis_isgr_energy_102_pha2/ibis_isgr_energy"
+        bin="ibis_isgr_energy"
 
         if self.binary is not None:
             bin=self.binary
@@ -1048,7 +1052,7 @@ import ast
 import pyfits,pywcs
 
 class GRcat(DataAnalysis):
-    input="gnrl_ref_cat_38m"
+    input="gnrl_ref_cat_40"
     input_ic=ICRoot
     
     suffix=None
@@ -1063,9 +1067,9 @@ class GRcat(DataAnalysis):
 
     def main(self):
         if self.suffix is None:
-            self.cat=os.environ['REP_BASE_PROD']+"/cat/hec/gnrl_refr_cat_0038m.fits[1]"
+            self.cat=os.environ['REP_BASE_PROD']+"/cat/hec/gnrl_refr_cat_0040.fits[1]"
         else:
-            self.cat=os.environ['REP_BASE_PROD']+"/cat/hec/gnrl_refr_cat_0038m_%s.fits[1]"%self.suffix
+            self.cat=os.environ['REP_BASE_PROD']+"/cat/hec/gnrl_refr_cat_0040_%s.fits[1]"%self.suffix
 
 
 class BrightCat(DataAnalysis):
@@ -1120,7 +1124,8 @@ class BrightPIFImage(DataAnalysis):
 
 
 
-        ht=heatool(os.environ['COMMON_INTEGRAL_SOFTDIR']+"/ii_pif/ii_pif_oof/ii_pif")
+        #ht=heatool(os.environ['COMMON_INTEGRAL_SOFTDIR']+"/ii_pif/ii_pif_oof/ii_pif")
+        ht=heatool("ii_pif")
         ht['inOG']=""
         ht['outOG']="ogg.fits[1]"
         ht['inCat']=catfn
@@ -1135,7 +1140,7 @@ class BrightPIFImage(DataAnalysis):
         ht['E_band_min'] = " ".join([str(a[0]) for a in self.input_bins.bins])
         ht['E_band_max'] = " ".join([str(a[1]) for a in self.input_bins.bins])
         
-        ht['AllowOffEdge'] = 100
+        #ht['AllowOffEdge'] = 100
         ht.run()
 
         self.pifs=da.DataFile("isgri_model.fits")
