@@ -307,11 +307,12 @@ class MemCacheIntegralBase:
         return r # choose to avoid overlapp    
 
 
-class MemCacheIntegral(MemCacheIntegralBase,dataanalysis.MemCacheMySQL):
-    pass
 
-class MemCacheIntegralLegacy(MemCacheIntegralBase,dataanalysis.MemCacheSqlite):
-    pass
+#class MemCacheIntegral(MemCacheIntegralBase,dataanalysis.MemCacheMySQL):
+#    pass
+
+#class MemCacheIntegralLegacy(MemCacheIntegralBase,dataanalysis.MemCacheSqlite):
+#    pass
 
 class MemCacheIntegralFallback(MemCacheIntegralBase,dataanalysis.MemCacheNoIndex):
     pass
@@ -1059,17 +1060,28 @@ class GRcat(DataAnalysis):
 
     cached=False # again, this is transient-level cache
 
+    userefcatvar=False
+
     def get_version(self):
         v=self.get_signature()+"."+self.version
-        if self.suffix is not None:
-            v=v+"."+self.suffix
+
+        if self.userefcatvar:
+            self.cat=os.environ["ISDC_REF_CAT"]
+            self.catname=self.cat.split("/")[-1]
+            v+="var_"+self.catname
+        else:
+            if self.suffix is not None:
+                v=v+"."+self.suffix
         return v
 
     def main(self):
-        if self.suffix is None:
-            self.cat=os.environ['REP_BASE_PROD']+"/cat/hec/gnrl_refr_cat_0040.fits[1]"
+        if self.userefcatvar:
+            pass
         else:
-            self.cat=os.environ['REP_BASE_PROD']+"/cat/hec/gnrl_refr_cat_0040_%s.fits[1]"%self.suffix
+            if self.suffix is None:
+                self.cat=os.environ['REP_BASE_PROD']+"/cat/hec/gnrl_refr_cat_0040.fits[1]"
+            else:
+                self.cat=os.environ['REP_BASE_PROD']+"/cat/hec/gnrl_refr_cat_0040_%s.fits[1]"%self.suffix
 
 
 class BrightCat(DataAnalysis):
