@@ -323,6 +323,9 @@ class MemCacheIntegralFallbackOldPath(MemCacheIntegralBaseOldPath,dataanalysis.M
 class MemCacheIntegralIRODS(MemCacheIntegralBase,dataanalysis.MemCacheIRODS):
     pass
 
+class MemCacheIntegralSSH(MemCacheIntegralBase,dataanalysis.MemCacheSSH):
+    pass
+
 #mc=dataanalysis.TransientCacheInstance
 #mcg=MemCacheIntegral('/Integral/data/reduced/ddcache/')
 #mc=mcg
@@ -359,6 +362,14 @@ for IntegralCacheRoot in IntegralCacheRoots.split(":"):
 mcgirods=MemCacheIntegralIRODS('/tempZone/home/integral/data/reduced/ddcache/')
 CacheStack[-1].parent=mcgirods
 CacheStack.append(mcgirods)
+
+#mcgssh=MemCacheIntegralSSH("apcclwn12:/Integral2/data/reduced/ddcache/")
+#CacheStack[-1].parent=mcgssh
+#CacheStack.append(mcgssh)
+
+mc_isdc_ssh=MemCacheIntegralSSH("isdc-nx00.isdc.unige.ch:/home/isdc/savchenk/osa11_deployment/ddcache/")
+CacheStack[-1].parent=mc_isdc_ssh
+CacheStack.append(mc_isdc_ssh)
 
 mc=CacheStack[0]
 
@@ -626,9 +637,13 @@ class ibis_isgr_energy(DataAnalysis):
             self.input_scw.scwpath+"/ibis_hk.fits[IBIS-DPE.-CNV]", \
             self.input_scw.auxadppath+"/time_correlation.fits[AUXL-TCOR-HIS]" \
         ])
+        
+        import_attr(self.input_scw.scwpath+"/swg.fits",['OBTSTART','OBTEND'])
+        set_attr({'ISDCLEVL':"COR"})
 
         #bin=os.environ['COMMON_INTEGRAL_SOFTDIR']+"/spectral/ibis_isgr_energy/ibis_isgr_energy_102_pha2/ibis_isgr_energy"
         bin="ibis_isgr_energy"
+        #bin=os.environ['COMMON_INTEGRAL_SOFTDIR']+"/spectral/ibis_isgr_energy/ibis_isgr_energy_102_pha2/ibis_isgr_energy"
 
         if self.binary is not None:
             bin=self.binary
@@ -636,13 +651,13 @@ class ibis_isgr_energy(DataAnalysis):
         ht=heatool(bin)
         ht['inGRP']="og.fits"
         ht['outCorEvts']="isgri_events_corrected.fits(ISGR-EVTS-COR.tpl)"
-        ht['useGTI']="n"
+        ht['useGTI']="y" #!!!
         ht['randSeed']=500
         ht['riseDOL']=self.input_ecorrdata.risedol
         ht['GODOL']=self.input_ecorrdata.godol
         ht['supGDOL']=self.input_ecorrdata.supgdol
         ht['supODOL']=self.input_ecorrdata.supodol
-        ht['chatter']="4"
+        ht['chatter']="5"
         ht.run()
 
         self.output_events=DataFile("isgri_events_corrected.fits")
