@@ -53,9 +53,9 @@ def remove_repeating(inlist):
 
 class MemCacheIntegralBaseOldPath: 
 #class MemCacheIntegral(dataanalysis.MemCacheSqlite):
-    def get_scw(self,hashe):                                                                                                                                       
+    def get_scw(self,hashe):
         #if dataanalysis.printhook.global_log_enabled: print("search for scw in",hashe)
-        if isinstance(hashe,tuple):                                                                                                                                
+        if isinstance(hashe,tuple):
             if hashe[0]=="analysis": # more universaly                                                                                                             
                 if hashe[2].startswith('ScWData'):
                     return hashe[1]
@@ -379,22 +379,33 @@ class OSA_tool_kit_class(object):
 
 OSA_tool_kit=OSA_tool_kit_class()
 
+def get_OSA_tools(names=None):
+    if names is None:
+        return dataanalysis.NoAnalysis
+
+    if isinstance(names,str):
+        names=[names]
+
+    class OSA_tools(dataanalysis.DataAnalysis):
+        osa_tools=names[:]
+        
+        def get_version(self):
+            v=self.get_signature()+"."+self.version
+            for osa_tool in self.osa_tools:
+                v+="."+OSA_tool_kit.get_tool_version(osa_tool)
+            return v
+
+    return OSA_tools
+
 class DataAnalysis(dataanalysis.DataAnalysis):
     cache=mc
 
     write_caches=[dataanalysis.TransientCache,MemCacheIntegralFallback]
     read_caches=[dataanalysis.TransientCache,MemCacheIntegralFallback,MemCacheIntegralFallbackOldPath]
 
-    osa_tools=None
+    input_osatools=get_OSA_tools()
 
     cached=False
-
-    def get_version(self):
-        v=self.get_signature()+"."+self.version
-        if self.osa_tools is not None:
-            for osa_tool in self.osa_tools:
-                v+="."+OSA_tool_kit.get_tool_version(osa_tool)
-        return v
 
     def get_scw(self):
         if self._da_locally_complete is not None:
