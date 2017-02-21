@@ -323,9 +323,6 @@ class MemCacheIntegralFallbackOldPath(MemCacheIntegralBaseOldPath,dataanalysis.M
 class MemCacheIntegralIRODS(MemCacheIntegralBase,dataanalysis.MemCacheIRODS):
     pass
 
-class MemCacheIntegralSSH(MemCacheIntegralBase,dataanalysis.MemCacheSSH):
-    pass
-
 #mc=dataanalysis.TransientCacheInstance
 #mcg=MemCacheIntegral('/Integral/data/reduced/ddcache/')
 #mc=mcg
@@ -363,17 +360,24 @@ mcgirods=MemCacheIntegralIRODS('/tempZone/home/integral/data/reduced/ddcache/')
 CacheStack[-1].parent=mcgirods
 CacheStack.append(mcgirods)
 
-#mcgssh=MemCacheIntegralSSH("apcclwn12:/Integral2/data/reduced/ddcache/")
-#CacheStack[-1].parent=mcgssh
-#CacheStack.append(mcgssh)
-
-mc_isdc_ssh=MemCacheIntegralSSH("isdc-nx00.isdc.unige.ch:/home/isdc/savchenk/osa11_deployment/ddcache/")
-CacheStack[-1].parent=mc_isdc_ssh
-CacheStack.append(mc_isdc_ssh)
-
 mc=CacheStack[0]
 
 print "cache stack:",CacheStack
+
+class OSA_tool_kit_class(object):
+    tool_versions=None
+
+    def get_tool_version(self,name):
+        if self.tool_versions is None:
+            self.tool_versions={}
+
+        if name not in self.tool_versions:
+            cl=subprocess.Popen([name,"--version"],stdout=subprocess.PIPE)
+            self.tool_versions[name]=cl.stdout.read().strip().split()[-1]
+
+        return self.tool_versions[name]
+
+OSA_tool_kit=OSA_tool_kit_class()
 
 class DataAnalysis(dataanalysis.DataAnalysis):
     cache=mc
@@ -381,7 +385,16 @@ class DataAnalysis(dataanalysis.DataAnalysis):
     write_caches=[dataanalysis.TransientCache,MemCacheIntegralFallback]
     read_caches=[dataanalysis.TransientCache,MemCacheIntegralFallback,MemCacheIntegralFallbackOldPath]
 
+    osa_tools=None
+
     cached=False
+
+    def get_version(self):
+        v=self.get_signature()+"."+self.version
+        if self.osa_tools is not None:
+            for osa_tool in self.osa_tools:
+                v+="."+OSA_tool_kit.get_tool_version(osa_tool)
+        return v
 
     def get_scw(self):
         if self._da_locally_complete is not None:
@@ -592,6 +605,8 @@ class ibis_isgr_energy_standard(DataAnalysis):
     input_ecorrdata=GetEcorrCalDB
 
     version="v4_extras"
+
+    osa_tools=["ibis_isgr_energy"]
    
     def main(self):
 
@@ -637,13 +652,9 @@ class ibis_isgr_energy(DataAnalysis):
             self.input_scw.scwpath+"/ibis_hk.fits[IBIS-DPE.-CNV]", \
             self.input_scw.auxadppath+"/time_correlation.fits[AUXL-TCOR-HIS]" \
         ])
-        
-        import_attr(self.input_scw.scwpath+"/swg.fits",['OBTSTART','OBTEND'])
-        set_attr({'ISDCLEVL':"COR"})
 
         #bin=os.environ['COMMON_INTEGRAL_SOFTDIR']+"/spectral/ibis_isgr_energy/ibis_isgr_energy_102_pha2/ibis_isgr_energy"
         bin="ibis_isgr_energy"
-        #bin=os.environ['COMMON_INTEGRAL_SOFTDIR']+"/spectral/ibis_isgr_energy/ibis_isgr_energy_102_pha2/ibis_isgr_energy"
 
         if self.binary is not None:
             bin=self.binary
@@ -651,13 +662,13 @@ class ibis_isgr_energy(DataAnalysis):
         ht=heatool(bin)
         ht['inGRP']="og.fits"
         ht['outCorEvts']="isgri_events_corrected.fits(ISGR-EVTS-COR.tpl)"
-        ht['useGTI']="y" #!!!
+        ht['useGTI']="n"
         ht['randSeed']=500
         ht['riseDOL']=self.input_ecorrdata.risedol
         ht['GODOL']=self.input_ecorrdata.godol
         ht['supGDOL']=self.input_ecorrdata.supgdol
         ht['supODOL']=self.input_ecorrdata.supodol
-        ht['chatter']="5"
+        ht['chatter']="4"
         ht.run()
 
         self.output_events=DataFile("isgri_events_corrected.fits")
@@ -862,10 +873,10 @@ class SpectraBins(DataAnalysis):
 
     version="v3"
     def main(self):
-        self.binrmf=os.environ['INTEGRAL_DATA']+"/resources/rmf_62bands.fits" # noo!!!
-        e=pyfits.open(self.binrmf)[3].data
+        self.binrmf=os.environ['CURRENT_IC']+"/ic/ibis/rsp/isgr_ebds_mod_0001.fits" # noo!!!
+        e=pyfits.open(self.binrmf)[1].data
         self.bins=zip(e['E_MIN'],e['E_MAX'])
-        self.binrmfext=self.binrmf+'[3]'
+        self.binrmfext=self.binrmf+'[1]'
 
     def get_binrmfext(self):
         return self.binrmfext
