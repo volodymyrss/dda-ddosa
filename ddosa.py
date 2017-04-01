@@ -38,6 +38,11 @@ from pilton import heatool
 import pprint
 import os,shutil,re,time,glob
 from astropy.io import fits as pyfits
+from astropy import wcs
+import subprocess,os
+import dataanalysis as da
+import ddosa
+import ast
 
 def remove_repeating(inlist):
     if inlist==[]:
@@ -1083,11 +1088,6 @@ class BinMapsSpectra(BinMapsVirtual):
     input_bins=SpectraBins
 
 
-import subprocess,os
-import dataanalysis as da
-import ddosa
-import ast
-import pyfits,pywcs
 
 class GRcat(DataAnalysis):
     input="gnrl_ref_cat_40"
