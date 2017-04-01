@@ -408,7 +408,7 @@ class DataAnalysis(dataanalysis.DataAnalysis):
     write_caches=[dataanalysis.TransientCache,MemCacheIntegralFallback]
     read_caches=[dataanalysis.TransientCache,MemCacheIntegralFallback,MemCacheIntegralFallbackOldPath]
 
-    input_osatools=get_OSA_tools()
+    #input_osatools=get_OSA_tools()
 
     cached=False
 
