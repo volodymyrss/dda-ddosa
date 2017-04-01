@@ -893,7 +893,7 @@ class SpectraBins(DataAnalysis):
         #self.binrmf=os.environ['CURRENT_IC']+"/ic/ibis/rsp/isgr_ebds_mod_0001.fits" # noo!!!
         e=pyfits.open(self.binrmf)[3].data
         self.bins=zip(e['E_MIN'],e['E_MAX'])
-        self.binrmfext=self.binrmf+'[1]'
+        self.binrmfext=self.binrmf+'[3]'
 
     def get_binrmfext(self):
         return self.binrmfext
