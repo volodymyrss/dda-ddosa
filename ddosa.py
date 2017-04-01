@@ -1791,8 +1791,6 @@ def set_attr(attrs,fn="og.fits"):
         da.run()
         
 def construct_empty_shadidx_old(bins,fn="og.fits",levl="BIN_I"):
-    import pyfits # why now? its expensive and done only if needed
-
     remove_withtemplate(fn+"(ISGR-DETE-SHD-IDX.tpl)")
 
     ht=heatool("dal_create")
@@ -1848,8 +1846,6 @@ def construct_empty_shadidx_old(bins,fn="og.fits",levl="BIN_I"):
     og.writeto(fn,clobber=True)
 
 def construct_empty_shadidx(bins,fn="og.fits",levl="BIN_I"):
-    import pyfits # why now? its expensive and done only if needed
-
     remove_withtemplate(fn+"(ISGR-DETE-SHD-IDX.tpl)")
 
     ht=heatool("dal_create")
