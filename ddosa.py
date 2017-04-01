@@ -1943,7 +1943,17 @@ class RevScWList(DataAnalysis):
     def main(self):
         import os
 
-        event_files=glob.glob(self.input_rev.revroot+"/*/isgri_events.fits*")
+        event_files=[]
+        for event_file in glob.glob(self.input_rev.revroot+"/*/isgri_events.fits*"):
+            print event_file
+            try:
+                evts=pyfits.open(event_file)[3]
+                print evts
+                if evts.data.shape[0]<10000:
+                    raise Exception("very few events!")
+                event_files.append(event_file)
+            except Exception as e:
+                print e
 
         print "event files in",self.input_rev.revroot
         print "found event files",event_files
