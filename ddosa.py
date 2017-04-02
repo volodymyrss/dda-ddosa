@@ -889,7 +889,8 @@ class SpectraBins(DataAnalysis):
 
     version="v3"
     def main(self):
-        self.binrmf=os.environ['INTEGRAL_DATA']+"/resources/rmf_62bands.fits" # noo!!!
+        #self.binrmf=os.environ['INTEGRAL_DATA']+"/resources/" # noo!!!
+        self.binrmf=os.environ['CURRENT_IC']+"/ic/ibis/rsp/rmf_62bands.fits" # noo!!!
         #self.binrmf=os.environ['CURRENT_IC']+"/ic/ibis/rsp/isgr_ebds_mod_0001.fits" # noo!!!
         e=pyfits.open(self.binrmf)[3].data
         self.bins=zip(e['E_MIN'],e['E_MAX'])
