@@ -1888,6 +1888,14 @@ class SpectraProcessingSummary(DataAnalysis):
         print "reduced hash",rh
         return [dataanalysis.DataHandle('processing_definition:'+rh[:8])]
 
+class IDScWList(DataAnalysis):
+    scwid_list=None
+    allow_alias=True
+
+    def main(self):
+        self.scwlistdata=[ScWData(input_scwid=s.strip()) for s in self.scwid_list]
+
+
 class RevScWList(DataAnalysis):
     input_rev=Revolution
 
