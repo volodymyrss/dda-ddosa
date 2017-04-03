@@ -37,7 +37,7 @@ from pilton import heatool
 
 import pprint
 import os,shutil,re,time,glob
-from astropu.io import fits as pyfits
+from astropy.io import fits as pyfits
 
 def remove_repeating(inlist):
     if inlist==[]:
