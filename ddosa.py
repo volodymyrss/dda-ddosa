@@ -457,6 +457,8 @@ class ScWData(DataAnalysis):
 class Revolution(DataAnalysis):
     input_revid=None
 
+    scwver="001"
+
     def get_revid(self):
         return self.input_revid.handle
 
@@ -464,6 +466,7 @@ class Revolution(DataAnalysis):
         rbp=os.environ["REP_BASE_PROD"]
         self.revroot=rbp+"/scw/%s/"%self.get_revid()
         self.revdir=self.revroot+"/rev.001/"
+        self.auxadppath=rbp+"/aux/adp/"+self.revid+"."+self.scwver
 
     def get_ijd(self):
         r1100=4306.5559396296
