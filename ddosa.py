@@ -176,7 +176,7 @@ class MemCacheIntegralBaseOldPath:
                 if dataanalysis.printhook.global_log_enabled: print("cached rev:",rev)
                 r=self.filecacheroot+"/byrev/"+rev+"/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/" # choose to avoid overlapp    
         else:
-        if dataanalysis.printhook.global_log_enabled: print("cached scw:",scw)
+            if dataanalysis.printhook.global_log_enabled: print("cached scw:",scw)
             print(scw,hashe[2],marked)
             r=self.filecacheroot+"/byscw/"+scw[:4]+"/"+scw+"/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/" # choose to avoid overlapp    
 
