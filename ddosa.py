@@ -355,10 +355,10 @@ for IntegralCacheRoot in IntegralCacheRoots.split(":"):
         CacheStack[-1].parent=mcgfb
         CacheStack.append(mcgfb)
 
-    mcgfb_oldp=MemCacheIntegralFallbackOldPath(IntegralCacheRoot)
-    mcgfb_oldp.readonly_cache=ro_flag
-    mcgfb.parent=mcgfb_oldp
-    CacheStack.append(mcgfb_oldp)
+    #mcgfb_oldp=MemCacheIntegralFallbackOldPath(IntegralCacheRoot)
+    #mcgfb_oldp.readonly_cache=ro_flag
+    #mcgfb.parent=mcgfb_oldp
+    #CacheStack.append(mcgfb_oldp)
 
 mcgirods=MemCacheIntegralIRODS('/tempZone/home/integral/data/reduced/ddcache/')
 CacheStack[-1].parent=mcgirods
