@@ -38,6 +38,12 @@ from pilton import heatool
 import pprint
 import os,shutil,re,time,glob
 from astropy.io import fits as pyfits
+from astropy import wcs
+from astropy import wcs as pywcs
+import subprocess,os
+import dataanalysis as da
+import ddosa
+import ast
 
 def remove_repeating(inlist):
     if inlist==[]:
@@ -56,8 +62,9 @@ class MemCacheIntegralBaseOldPath:
     def get_scw(self,hashe):                                                                                                                                       
         raise Exception("deprecated cache!")
 
+    def get_scw(self,hashe):
         #if dataanalysis.printhook.global_log_enabled: print("search for scw in",hashe)
-        if isinstance(hashe,tuple):                                                                                                                                
+        if isinstance(hashe,tuple):
             if hashe[0]=="analysis": # more universaly                                                                                                             
                 if hashe[2].startswith('ScWData'):
                     return hashe[1]
@@ -169,7 +176,7 @@ class MemCacheIntegralBaseOldPath:
                 if dataanalysis.printhook.global_log_enabled: print("cached rev:",rev)
                 r=self.filecacheroot+"/byrev/"+rev+"/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/" # choose to avoid overlapp    
         else:
-            if dataanalysis.printhook.global_log_enabled: print("cached scw:",scw)
+        if dataanalysis.printhook.global_log_enabled: print("cached scw:",scw)
             print(scw,hashe[2],marked)
             r=self.filecacheroot+"/byscw/"+scw[:4]+"/"+scw+"/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/" # choose to avoid overlapp    
 
@@ -312,11 +319,12 @@ class MemCacheIntegralBase:
         return r # choose to avoid overlapp    
 
 
-class MemCacheIntegral(MemCacheIntegralBase,dataanalysis.MemCacheMySQL):
-    pass
 
-class MemCacheIntegralLegacy(MemCacheIntegralBase,dataanalysis.MemCacheSqlite):
-    pass
+#class MemCacheIntegral(MemCacheIntegralBase,dataanalysis.MemCacheMySQL):
+#    pass
+
+#class MemCacheIntegralLegacy(MemCacheIntegralBase,dataanalysis.MemCacheSqlite):
+#    pass
 
 class MemCacheIntegralFallback(MemCacheIntegralBase,dataanalysis.MemCacheNoIndex):
     pass
@@ -368,11 +376,46 @@ mc=CacheStack[0]
 
 print "cache stack:",CacheStack
 
+class OSA_tool_kit_class(object):
+    tool_versions=None
+
+    def get_tool_version(self,name):
+        if self.tool_versions is None:
+            self.tool_versions={}
+
+        if name not in self.tool_versions:
+            cl=subprocess.Popen([name,"--version"],stdout=subprocess.PIPE)
+            self.tool_versions[name]=cl.stdout.read().strip().split()[-1]
+
+        return self.tool_versions[name]
+
+OSA_tool_kit=OSA_tool_kit_class()
+
+def get_OSA_tools(names=None):
+    if names is None:
+        return dataanalysis.NoAnalysis
+
+    if isinstance(names,str):
+        names=[names]
+
+    class OSA_tools(dataanalysis.DataAnalysis):
+        osa_tools=names[:]
+        
+        def get_version(self):
+            v=self.get_signature()+"."+self.version
+            for osa_tool in self.osa_tools:
+                v+="."+OSA_tool_kit.get_tool_version(osa_tool)
+            return v
+
+    return OSA_tools
+
 class DataAnalysis(dataanalysis.DataAnalysis):
     cache=mc
 
     write_caches=[dataanalysis.TransientCache,MemCacheIntegralFallback]
     read_caches=[dataanalysis.TransientCache,MemCacheIntegralFallback,MemCacheIntegralFallbackOldPath]
+
+    #input_osatools=get_OSA_tools()
 
     cached=False
 
@@ -588,6 +631,8 @@ class ibis_isgr_energy_standard(DataAnalysis):
     input_ecorrdata=GetEcorrCalDB
 
     version="v4_extras"
+
+    osa_tools=["ibis_isgr_energy"]
    
     def main(self):
 
@@ -854,7 +899,9 @@ class SpectraBins(DataAnalysis):
 
     version="v3"
     def main(self):
-        self.binrmf=os.environ['INTEGRAL_DATA']+"/resources/rmf_62bands.fits" # noo!!!
+        #self.binrmf=os.environ['INTEGRAL_DATA']+"/resources/" # noo!!!
+        self.binrmf=os.environ['CURRENT_IC']+"/ic/ibis/rsp/rmf_62bands.fits" # noo!!!
+        #self.binrmf=os.environ['CURRENT_IC']+"/ic/ibis/rsp/isgr_ebds_mod_0001.fits" # noo!!!
         e=pyfits.open(self.binrmf)[3].data
         self.bins=zip(e['E_MIN'],e['E_MAX'])
         self.binrmfext=self.binrmf+'[3]'
@@ -1053,11 +1100,6 @@ class BinMapsSpectra(BinMapsVirtual):
     input_bins=SpectraBins
 
 
-import subprocess,os
-import dataanalysis as da
-import ddosa
-import ast
-from astropy import wcs as pywcs
 
 class GRcat(DataAnalysis):
     input="gnrl_ref_cat_40"
@@ -1067,17 +1109,28 @@ class GRcat(DataAnalysis):
 
     cached=False # again, this is transient-level cache
 
+    userefcatvar=False
+
     def get_version(self):
         v=self.get_signature()+"."+self.version
-        if self.suffix is not None:
-            v=v+"."+self.suffix
+
+        if self.userefcatvar:
+            self.cat=os.environ["ISDC_REF_CAT"]
+            self.catname=self.cat.split("/")[-1]
+            v+="var_"+self.catname
+        else:
+            if self.suffix is not None:
+                v=v+"."+self.suffix
         return v
 
     def main(self):
-        if self.suffix is None:
-            self.cat=os.environ['REP_BASE_PROD']+"/cat/hec/gnrl_refr_cat_0040.fits[1]"
+        if self.userefcatvar:
+            pass
         else:
-            self.cat=os.environ['REP_BASE_PROD']+"/cat/hec/gnrl_refr_cat_0040_%s.fits[1]"%self.suffix
+            if self.suffix is None:
+                self.cat=os.environ['REP_BASE_PROD']+"/cat/hec/gnrl_refr_cat_0040.fits[1]"
+            else:
+                self.cat=os.environ['REP_BASE_PROD']+"/cat/hec/gnrl_refr_cat_0040_%s.fits[1]"%self.suffix
 
 
 class BrightCat(DataAnalysis):
@@ -1910,7 +1963,17 @@ class RevScWList(DataAnalysis):
     def main(self):
         import os
 
-        event_files=glob.glob(self.input_rev.revroot+"/*/isgri_events.fits*")
+        event_files=[]
+        for event_file in glob.glob(self.input_rev.revroot+"/*/isgri_events.fits*"):
+            print event_file
+            try:
+                evts=pyfits.open(event_file)[3]
+                print evts
+                if evts.data.shape[0]<10000:
+                    raise Exception("very few events!")
+                event_files.append(event_file)
+            except Exception as e:
+                print e
 
         print "event files in",self.input_rev.revroot
         print "found event files",event_files
