@@ -54,6 +54,8 @@ def remove_repeating(inlist):
 class MemCacheIntegralBaseOldPath: 
 #class MemCacheIntegral(dataanalysis.MemCacheSqlite):
     def get_scw(self,hashe):                                                                                                                                       
+        raise Exception("deprecated cache!")
+
         #if dataanalysis.printhook.global_log_enabled: print("search for scw in",hashe)
         if isinstance(hashe,tuple):                                                                                                                                
             if hashe[0]=="analysis": # more universaly                                                                                                             
@@ -182,7 +184,10 @@ class MemCacheIntegralBase:
         if isinstance(hashe,tuple):                                                                                                                                
             if hashe[0]=="analysis": # more universaly                                                                                                             
                 if hashe[2].startswith('ScWData'):
-                    return hashe[1]
+                    if isinstance(hashe[1],tuple):
+                        return hashe[2]
+                    else:
+                        return hashe[1]
                 return self.get_scw(hashe[1])
             if hashe[0]=="list": # more universaly                                                                                                                 
                 for k in hashe[1:]:
