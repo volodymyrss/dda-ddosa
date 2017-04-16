@@ -185,7 +185,7 @@ class MemCacheIntegralBase:
             if hashe[0]=="analysis": # more universaly                                                                                                             
                 if hashe[2].startswith('ScWData'):
                     if isinstance(hashe[1],tuple):
-                        return hashe[2]
+                        return hashe[1][-1]
                     else:
                         return hashe[1]
                 return self.get_scw(hashe[1])
