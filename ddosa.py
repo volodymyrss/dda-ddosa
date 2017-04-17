@@ -899,8 +899,8 @@ class SpectraBins(DataAnalysis):
 
     version="v3"
     def main(self):
-        #self.binrmf=os.environ['INTEGRAL_DATA']+"/resources/" # noo!!!
-        self.binrmf=os.environ['CURRENT_IC']+"/ic/ibis/rsp/rmf_62bands.fits" # noo!!!
+        self.binrmf=os.environ['INTEGRAL_DATA']+"/resources/rmf_62bands.fits"
+        #self.binrmf=os.environ['CURRENT_IC']+"/ic/ibis/rsp/rmf_62bands.fits" # noo!!!
         #self.binrmf=os.environ['CURRENT_IC']+"/ic/ibis/rsp/isgr_ebds_mod_0001.fits" # noo!!!
         e=pyfits.open(self.binrmf)[3].data
         self.bins=zip(e['E_MIN'],e['E_MAX'])
@@ -1566,7 +1566,8 @@ class CatForSpectraFromImaging(DataAnalysis):
 class ISGRIResponse(DataAnalysis):
     input_ecorrdata=GetEcorrCalDB
 
-    path="/sps/integral/analysis/savchenk/lut2tests/test_05351/single_scw/resources/rmf/rmf_62bands.fits"
+    path=os.environ['INTEGRAL_DATA']+"/resources/rmf_62bands.fits"
+        
 
 class ii_spectra_extract(DataAnalysis):
     input_gb=ghost_bustersSpectra
