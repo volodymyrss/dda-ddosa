@@ -395,16 +395,23 @@ def get_OSA_tools(names=None):
     if names is None:
         return dataanalysis.NoAnalysis
 
-    if isinstance(names,str):
+    if isinstance(names,str) or isinstance(names,tuple):
         names=[names]
+
+    
+    names=[ name if isinstance(name,tuple) else (name,None)
+                for name in names ]
+        
 
     class OSA_tools(dataanalysis.DataAnalysis):
         osa_tools=names[:]
         
         def get_version(self):
             v=self.get_signature()+"."+self.version
-            for osa_tool in self.osa_tools:
-                v+="."+OSA_tool_kit.get_tool_version(osa_tool)
+            for osa_tool,default_version in self.osa_tools:
+                current_version=OSA_tool_kit.get_tool_version(osa_tool)
+                if default_version is None or current_version!=default_version:
+                    v+="."+osa_tool+"_"+current_version
             return v
 
     return OSA_tools
@@ -415,7 +422,7 @@ class DataAnalysis(dataanalysis.DataAnalysis):
     write_caches=[dataanalysis.TransientCache,MemCacheIntegralFallback]
     read_caches=[dataanalysis.TransientCache,MemCacheIntegralFallback,MemCacheIntegralFallbackOldPath]
 
-    #input_osatools=get_OSA_tools()
+    input_osatools=get_OSA_tools()
 
     cached=False
 
@@ -434,6 +441,7 @@ class DataAnalysis(dataanalysis.DataAnalysis):
 
     def __repr__(self):
         return "[%s%s%s%s%i]"%(self.get_version(),self.get_scw(),";Virtual" if self.virtual else "",";Complete" if self._da_locally_complete else "",id(self))
+
 
 class NoScWData(dataanalysis.AnalysisException):
     pass
