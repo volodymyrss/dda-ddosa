@@ -29,9 +29,12 @@
 # maks environment, osa, as input
 # make aliases for evolutions
 
-from dataanalysis import DataFile,shhash
-import dataanalysis 
-
+from dataanalysis.core import DataFile
+from dataanalysis.caches import cache_core
+from dataanalysis import hashtools
+from dataanalysis.hashtools import shhash
+import dataanalysis.printhook
+import dataanalysis.core as da
 
 from pilton import heatool
 
@@ -41,8 +44,6 @@ from astropy.io import fits as pyfits
 from astropy import wcs
 from astropy import wcs as pywcs
 import subprocess,os
-import dataanalysis as da
-import ddosa
 import ast
 
 def remove_repeating(inlist):
@@ -149,7 +150,7 @@ class MemCacheIntegralBaseOldPath:
         rev=self.get_rev(hashe)
 
         def hash_to_path2(hashe):                                                                                                                                      
-            return dataanalysis.shhash(repr(hashe[1]))[:8]                                                                                                           
+            return shhash(repr(hashe[1]))[:8]                                                                                                           
             
         marked=self.get_marked(hashe[1])
         marked=remove_repeating(marked)
@@ -276,14 +277,14 @@ class MemCacheIntegralBase:
         rev=self.get_rev(hashe)
 
         def hash_to_path2(hashe):                                                                                                                                      
-            return dataanalysis.shhash(repr(hashe[1]))[:8]                                                                                                           
+            return shhash(repr(hashe[1]))[:8]                                                                                                           
             
         marked=self.get_marked(hashe[1])
         marked=remove_repeating(marked)
         if dataanalysis.printhook.global_log_enabled: print("marked",marked)
 
         for mark in marked:
-            hashe=dataanalysis.hashe_replace_object(hashe,mark+"..","any")
+            hashe=hashtools.hashe_replace_object(hashe,mark+"..","any")
 
         if not isinstance(scw,str):
             scw=None
@@ -297,13 +298,13 @@ class MemCacheIntegralBase:
                 if dataanalysis.printhook.global_log_enabled: print("not rev-grouped cache")
                 r=self.filecacheroot+"/global/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/"
             else:
-                hashe=dataanalysis.hashe_replace_object(hashe,rev,"any")
+                hashe=hashtools.hashe_replace_object(hashe,rev,"any")
                 #print "reduced hashe",hashe
                 if dataanalysis.printhook.global_log_enabled: print("cached rev:",rev)
                 r=self.filecacheroot+"/byrev/"+rev+"/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/" # choose to avoid overlapp    
         else:
-            hashe=dataanalysis.hashe_replace_object(hashe,scw,"any")
-            hashe=dataanalysis.hashe_replace_object(hashe,('analysis', scw[:4], 'Revolution.v0'),('analysis', 'any', 'Revolution.v0'))
+            hashe=hashtools.hashe_replace_object(hashe,scw,"any")
+            hashe=hashtools.hashe_replace_object(hashe,('analysis', scw[:4], 'Revolution.v0'),('analysis', 'any', 'Revolution.v0'))
 
             #str("reduced hashe:",hashe,hash_to_path2(hashe))
             #if dataanalysis.printhook.global_log_enabled: print("reduced hashe:",hashe,hash_to_path2(hashe))
@@ -326,14 +327,14 @@ class MemCacheIntegralBase:
 #class MemCacheIntegralLegacy(MemCacheIntegralBase,dataanalysis.MemCacheSqlite):
 #    pass
 
-class MemCacheIntegralFallback(MemCacheIntegralBase,dataanalysis.MemCacheNoIndex):
+class MemCacheIntegralFallback(MemCacheIntegralBase,dataanalysis.caches.cache_core.CacheNoIndex):
     pass
 
-class MemCacheIntegralFallbackOldPath(MemCacheIntegralBaseOldPath,dataanalysis.MemCacheNoIndex):
-    readonly_cache=True
+#class MemCacheIntegralFallbackOldPath(MemCacheIntegralBaseOldPath,dataanalysis.caches.core.CacheNoIndex):
+    #readonly_cache=True
 
-class MemCacheIntegralIRODS(MemCacheIntegralBase,dataanalysis.MemCacheIRODS):
-    pass
+#class MemCacheIntegralIRODS(MemCacheIntegralBase,dataanalysis.MemCacheIRODS):
+#    pass
 
 #mc=dataanalysis.TransientCacheInstance
 #mcg=MemCacheIntegral('/Integral/data/reduced/ddcache/')
@@ -368,9 +369,9 @@ for IntegralCacheRoot in IntegralCacheRoots.split(":"):
     #mcgfb.parent=mcgfb_oldp
     #CacheStack.append(mcgfb_oldp)
 
-mcgirods=MemCacheIntegralIRODS('/tempZone/home/integral/data/reduced/ddcache/')
-CacheStack[-1].parent=mcgirods
-CacheStack.append(mcgirods)
+#mcgirods=MemCacheIntegralIRODS('/tempZone/home/integral/data/reduced/ddcache/')
+#CacheStack[-1].parent=mcgirods
+#CacheStack.append(mcgirods)
 
 mc=CacheStack[0]
 
@@ -393,7 +394,7 @@ OSA_tool_kit=OSA_tool_kit_class()
 
 def get_OSA_tools(names=None):
     if names is None:
-        return dataanalysis.NoAnalysis
+        return da.NoAnalysis
 
     if isinstance(names,str) or isinstance(names,tuple):
         names=[names]
@@ -403,7 +404,7 @@ def get_OSA_tools(names=None):
                 for name in names ]
         
 
-    class OSA_tools(dataanalysis.DataAnalysis):
+    class OSA_tools(da.DataAnalysis):
         osa_tools=names[:]
         
         def get_version(self):
@@ -416,11 +417,11 @@ def get_OSA_tools(names=None):
 
     return OSA_tools
 
-class DataAnalysis(dataanalysis.DataAnalysis):
+class DataAnalysis(da.DataAnalysis):
     cache=mc
 
-    write_caches=[dataanalysis.TransientCache,MemCacheIntegralFallback]
-    read_caches=[dataanalysis.TransientCache,MemCacheIntegralFallback,MemCacheIntegralFallbackOldPath]
+    write_caches=[cache_core.TransientCache,MemCacheIntegralFallback]
+    read_caches=[cache_core.TransientCache,MemCacheIntegralFallback] #,MemCacheIntegralFallbackOldPath]
 
     input_osatools=get_OSA_tools()
 
@@ -443,7 +444,7 @@ class DataAnalysis(dataanalysis.DataAnalysis):
         return "[%s%s%s%s%i]"%(self.get_version(),self.get_scw(),";Virtual" if self.virtual else "",";Complete" if self._da_locally_complete else "",id(self))
 
 
-class NoScWData(dataanalysis.AnalysisException):
+class NoScWData(da.AnalysisException):
     pass
     
 
@@ -468,7 +469,7 @@ class ScWData(DataAnalysis):
         try:
             print "searching in "+os.environ['REP_BASE_PROD']
             self.assume_rbp(os.environ['REP_BASE_PROD'])
-        except dataanalysis.AnalysisException:
+        except da.AnalysisException:
             if self.scwver=="000":
                 print "searching in "+os.environ['REP_BASE_PROD']+"/nrt"
                 self.assume_rbp(os.environ['REP_BASE_PROD']+"/nrt")
@@ -550,7 +551,7 @@ class RevForScW(DataAnalysis):
 
 class Rev4ScW(Revolution):
     input_scw=ScWData    
-    input_revid=dataanalysis.NoAnalysis
+    input_revid=da.NoAnalysis
 
     def __repr__(self):
         return "[Rev4ScW:for %s]"%repr(self.input_scw)
@@ -1892,10 +1893,10 @@ def construct_empty_shadidx(bins,fn="og.fits",levl="BIN_I"):
         og[2+i].header['ISDCLEVL']=levl
     og.writeto(fn,clobber=True)
 
-class AnyScW(dataanalysis.AnyAnalysis):
+class AnyScW(da.AnyAnalysis):
     pass
 
-class AnyRev(dataanalysis.AnyAnalysis):
+class AnyRev(da.AnyAnalysis):
     pass
 
 class BinnedDataProcessingSummary(DataAnalysis):
@@ -1905,9 +1906,9 @@ class BinnedDataProcessingSummary(DataAnalysis):
         mf=BinEventsImage(assume=ScWData(input_scwid="any",use_abstract=True)) # arbitrary choice of scw, should be the same: assumption of course
         ahash=mf.process(output_required=False,run_if_haveto=False)[0]
        # print "one scw hash:",ahash
-        #ahash=dataanalysis.hashe_replace_object(ahash,'AnyScW','None')
+        #ahash=hashtools.hashe_replace_object(ahash,'AnyScW','None')
         print "generalized hash:",ahash
-        rh=dataanalysis.shhash(ahash)
+        rh=shhash(ahash)
         print "reduced hash",rh
         return [dataanalysis.DataHandle('processing_definition:'+rh[:8])]
 
@@ -1918,9 +1919,9 @@ class BasicEventProcessingSummary(DataAnalysis):
         mf=ISGRIEvents(assume=ScWData(input_scwid="any",use_abstract=True)) # arbitrary choice of scw, should be the same: assumption of course
         ahash=mf.process(output_required=False,run_if_haveto=False)[0]
        # print "one scw hash:",ahash
-        #ahash=dataanalysis.hashe_replace_object(ahash,'AnyScW','None')
+        #ahash=hashtools.hashe_replace_object(ahash,'AnyScW','None')
         print "generalized hash:",ahash
-        rh=dataanalysis.shhash(ahash)
+        rh=shhash(ahash)
         print "reduced hash",rh
         return [dataanalysis.DataHandle('processing_definition:'+rh[:8])]
 
@@ -1931,9 +1932,9 @@ class ImageProcessingSummary(DataAnalysis):
         mf=ii_skyimage(assume=ScWData(input_scwid="any",use_abstract=True)) # arbitrary choice of scw, should be the same: assumption of course
         ahash=mf.process(output_required=False,run_if_haveto=False)[0]
         print "one scw hash:",ahash
-        ahash=dataanalysis.hashe_replace_object(ahash,'AnyScW','None')
+        ahash=hashtools.hashe_replace_object(ahash,'AnyScW','None')
         print "generalized hash:",ahash
-        rh=dataanalysis.shhash(ahash)
+        rh=shhash(ahash)
         print "reduced hash",rh
         d=dataanalysis.DataHandle('processing_definition:'+rh[:8])
         dataanalysis.AnalysisFactory.register_definition(d.handle,ahash)
@@ -1949,9 +1950,9 @@ class SpectraProcessingSummary(DataAnalysis):
         ahash=mf.process(output_required=False,run_if_haveto=False)[0]
         #print "one scw hash:",ahash
         #ahash=dataanalysis.hashe_replacI#e_object(ahash,'AnyScW','None')
-        #ahash=dataanalysis.hashe_replace_object(ahash,'AnyRevID','None')
+        #ahash=hashtools.hashe_replace_object(ahash,'AnyRevID','None')
         print "generalized hash:",ahash
-        rh=dataanalysis.shhash(ahash)
+        rh=shhash(ahash)
         print "reduced hash",rh
         return [dataanalysis.DataHandle('processing_definition:'+rh[:8])]
 
