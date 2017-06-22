@@ -769,8 +769,8 @@ class gti_user(DataAnalysis):
 
 # maybe split indeed,but try to show another case
 class ibis_gti(DataAnalysis):
-    input_scw=ScWData()
-    input_ic=ICRoot()
+    input_scw=ScWData
+    input_ic=ICRoot
     #input_gticreate=gti_create()
 
     cached=True
@@ -783,7 +783,7 @@ class ibis_gti(DataAnalysis):
 
         if os.path.exists("obs"):
             os.rename("obs","obs."+str(time.time()))
-        
+
         bin="og_create"
         ogc=heatool(bin)
         ogc['idxSwg']="scw.list"
@@ -791,7 +791,7 @@ class ibis_gti(DataAnalysis):
         ogc['ogid']="scw_"+self.input_scw.scwid
         ogc['baseDir']=os.getcwd().replace("[","_").replace("]","_") # dangerous
         ogc.run()
-        
+
         scwroot="scw/"+self.input_scw.scwid
 
         bin="ibis_gti"
@@ -815,7 +815,6 @@ class ibis_gti(DataAnalysis):
                 path="../../"+path
             ht['GTI_gtiUserI']=path
             ht['GTI_TimeFormat']='UTC'
-
 
         ht.run()
 
