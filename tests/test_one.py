@@ -8,17 +8,18 @@ import dataanalysis.core as da
 
 
 def test_scw():
-    da.debug_output()
+    #da.debug_output()
 
     
     fa=ddosa.ScWData(input_scwid="066500230010.001")
 
     fa.get()
+
     print fa.scwpath
 
 
 def test_gti():
-    da.debug_output()
+#    da.debug_output()
 
     return # disabled cache
 
@@ -53,7 +54,7 @@ def test_gti_cached():
 
 
 def test_image():
-    da.debug_output()
+    #da.debug_output()
 
     
     fa=ddosa.ii_skyimage(assume=[
@@ -72,10 +73,11 @@ def test_spectra():
 
     fa = ddosa.ii_spectra_extract(assume=[
         ddosa.ScWData(input_scwid="066500230010.001"),
-        ddosa.SpectraBins(use_rmfpath="/data/resources/rmf_62bands.fits")
+        ddosa.SpectraBins(use_rmfpath="/data/resources/rmf_62bands.fits"),
     ])
     fa.read_caches = []
 
     fa.get()
 
     assert os.path.exists(fa.spectrum.get_path())
+
