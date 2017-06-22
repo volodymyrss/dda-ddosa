@@ -1,4 +1,5 @@
 import glob
+import os
 
 import astropy.io.fits as fits
 
@@ -51,7 +52,7 @@ def test_gti_cached():
     fb.get()
 
 
-def test_one():
+def test_image():
     da.debug_output()
 
     
@@ -65,3 +66,16 @@ def test_one():
 
     print fa.skyima
 
+
+def test_spectra():
+    da.debug_output()
+
+    fa = ddosa.ii_spectra_extract(assume=[
+        ddosa.ScWData(input_scwid="066500230010.001"),
+        ddosa.SpectraBins(use_rmfpath="/data/resources/rmf_62bands.fits")
+    ])
+    fa.read_caches = []
+
+    fa.get()
+
+    assert os.path.exists(fa.spectrum.get_path())
