@@ -46,6 +46,11 @@ from astropy import wcs as pywcs
 import subprocess,os
 import ast
 
+if hasattr(da,'DataAnalysisPrototype'):
+    DataAnalysisPrototype=da.DataAnalysisPrototype
+else:
+    DataAnalysisPrototype = da.DataAnalysis
+
 def remove_repeating(inlist):
     if inlist==[]:
         return inlist
@@ -404,7 +409,7 @@ def get_OSA_tools(names=None):
                 for name in names ]
         
 
-    class OSA_tools(da.DataAnalysis):
+    class OSA_tools(DataAnalysisPrototype):
         osa_tools=names[:]
         
         def get_version(self):
@@ -417,7 +422,7 @@ def get_OSA_tools(names=None):
 
     return OSA_tools
 
-class DataAnalysis(da.DataAnalysis):
+class DataAnalysis(DataAnalysisPrototype):
     cache=mc
 
     write_caches=[cache_core.TransientCache,MemCacheIntegralFallback]
@@ -1574,7 +1579,7 @@ class CatForSpectraFromImaging(DataAnalysis):
 
         self.cat=DataFile(catfn)
 
-#class CatForSpectra(da.DataAnalysis):
+#class CatForSpectra(DataAnalysisPrototype):
 #    pass
 
 class ISGRIResponse(DataAnalysis):
