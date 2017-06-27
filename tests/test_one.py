@@ -54,7 +54,8 @@ def test_gti_cached():
 
 
 def test_image():
-    #da.debug_output()
+    #
+    # da.debug_output()
 
     
     fa=ddosa.ii_skyimage(assume=[
