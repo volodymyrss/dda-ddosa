@@ -69,8 +69,32 @@ def test_image():
     print fa.skyima
 
 
+def test_image_cached():
+    fa = ddosa.ii_skyimage(assume=[
+        ddosa.ScWData(input_scwid="066500230010.001"),
+    ])
+
+    fa.get()
+
+    # now get cached
+
+
+    fb = ddosa.ii_skyimage(assume=[
+        ddosa.ScWData(input_scwid="066500230010.001"),
+    ])
+
+    fb.produce_disabled = True
+
+    import time
+    t0 = time.time()
+
+    fb.get()
+
+    assert time.time()-t0<3
+
+
 def test_spectra():
-    da.debug_output()
+    #da.debug_output()
 
     fa = ddosa.ii_spectra_extract(assume=[
         ddosa.ScWData(input_scwid="066500230010.001"),
