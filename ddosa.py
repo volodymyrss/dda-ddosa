@@ -1052,6 +1052,15 @@ class BinEventsSpectra(BinEventsVirtual):
     target_level="BIN_S"
     input_bins=SpectraBins
 
+class LCEnergyBins(ImageBins):
+    pass
+
+class BinEventsLC(BinEventsVirtual):
+    target_level="BIN_L"
+    input_timebin=LCBinning
+    input_bins = LCEnergyBins
+
+
 class BinMapsVirtual(DataAnalysis):
     input_bins=ImageBins
     input_ic=IBIS_ICRoot
@@ -1118,7 +1127,9 @@ class BinMapsSpectra(BinMapsVirtual):
     target_level="BIN_S"
     input_bins=SpectraBins
 
-
+class BinMapsLC(BinMapsVirtual):
+    target_level="BIN_L"
+    input_bins=SpectraBins
 
 class GRcat(DataAnalysis):
     input="gnrl_ref_cat_40"
@@ -1297,6 +1308,11 @@ class ShadowUBCSpectra(ShadowUBCVirtual):
     input_maps=BinMapsSpectra
     #input_brpif=BrightPIFSpectra
 
+class ShadowUBCLC(ShadowUBCVirtual):
+    level="BIN_L"
+    input_shadows=BinEventsLC
+    input_maps=BinMapsLC
+    #input_brpif=BrightPIFSpectra
 
 class GBcat(DataAnalysis):
     input=GRcat
@@ -1362,6 +1378,10 @@ class ghost_bustersImage(ghost_bustersVirtual):
 class ghost_bustersSpectra(ghost_bustersVirtual):
     input_shadow=ShadowUBCSpectra
     level="BIN_S"
+
+class ghost_bustersLC(ghost_bustersVirtual):
+    input_shadow=ShadowUBCLC
+    level="BIN_L"
 
 class ISGRIRefCat(DataAnalysis):
     input=GRcat
@@ -1696,6 +1716,117 @@ class ii_spectra_extract(DataAnalysis):
 
         self.spectrum=DataFile(spec_fn)
         self.pifs=DataFile(pif_fn)
+
+class CatForLC(CatForSpectraFromImaging):
+    pass
+
+
+class ii_lc_extract(DataAnalysis):
+    input_gb = ghost_bustersLC
+    input_cat = CatForLC
+    input_ic = IBIS_ICRoot
+    input_scw = ScWData
+    input_maps = BinMapsLC
+
+    input_gti = ibis_gti
+
+    cached = True
+
+    version = "v1"
+
+    # input_bins=SpectraBins
+    # input_cat=CatExtract
+    # input_imgconfig=ImagingConfig
+
+    shdtype = "BIN_L"
+    binary = "ii_lc_extract"
+
+    usebkg = True
+
+    report_runtime_destination = "mysql://pixels.runtime"
+
+    def main(self):
+        if hasattr(self.input_cat, 'empty_results'):
+            print "empty here"
+            self.empty_results = True
+            return
+
+        att = self.input_scw.auxadppath + "/attitude_historic.fits"
+        if os.path.exists(att):
+            att = self.input_scw.auxadppath + "/attitude_historic.fits[AUXL-ATTI-HIS,1,BINTABLE]"
+            attp = att
+        else:
+            att = self.input_scw.auxadppath + "/attitude_snapshot.fits[AUXL-ATTI-SNA,1,BINTABLE]"
+            attp_fn = glob.glob(self.input_scw.auxadppath + "/attitude_predicted_*.fits*")[0]
+            attp = attp_fn + "[AUXL-ATTI-PRE,1,BINTABLE]"
+
+        construct_gnrl_scwg_grp(self.input_scw, [ \
+            self.input_gb.corshad.path,
+            self.input_scw.auxadppath + "/time_correlation.fits[AUXL-TCOR-HIS]",
+            att,
+            attp,
+            self.input_gti.output_gti.path
+        ])
+        # self.input_cat.cat.path,
+
+        import_attr(self.input_scw.scwpath + "/swg.fits",
+                    ["OBTSTART", "OBTEND", "TSTART", "TSTOP", "SW_TYPE", "TELAPSE", "SWID"])
+        set_attr({'ISDCLEVL': "BIN_L"})
+        # set_attr({'INSTRUME':"IBIS"},"og.fits")
+
+        # construct_gnrl_scwg_grp_idx(self.input_scw,[\
+        #            "og.fits",
+        #        ])
+        # set_attr({'ISDCLEVL':"BIN_I"},"og_idx.fits")
+
+        #  construct_og(self.input_scw,[\
+        #              "og_idx.fits",
+        #          ])
+        #  set_attr({'ISDCLEVL':"BIN_I"},"ogg.fits")
+
+        # remove_withtemplate("isgri_srcl_res.fits(ISGR-SRCL-RES.tpl)")
+
+        pif_fn, pif_tpl = "isgri_pif.fits", "(ISGR-PIF.-SHD-IDX.tpl)"
+        spec_fn, spec_tpl = "isgri_spectrum.fits", "(ISGR-EVTS-SPE-IDX.tpl)"
+
+        remove_withtemplate(pif_fn + pif_tpl)
+        remove_withtemplate(spec_fn + spec_tpl)
+
+        ht = heatool(self.binary)
+        ht['outSwg'] = "og.fits"
+        ht['inCat'] = self.input_cat.cat.get_path()
+        ht['outPif'] = pif_fn + pif_tpl
+        ht['outSpec'] = spec_fn + spec_tpl
+        ht['mask'] = self.input_ic.ibisicroot + "/mod/isgr_mask_mod_0003.fits[ISGR-MASK-MOD,1,IMAGE]"
+        ht['tungAtt'] = self.input_ic.ibisicroot + "/mod/isgr_attn_mod_0010.fits[ISGR-ATTN-MOD,1,BINTABLE]"
+        ht['aluAtt'] = self.input_ic.ibisicroot + "/mod/isgr_attn_mod_0011.fits[ISGR-ATTN-MOD,1,BINTABLE]"
+        ht['leadAtt'] = self.input_ic.ibisicroot + "/mod/isgr_attn_mod_0012.fits[ISGR-ATTN-MOD,1,BINTABLE]"
+        ht['idx_isgrResp'] = self.input_response.path
+        ht['isgrUnifDol'] = self.input_maps.unif.path
+        if self.usebkg:
+            ht['isgrBkgDol'] = self.input_maps.back.path
+        else:
+            ht['isgrBkgDol'] = "-"
+        ht['corrDol'] = self.input_maps.corr.path
+        ht['OutType'] = self.shdtype
+        ht['method_cor'] = 1
+
+        if hasattr(self, 'input_bins') and not self.input_bins.rmfbins:
+            ebins = self.input_bins.bins
+            ht['num_band'] = len(ebins)
+            ht['E_band_min'], ht['E_band_max'] = [" ".join(["%.5lg" % b for b in a]) for a in zip(*ebins)]
+        else:
+            rmf = self.input_bins.get_binrmfext() if hasattr(self, 'input_bins') else self.input_response.path
+            ht['num_band'] = -1
+            ht['idx_isgrResp'] = rmf  # +"[1]" will this work?
+
+        # for k in ['SearchMode','ToSearch','CleanMode','MinCatSouSnr','MinNewSouSnr','NegModels','DoPart2']: # dopart2 is flow control, separately
+        #    ht[k]=getattr(self.input_imgconfig,k)
+
+        ht.run()
+
+        self.spectrum = DataFile(spec_fn)
+        self.pifs = DataFile(pif_fn)
 
 
 class root(DataAnalysis):
