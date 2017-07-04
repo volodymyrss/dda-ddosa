@@ -17,4 +17,4 @@ def test_lightcurves():
 
     fa.get()
 
-    #assert os.path.exists(fa.spectrum.get_path())
+    assert os.path.exists(fa.lightcurve.get_path())
