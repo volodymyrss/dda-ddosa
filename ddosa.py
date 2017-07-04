@@ -149,7 +149,7 @@ class MemCacheIntegralBaseOldPath:
 
 
     def construct_cached_file_path(self,hashe,obj=None):                                                                                                                        
-        #print "will construct INTEGRAL cached file path for",hashe
+        #print("will construct INTEGRAL cached file path for",hashe)
 
         scw=self.get_scw(hashe)
         rev=self.get_rev(hashe)
@@ -169,8 +169,8 @@ class MemCacheIntegralBaseOldPath:
             print("any scw:",scw,hashe)
             scw=None
 
-        print "scw:",scw
-        print "rev:",rev
+        print("scw:",scw)
+        print("rev:",rev)
 
 
         if scw is None:
@@ -188,7 +188,7 @@ class MemCacheIntegralBaseOldPath:
 
         #if dataanalysis.printhook.global_log_enabled: print("cached path:",r)
 
-        print self,"cached path:",r
+        print(self,"cached path:",r)
                                                                                                                                                                        
         return r # choose to avoid overlapp    
 
@@ -276,7 +276,7 @@ class MemCacheIntegralBase:
 
 
     def construct_cached_file_path(self,hashe,obj=None):                                                                                                                        
-        #print "will construct INTEGRAL cached file path for",hashe
+        #print("will construct INTEGRAL cached file path for",hashe)
 
         scw=self.get_scw(hashe)
         rev=self.get_rev(hashe)
@@ -304,7 +304,7 @@ class MemCacheIntegralBase:
                 r=self.filecacheroot+"/global/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/"
             else:
                 hashe=hashtools.hashe_replace_object(hashe,rev,"any")
-                #print "reduced hashe",hashe
+                #print("reduced hashe",hashe)
                 if dataanalysis.printhook.global_log_enabled: print("cached rev:",rev)
                 r=self.filecacheroot+"/byrev/"+rev+"/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/" # choose to avoid overlapp    
         else:
@@ -320,7 +320,7 @@ class MemCacheIntegralBase:
 
         #if dataanalysis.printhook.global_log_enabled: print("cached path:",r)
 
-        print self,"cached path:",r
+        print(self,"cached path:",r)
                                                                                                                                                                        
         return r # choose to avoid overlapp    
 
@@ -380,7 +380,7 @@ for IntegralCacheRoot in IntegralCacheRoots.split(":"):
 
 mc=CacheStack[0]
 
-print "cache stack:",CacheStack
+print("cache stack:",CacheStack)
 
 class OSA_tool_kit_class(object):
     tool_versions=None
@@ -472,11 +472,11 @@ class ScWData(DataAnalysis):
         self.revid=self.scwid[:4]
         
         try:
-            print "searching in "+os.environ['REP_BASE_PROD']
+            print("searching in "+os.environ['REP_BASE_PROD'])
             self.assume_rbp(os.environ['REP_BASE_PROD'])
         except da.AnalysisException:
             if self.scwver=="000":
-                print "searching in "+os.environ['REP_BASE_PROD']+"/nrt"
+                print("searching in "+os.environ['REP_BASE_PROD']+"/nrt")
                 self.assume_rbp(os.environ['REP_BASE_PROD']+"/nrt")
             else:
                 raise
@@ -488,14 +488,14 @@ class ScWData(DataAnalysis):
 
         if not os.path.exists(self.scwpath+"/swg.fits"):
             if not os.path.exists(self.scwpath+"/swg.fits.gz"):
-                print "failed searching for",self.scwpath+"/swg.fits"
+                print("failed searching for",self.scwpath+"/swg.fits")
                 raise NoScWData("no scw data for: "+repr(self.scwid))
                 #raise Exception("no scw data!")
             else:
                 self.swgpath=self.scwpath+"/swg.fits.gz"
         else:
             self.swgpath=self.scwpath+"/swg.fits"
-        print "swgpath:",self.swgpath
+        print("swgpath:",self.swgpath)
 
     def get_isgri_events(self):
         if hasattr(self,'isgrievents'):
@@ -551,7 +551,7 @@ class RevForScW(DataAnalysis):
 
     def main(self):
         revid=self.input_scw.input_scwid.handle[:4]
-        print "revolution id for scw:",revid
+        print("revolution id for scw:",revid)
         return Revolution(input_revid=revid)
 
 class Rev4ScW(Revolution):
@@ -563,7 +563,7 @@ class Rev4ScW(Revolution):
 
     def get_revid(self):
         revid=self.input_scw.input_scwid.handle[:4]
-        print "revolution id for scw:",revid
+        print("revolution id for scw:",revid)
         return revid
 
 class ICRoot(DataAnalysis):
@@ -623,7 +623,7 @@ class GetEcorrCalDB(DataAnalysis):
             ver=re.match(self.input_ibisic.ibisicroot+"/mod/isgr_gain_mod_(.*?).fits",gmfile).group(1)
             vstart=pyfits.open(gmfile)[1].header['VSTART']
         
-            print vstart,ver
+            print(vstart,ver)
             if vstart>newest_vstart and t>vstart:
                 newest_vstart=vstart
                 newest_ver=ver
@@ -814,9 +814,9 @@ class ibis_gti(DataAnalysis):
         if hasattr(self,'input_usergti'):
             path=self.input_usergti.gti.get_path()
             if os.path.abspath(path)==os.path.normpath(path):
-                print "full path",path
+                print("full path",path)
             else:
-                print "not a full path",path
+                print("not a full path",path)
                 path="../../"+path
             ht['GTI_gtiUserI']=path
             ht['GTI_TimeFormat']='UTC'
@@ -827,7 +827,7 @@ class ibis_gti(DataAnalysis):
         self.output_gti=DataFile("ibis_gti.fits")
 
         gti=pyfits.open("ibis_gti.fits")[-1].data
-        print gti
+        print(gti)
         
 
 # maybe split indeed,but try to show another way
@@ -997,10 +997,10 @@ class BinEventsVirtual(DataAnalysis):
         ht['gti_name'] = 'MERGED_ISGRI'
         ht['outputLevel'] = self.target_level
 
-        print "target_level",self.target_level
+        print("target_level",self.target_level)
 
-        print "has rmfbins "+str(self.input_bins.rmfbins) if hasattr(self.input_bins,'rmfbins') else "no rmfbins"
-        print "has binrmfext" if hasattr(self.input_bins,'binrmfext') else "no binrmfext"
+        print("has rmfbins "+str(self.input_bins.rmfbins) if hasattr(self.input_bins,'rmfbins') else "no rmfbins")
+        print("has binrmfext" if hasattr(self.input_bins,'binrmfext') else "no binrmfext")
 
         if ( self.target_level=="BIN_I" or not hasattr(self.input_bins,'rmfbins') or not self.input_bins.rmfbins or not hasattr(self.input_bins,'binrmfext') ) and not ( hasattr(self.input_bins,'rmfbins') and self.input_bins.rmfbins ): # fix!!
             ht['isgri_e_num'] = len(self.input_bins.bins)
@@ -1019,7 +1019,7 @@ class BinEventsVirtual(DataAnalysis):
 
         ht['isgri_min_rise'] = self.minrisetime
         ht['isgri_max_rise'] = self.maxrisetime
-        ht['isgri_t_len'] = 10000000
+        ht['isgri_t_len'] = 10000000 if not hasattr(self,'input_timebin') else self.input_timebin.time_bin_seconds
         ht['idxLowThre']=self.input_scw.revdirpath+"/idx/isgri_context_index.fits[1]"
         ht['idxNoisy']=self.input_scw.revdirpath+"/idx/isgri_prp_noise_index.fits[1]"
         ht['outRawShadow']=det_fn+det_tpl
@@ -1055,9 +1055,17 @@ class BinEventsSpectra(BinEventsVirtual):
 class LCEnergyBins(ImageBins):
     pass
 
+class LCTimeBin(DataAnalysis):
+    time_bin_seconds=100
+
+    def get_version(self):
+        return self.get_signature()+"."+self.version+".t%.5lg"%self.time_bin_seconds
+
+
+
 class BinEventsLC(BinEventsVirtual):
-    target_level="BIN_L"
-    input_timebin=LCBinning
+    target_level="BIN_T"
+    input_timebin=LCTimeBin
     input_bins = LCEnergyBins
 
 
@@ -1089,15 +1097,16 @@ class BinMapsVirtual(DataAnalysis):
 
         if hasattr(self,'input_unif'):
             maps['unif']=('Uni',self.input_unif.unif.get_path()+"[1]")
-            print "will use uniformity:",maps['unif']
+            print("will use uniformity:",maps['unif'])
         
         if hasattr(self,'input_bkg'):
             maps['back']=('Bkg',self.input_bkg.bkg.get_path()+"[1]")
-            print "will use background:",maps['back']
+            print("will use background:",maps['back'])
 
         level2key={
                 'BIN_I':'ima',
-                'BIN_S':'spe'
+                'BIN_S':'spe',
+                'BIN_T':'lcr',
                 }
         
         lk=level2key[self.target_level]
@@ -1128,8 +1137,8 @@ class BinMapsSpectra(BinMapsVirtual):
     input_bins=SpectraBins
 
 class BinMapsLC(BinMapsVirtual):
-    target_level="BIN_L"
-    input_bins=SpectraBins
+    target_level="BIN_T"
+    input_bins=LCEnergyBins
 
 class GRcat(DataAnalysis):
     input="gnrl_ref_cat_40"
@@ -1309,7 +1318,7 @@ class ShadowUBCSpectra(ShadowUBCVirtual):
     #input_brpif=BrightPIFSpectra
 
 class ShadowUBCLC(ShadowUBCVirtual):
-    level="BIN_L"
+    level="BIN_T"
     input_shadows=BinEventsLC
     input_maps=BinMapsLC
     #input_brpif=BrightPIFSpectra
@@ -1381,7 +1390,7 @@ class ghost_bustersSpectra(ghost_bustersVirtual):
 
 class ghost_bustersLC(ghost_bustersVirtual):
     input_shadow=ShadowUBCLC
-    level="BIN_L"
+    level="BIN_T"
 
 class ISGRIRefCat(DataAnalysis):
     input=GRcat
@@ -1542,7 +1551,7 @@ class ii_skyimage(DataAnalysis):
 
 
         if not os.path.exists("isgri_sky_ima.fits"):
-            print "no image produced: since there was no exception in the binary, assuming empty results"
+            print("no image produced: since there was no exception in the binary, assuming empty results")
             self.empty_results=True
             return
 
@@ -1559,7 +1568,7 @@ class ii_skyimage(DataAnalysis):
                 if self.save_image:
                     shutil.copyfile("isgri_sky_ima.fits","isgri_sky_ima_%s.fits"%tag)
             except:
-                print "something went wrong"
+                print("something went wrong")
     
         self.post_process()
 
@@ -1578,7 +1587,7 @@ class CatForSpectraFromImaging(DataAnalysis):
 
     def main(self):
         if hasattr(self.input_imaging,'empty_results'):
-            print "no results here"
+            print("no results here")
             self.empty_results=True
             return
 
@@ -1586,11 +1595,11 @@ class CatForSpectraFromImaging(DataAnalysis):
 
         f=pyfits.open(self.input_imaging.srclres.path)
 
-        print "image catalog contains",len(f[1].data)
+        print("image catalog contains",len(f[1].data))
 
         if self.minsig is not None:
             f[1].data=f[1].data[f[1].data['DETSIG']>self.minsig]
-            print "selecting by significance",len(f[1].data)
+            print("selecting by significance",len(f[1].data))
         
         if self.maxsources is not None:
             raise Exception("not implemented")
@@ -1635,7 +1644,7 @@ class ii_spectra_extract(DataAnalysis):
 
     def main(self):
         if hasattr(self.input_cat,'empty_results'):
-            print "empty here"
+            print("empty here")
             self.empty_results=True
             return
 
@@ -1734,20 +1743,20 @@ class ii_lc_extract(DataAnalysis):
 
     version = "v1"
 
-    # input_bins=SpectraBins
+ #   input_bins=LCEnergyBins
     # input_cat=CatExtract
     # input_imgconfig=ImagingConfig
 
-    shdtype = "BIN_L"
+    shdtype = "BIN_T"
     binary = "ii_lc_extract"
 
     usebkg = True
 
-    report_runtime_destination = "mysql://pixels.runtime"
+    #report_runtime_destination = "mysql://pixels.runtime"
 
     def main(self):
         if hasattr(self.input_cat, 'empty_results'):
-            print "empty here"
+            print("empty here")
             self.empty_results = True
             return
 
@@ -1771,7 +1780,7 @@ class ii_lc_extract(DataAnalysis):
 
         import_attr(self.input_scw.scwpath + "/swg.fits",
                     ["OBTSTART", "OBTEND", "TSTART", "TSTOP", "SW_TYPE", "TELAPSE", "SWID"])
-        set_attr({'ISDCLEVL': "BIN_L"})
+        set_attr({'ISDCLEVL': self.shdtype})
         # set_attr({'INSTRUME':"IBIS"},"og.fits")
 
         # construct_gnrl_scwg_grp_idx(self.input_scw,[\
@@ -1786,22 +1795,19 @@ class ii_lc_extract(DataAnalysis):
 
         # remove_withtemplate("isgri_srcl_res.fits(ISGR-SRCL-RES.tpl)")
 
-        pif_fn, pif_tpl = "isgri_pif.fits", "(ISGR-PIF.-SHD-IDX.tpl)"
-        spec_fn, spec_tpl = "isgri_spectrum.fits", "(ISGR-EVTS-SPE-IDX.tpl)"
+        #pif_fn, pif_tpl = "isgri_pif.fits", "(ISGR-PIF.-SHD-IDX.tpl)"
+        lc_fn, lc_tpl = "isgri_lcr.fits", "(ISGR-SRC.-LCR-IDX.tpl)"
 
-        remove_withtemplate(pif_fn + pif_tpl)
-        remove_withtemplate(spec_fn + spec_tpl)
+        remove_withtemplate(lc_fn + lc_tpl)
 
         ht = heatool(self.binary)
         ht['outSwg'] = "og.fits"
         ht['inCat'] = self.input_cat.cat.get_path()
-        ht['outPif'] = pif_fn + pif_tpl
-        ht['outSpec'] = spec_fn + spec_tpl
+        ht['outLC'] = lc_fn + lc_tpl
         ht['mask'] = self.input_ic.ibisicroot + "/mod/isgr_mask_mod_0003.fits[ISGR-MASK-MOD,1,IMAGE]"
         ht['tungAtt'] = self.input_ic.ibisicroot + "/mod/isgr_attn_mod_0010.fits[ISGR-ATTN-MOD,1,BINTABLE]"
         ht['aluAtt'] = self.input_ic.ibisicroot + "/mod/isgr_attn_mod_0011.fits[ISGR-ATTN-MOD,1,BINTABLE]"
         ht['leadAtt'] = self.input_ic.ibisicroot + "/mod/isgr_attn_mod_0012.fits[ISGR-ATTN-MOD,1,BINTABLE]"
-        ht['idx_isgrResp'] = self.input_response.path
         ht['isgrUnifDol'] = self.input_maps.unif.path
         if self.usebkg:
             ht['isgrBkgDol'] = self.input_maps.back.path
@@ -1811,22 +1817,13 @@ class ii_lc_extract(DataAnalysis):
         ht['OutType'] = self.shdtype
         ht['method_cor'] = 1
 
-        if hasattr(self, 'input_bins') and not self.input_bins.rmfbins:
-            ebins = self.input_bins.bins
-            ht['num_band'] = len(ebins)
-            ht['E_band_min'], ht['E_band_max'] = [" ".join(["%.5lg" % b for b in a]) for a in zip(*ebins)]
-        else:
-            rmf = self.input_bins.get_binrmfext() if hasattr(self, 'input_bins') else self.input_response.path
-            ht['num_band'] = -1
-            ht['idx_isgrResp'] = rmf  # +"[1]" will this work?
-
         # for k in ['SearchMode','ToSearch','CleanMode','MinCatSouSnr','MinNewSouSnr','NegModels','DoPart2']: # dopart2 is flow control, separately
         #    ht[k]=getattr(self.input_imgconfig,k)
 
         ht.run()
 
-        self.spectrum = DataFile(spec_fn)
-        self.pifs = DataFile(pif_fn)
+        self.lightcurve = DataFile(lc_fn)
+
 
 
 class root(DataAnalysis):
@@ -2018,7 +2015,7 @@ def construct_empty_shadidx(bins,fn="og.fits",levl="BIN_I"):
     ht.run()
 
     for e1,e2 in bins:
-        print "appending",e1,e2
+        print("appending",e1,e2)
         dc=heatool('dal_append')
         dc['grpDOL']=fn
         dc['element']='ISGR-DETE-SHD.tpl'
@@ -2046,11 +2043,11 @@ class BinnedDataProcessingSummary(DataAnalysis):
     def main(self):
         mf=BinEventsImage(assume=ScWData(input_scwid="any",use_abstract=True)) # arbitrary choice of scw, should be the same: assumption of course
         ahash=mf.process(output_required=False,run_if_haveto=False)[0]
-       # print "one scw hash:",ahash
+       # print("one scw hash:",ahash)
         #ahash=hashtools.hashe_replace_object(ahash,'AnyScW','None')
-        print "generalized hash:",ahash
+        print("generalized hash:",ahash)
         rh=shhash(ahash)
-        print "reduced hash",rh
+        print("reduced hash",rh)
         return [dataanalysis.DataHandle('processing_definition:'+rh[:8])]
 
 class BasicEventProcessingSummary(DataAnalysis):
@@ -2059,11 +2056,11 @@ class BasicEventProcessingSummary(DataAnalysis):
     def main(self):
         mf=ISGRIEvents(assume=ScWData(input_scwid="any",use_abstract=True)) # arbitrary choice of scw, should be the same: assumption of course
         ahash=mf.process(output_required=False,run_if_haveto=False)[0]
-       # print "one scw hash:",ahash
+       # print("one scw hash:",ahash)
         #ahash=hashtools.hashe_replace_object(ahash,'AnyScW','None')
-        print "generalized hash:",ahash
+        print("generalized hash:",ahash)
         rh=shhash(ahash)
-        print "reduced hash",rh
+        print("reduced hash",rh)
         return [dataanalysis.DataHandle('processing_definition:'+rh[:8])]
 
 class ImageProcessingSummary(DataAnalysis):
@@ -2072,11 +2069,11 @@ class ImageProcessingSummary(DataAnalysis):
     def main(self):
         mf=ii_skyimage(assume=ScWData(input_scwid="any",use_abstract=True)) # arbitrary choice of scw, should be the same: assumption of course
         ahash=mf.process(output_required=False,run_if_haveto=False)[0]
-        print "one scw hash:",ahash
+        print("one scw hash:",ahash)
         ahash=hashtools.hashe_replace_object(ahash,'AnyScW','None')
-        print "generalized hash:",ahash
+        print("generalized hash:",ahash)
         rh=shhash(ahash)
-        print "reduced hash",rh
+        print("reduced hash",rh)
         d=dataanalysis.DataHandle('processing_definition:'+rh[:8])
         dataanalysis.AnalysisFactory.register_definition(d.handle,ahash)
         d.hash=ahash
@@ -2089,12 +2086,12 @@ class SpectraProcessingSummary(DataAnalysis):
         mf=ii_spectra_extract(assume=[ScWData(input_scwid="any",use_abstract=True),Revolution(input_revid="any",use_abstract=True)]) # arbitrary choice of scw, should be the same: assumption of course
         #mf=ii_spectra_extract(assume=[ScWData(input_scwid=AnyScW),Revolution(input_revid=AnyRevID)]) # arbitrary choice of scw, should be the same: assumption of course
         ahash=mf.process(output_required=False,run_if_haveto=False)[0]
-        #print "one scw hash:",ahash
+        #print("one scw hash:",ahash)
         #ahash=dataanalysis.hashe_replacI#e_object(ahash,'AnyScW','None')
         #ahash=hashtools.hashe_replace_object(ahash,'AnyRevID','None')
-        print "generalized hash:",ahash
+        print("generalized hash:",ahash)
         rh=shhash(ahash)
-        print "reduced hash",rh
+        print("reduced hash",rh)
         return [dataanalysis.DataHandle('processing_definition:'+rh[:8])]
 
 class IDScWList(DataAnalysis):
@@ -2116,18 +2113,18 @@ class RevScWList(DataAnalysis):
 
         event_files=[]
         for event_file in glob.glob(self.input_rev.revroot+"/*/isgri_events.fits*"):
-            print event_file
+            print(event_file)
             try:
                 evts=pyfits.open(event_file)[3]
-                print evts
+                print(evts)
                 if evts.data.shape[0]<10000:
                     raise Exception("very few events!")
                 event_files.append(event_file)
             except Exception as e:
-                print e
+                print(e)
 
-        print "event files in",self.input_rev.revroot
-        print "found event files",event_files
+        print("event files in",self.input_rev.revroot)
+        print("found event files",event_files)
 
         scwids=sorted([fn.split("/")[-2] for fn in event_files])
 
@@ -2193,15 +2190,15 @@ class PickFewScWList(DataAnalysis):
 
     def main(self):
         thelist=sorted(self.input_list.scwlistdata,key=lambda x:x.input_scwid.handle)
-        print "available list",len(thelist),thelist
-        print "first scw:",self.firstscw
+        print("available list",len(thelist),thelist)
+        print("first scw:",self.firstscw)
         if self.firstscws:
             self.scwlistdata=thelist[self.firstscw:self.nscw+self.firstscw]
         else:
             self.scwlistdata=thelist[-self.nscw:]
         if self.step!=1:
             self.scwlistdata=self.scwlistdata[::self.step]
-        print "resulting list:",len(self.scwlistdata),self.scwlistdata
+        print("resulting list:",len(self.scwlistdata),self.scwlistdata)
 
 class FileScWList(DataAnalysis):
     input_fn=None
@@ -2228,10 +2225,10 @@ def fromUTC(utc):
     d={}                                                                                                                                                                                                       
     for l in r.split("\n"):                                                                                                                                                                                    
         t=re.search("Output Time\((.*?)\): (.*?)$",l,re.S)                                                                                                                                                     
-        #print l,t                                                                                                                                                                                             
+        #print(l,t                                                                                                                                                                                             )
         if t:                                                                                                                                                                                                  
             g=t.groups()                                                                                                                                                                                       
             d[g[0]]=g[1]                                                                                                                                                                                       
-            #print g                                                                                                                                                                                           
+            #print(g                                                                                                                                                                                           )
     return d    
 
