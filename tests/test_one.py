@@ -21,8 +21,6 @@ def test_scw():
 def test_gti():
 #    da.debug_output()
 
-    return # disabled cache
-
     fa=ddosa.ibis_gti(assume=[
                             ddosa.ScWData(input_scwid="066500230010.001"),
                         ])
