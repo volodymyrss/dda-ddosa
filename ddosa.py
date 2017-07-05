@@ -2102,7 +2102,8 @@ class IDScWList(DataAnalysis):
         v=self.get_signature()+"."+self.version
 
         if not isinstance(self.scwid_list,list):
-            raise Exception("scwid_list must be a list")
+            return v+repr(self.scwid_list)
+            #raise Exception("scwid_list must be a list")
 
         if len(self.scwid_list)==1:
             v+="_one_"+self.scwid_list[0]
@@ -2116,8 +2117,7 @@ class IDScWList(DataAnalysis):
         v += "_r" + revs[0] + "_" + revs[-1] + ("_n%i" % len(self.scwid_list)) + shhash("_".join(self.scwid_list))[:4]
         return v
 
-
-def main(self):
+    def main(self):
         self.scwlistdata=[ScWData(input_scwid=s.strip()) for s in self.scwid_list]
 
 
