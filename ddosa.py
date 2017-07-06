@@ -1574,7 +1574,155 @@ class ii_skyimage(DataAnalysis):
 
     def post_process(self):
         pass
-            
+
+class ImageGroups(DataAnalysis):
+    input_scwlist=None
+
+    allow_alias=True
+    run_for_hashe=True
+
+    def construct_og(self):
+        scw_og_fns = []
+
+        for scwgroup in self.members:
+            scw = scw.get()
+            image = image.process(output_required=True, restore_config=dict(datafile_restore_mode="url_in_object"))[1]
+
+            fn = "og_%s.fits" % scw.input_scwid.str()
+            ddosa.construct_gnrl_scwg_grp(scw, children=[image.skyima.get_path()], fn=fn)
+
+            scw_ogs.append(fn)
+
+        ddosa.construct_gnrl_scwg_grp_idx(scw_ogs)
+        # ddosa.set_attr({'ISDCLEVL': self.outtype}, "og_idx.fits")
+
+        ddosa.construct_og(["og_idx.fits"], fn="og.fits")
+
+    def main(self):
+        self.members=[
+            (
+                scw,
+                ii_skyimage(assume=[scw]),
+                ghost_bustersImage(assume=[scw]),
+                ibis_gti(assume=[scw]),
+            ) for scw in self.input_scwlist.scwlistdata
+        ]
+
+class mosaic_ii_skyimage(DataAnalysis):
+    input_maps = BinMapsImage
+    input_bins = ImageBins
+    input_cat = CatExtract
+    input_ic = IBIS_ICRoot
+    input_imgconfig = ImagingConfig
+
+    input_imagegroups=ImageGroups
+
+    #input_gb = ghost_bustersImage
+    #input_gti = ibis_gti
+
+    cached = True
+
+    ii_skyimage_binary = None
+
+    save_image = True
+
+    image_tag = None
+
+    version = "v2"
+
+    outtype = "BIN_I"
+
+    def get_version(self):
+        v = self.get_signature() + "." + self.version
+        for k in ['SouFit', 'SearchMode', 'ToSearch', 'CleanMode', 'MinCatSouSnr', 'MinNewSouSnr', 'NegModels']:
+            if hasattr(self, 'ii_' + k):
+                v += "_" + k + "_" + str(getattr(self, 'ii_' + k))
+        return v
+
+    def main(self):
+        construct_gnrl_scwg_grp(self.input_scw, [ \
+            self.input_gb.corshad.path,
+            self.input_cat.cat.path,
+            self.input_scw.auxadppath + "/time_correlation.fits[AUXL-TCOR-HIS]",
+            self.input_gti.output_gti.path,
+        ])
+
+        import_attr(self.input_scw.scwpath + "/swg.fits",
+                    ["OBTSTART", "OBTEND", "TSTART", "TSTOP", "SW_TYPE", "TELAPSE", "SWID", "SWBOUND"])
+        set_attr({'ISDCLEVL': self.outtype})
+        set_attr({'INSTRUME': "IBIS"}, "og.fits")
+
+        construct_gnrl_scwg_grp_idx([ \
+            "og.fits",
+        ])
+        set_attr({'ISDCLEVL': self.outtype}, "og_idx.fits")
+
+        construct_og([ \
+            "og_idx.fits",
+        ])
+        set_attr({'ISDCLEVL': self.outtype}, "ogg.fits")
+
+        remove_withtemplate("isgri_srcl_res.fits(ISGR-SRCL-RES.tpl)")
+        remove_withtemplate("isgri_mosa_ima.fits(ISGR-MOSA-IMA-IDX.tpl)")
+        remove_withtemplate("isgri_mosa_res.fits(ISGR-MOSA-RES-IDX.tpl)")
+        remove_withtemplate("isgri_sky_ima.fits")
+        remove_withtemplate("isgri_sky_res.fits")
+
+        if self.ii_skyimage_binary is None:
+            ii_skyimage_binary = "ii_skyimage"
+        else:
+            ii_skyimage_binary = self.ii_skyimage_binary
+
+        ht = heatool(ii_skyimage_binary)
+        ht['outOG'] = "ogg.fits[1]"
+        ht['outCat'] = "isgri_srcl_res.fits(ISGR-SRCL-RES.tpl)"
+        ht['mask'] = self.input_ic.ibisicroot + "/mod/isgr_mask_mod_0003.fits[ISGR-MASK-MOD,1,IMAGE]"
+        ht['deco'] = self.input_ic.ibisicroot + "/mod/isgr_deco_mod_0008.fits[ISGR-DECO-MOD,1,IMAGE]"
+        ht['tungAtt'] = self.input_ic.ibisicroot + "/mod/isgr_attn_mod_0010.fits[ISGR-ATTN-MOD,1,BINTABLE]"
+        ht['aluAtt'] = self.input_ic.ibisicroot + "/mod/isgr_attn_mod_0011.fits[ISGR-ATTN-MOD,1,BINTABLE]"
+        ht['leadAtt'] = self.input_ic.ibisicroot + "/mod/isgr_attn_mod_0012.fits[ISGR-ATTN-MOD,1,BINTABLE]"
+        ht['covrMod'] = self.input_ic.ibisicroot + "/mod/isgr_covr_mod_0002.fits[1]"
+        ht['outMosIma'] = "isgri_mosa_ima.fits(ISGR-MOSA-IMA-IDX.tpl)"
+        ht['outMosRes'] = "isgri_mosa_res.fits(ISGR-MOSA-RES-IDX.tpl)"
+        ht['ScwDir'] = './'
+        ht['ScwType'] = 'pointing'
+        ht['ExtenType'] = 2
+        ht['OutType'] = self.outtype
+        ht['num_band'] = len(self.input_bins.bins)
+        ht['E_band_min'] = " ".join([str(a[0]) for a in self.input_bins.bins])
+        ht['E_band_max'] = " ".join([str(a[1]) for a in self.input_bins.bins])
+        for k in ['SouFit', 'SearchMode', 'ToSearch', 'CleanMode', 'MinCatSouSnr', 'MinNewSouSnr', 'NegModels',
+                  'DoPart2']:  # dopart2 is flow control, separately
+            ht[k] = getattr(self.input_imgconfig, k)
+            if hasattr(self, 'ii_' + k): ht[k] = getattr(self, 'ii_' + k)
+        ht['corrDol'] = self.input_maps.corr.path
+        ht.run()
+
+        if not os.path.exists("isgri_sky_ima.fits"):
+            print("no image produced: since there was no exception in the binary, assuming empty results")
+            self.empty_results = True
+            return
+
+        self.srclres = DataFile("isgri_srcl_res.fits")
+
+        if self.save_image:
+            self.skyima = DataFile("isgri_sky_ima.fits")
+        self.skyres = DataFile("isgri_sky_res.fits")
+
+        if self.image_tag is not None:
+            try:
+                tag = str(self.image_tag)
+                shutil.copyfile("isgri_sky_res.fits", "isgri_sky_res_%s.fits" % tag)
+                if self.save_image:
+                    shutil.copyfile("isgri_sky_ima.fits", "isgri_sky_ima_%s.fits" % tag)
+            except:
+                print("something went wrong")
+
+        self.post_process()
+
+    def post_process(self):
+        pass
+
 
 class CatForSpectraFromImaging(DataAnalysis):
     input_imaging=ii_skyimage
@@ -1596,6 +1744,7 @@ class CatForSpectraFromImaging(DataAnalysis):
         f=pyfits.open(self.input_imaging.srclres.path)
 
         print("image catalog contains",len(f[1].data))
+        print("image catalog contains",f[1].data['DETSIG'].max())
 
         if self.minsig is not None:
             f[1].data=f[1].data[f[1].data['DETSIG']>self.minsig]
@@ -1910,6 +2059,17 @@ def construct_gnrl_scwg_grp_idx(children=[],fn="og_idx.fits"):
     dc['element']="swgs.txt"
     dc['index']=fn
     dc['template']="GNRL-SCWG-GRP-IDX.tpl"
+    dc.run()
+
+def construct_gnrl_arbitrary_grp_idx(children=[],structure="GNRL-SCWG-GRP",fn="og_idx.fits"):
+    remove_withtemplate(fn+"("+structure+"-IDX.tpl)")
+    #remove_withtemplate(fn + "(" + structure + "-IDX.tpl)")
+
+    open("swgs.txt","w").write("\n".join(children))
+    dc=heatool("txt2idx")
+    dc['element']="swgs.txt"
+    dc['index']=fn
+    dc['template']=structure+"-IDX.tpl"
     dc.run()
 
 def construct_og(children=[],fn="ogg.fits"):
