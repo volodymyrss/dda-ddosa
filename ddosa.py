@@ -1592,7 +1592,7 @@ class ImagingConfig(DataAnalysis):
     MinCatSouSnr=4
     MinNewSouSnr=5
     NegModels=1
-    DoPart2=0
+    DoPart2=1
     SouFit=0
 
 class ii_skyimage(DataAnalysis):
