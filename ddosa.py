@@ -1581,22 +1581,36 @@ class ImageGroups(DataAnalysis):
     allow_alias=True
     run_for_hashe=True
 
-    def construct_og(self):
+    outtype="BIN_I"
+
+    def construct_og(self,og_fn):
         scw_og_fns = []
 
-        for scwgroup in self.members:
-            scw = scw.get()
-            image = image.process(output_required=True, restore_config=dict(datafile_restore_mode="url_in_object"))[1]
-
+        for scw,image,gb,gti,cat in self.members:
             fn = "og_%s.fits" % scw.input_scwid.str()
-            ddosa.construct_gnrl_scwg_grp(scw, children=[image.skyima.get_path()], fn=fn)
+            construct_gnrl_scwg_grp(scw, children=
+                [
+                    image.skyima.get_path(),
+                    image.skyres.get_path(),
+                    gti.output_gti.get_path(),
+                    gb.corshad.get_path(),
+                    cat.cat.get_path(),
+                    scw.auxadppath + "/time_correlation.fits[AUXL-TCOR-HIS]",
+                ], fn=fn)
 
-            scw_ogs.append(fn)
+            import_attr(scw.scwpath + "/swg.fits",
+                        ["OBTSTART", "OBTEND", "TSTART", "TSTOP", "SW_TYPE", "TELAPSE", "SWID", "SWBOUND"],fn)
+            set_attr({'ISDCLEVL': self.outtype}, fn)
+            set_attr({'INSTRUME': "IBIS"}, fn)
 
-        ddosa.construct_gnrl_scwg_grp_idx(scw_ogs)
-        # ddosa.set_attr({'ISDCLEVL': self.outtype}, "og_idx.fits")
+            scw_og_fns.append(fn)
 
-        ddosa.construct_og(["og_idx.fits"], fn="og.fits")
+        construct_gnrl_scwg_grp_idx(scw_og_fns,fn="og_idx.fits")
+        set_attr({'ISDCLEVL': self.outtype}, "og_idx.fits")
+
+        construct_og(["og_idx.fits"], fn=og_fn)
+
+        set_attr({'ISDCLEVL': self.outtype}, og_fn)
 
     def main(self):
         self.members=[
@@ -1605,13 +1619,14 @@ class ImageGroups(DataAnalysis):
                 ii_skyimage(assume=[scw]),
                 ghost_bustersImage(assume=[scw]),
                 ibis_gti(assume=[scw]),
+                CatExtract(assume=[scw])
             ) for scw in self.input_scwlist.scwlistdata
         ]
 
 class mosaic_ii_skyimage(DataAnalysis):
     input_maps = BinMapsImage
     input_bins = ImageBins
-    input_cat = CatExtract
+    #input_cat = CatExtract
     input_ic = IBIS_ICRoot
     input_imgconfig = ImagingConfig
 
@@ -1640,33 +1655,13 @@ class mosaic_ii_skyimage(DataAnalysis):
         return v
 
     def main(self):
-        construct_gnrl_scwg_grp(self.input_scw, [ \
-            self.input_gb.corshad.path,
-            self.input_cat.cat.path,
-            self.input_scw.auxadppath + "/time_correlation.fits[AUXL-TCOR-HIS]",
-            self.input_gti.output_gti.path,
-        ])
-
-        import_attr(self.input_scw.scwpath + "/swg.fits",
-                    ["OBTSTART", "OBTEND", "TSTART", "TSTOP", "SW_TYPE", "TELAPSE", "SWID", "SWBOUND"])
-        set_attr({'ISDCLEVL': self.outtype})
-        set_attr({'INSTRUME': "IBIS"}, "og.fits")
-
-        construct_gnrl_scwg_grp_idx([ \
-            "og.fits",
-        ])
-        set_attr({'ISDCLEVL': self.outtype}, "og_idx.fits")
-
-        construct_og([ \
-            "og_idx.fits",
-        ])
-        set_attr({'ISDCLEVL': self.outtype}, "ogg.fits")
+        self.input_imagegroups.construct_og("ogg.fits")
 
         remove_withtemplate("isgri_srcl_res.fits(ISGR-SRCL-RES.tpl)")
         remove_withtemplate("isgri_mosa_ima.fits(ISGR-MOSA-IMA-IDX.tpl)")
         remove_withtemplate("isgri_mosa_res.fits(ISGR-MOSA-RES-IDX.tpl)")
-        remove_withtemplate("isgri_sky_ima.fits")
-        remove_withtemplate("isgri_sky_res.fits")
+        remove_withtemplate("isgri_sky_ima.fits(ISGR-SKY-IMA-IDX.tpl)")
+        remove_withtemplate("isgri_sky_res.fits(ISGR-SKY-RES-IDX.tpl)")
 
         if self.ii_skyimage_binary is None:
             ii_skyimage_binary = "ii_skyimage"
@@ -1691,14 +1686,14 @@ class mosaic_ii_skyimage(DataAnalysis):
         ht['num_band'] = len(self.input_bins.bins)
         ht['E_band_min'] = " ".join([str(a[0]) for a in self.input_bins.bins])
         ht['E_band_max'] = " ".join([str(a[1]) for a in self.input_bins.bins])
-        for k in ['SouFit', 'SearchMode', 'ToSearch', 'CleanMode', 'MinCatSouSnr', 'MinNewSouSnr', 'NegModels',
-                  'DoPart2']:  # dopart2 is flow control, separately
+        ht['DoPart2'] = 1
+        for k in ['SouFit', 'SearchMode', 'ToSearch', 'CleanMode', 'MinCatSouSnr', 'MinNewSouSnr', 'NegModels']:
             ht[k] = getattr(self.input_imgconfig, k)
             if hasattr(self, 'ii_' + k): ht[k] = getattr(self, 'ii_' + k)
         ht['corrDol'] = self.input_maps.corr.path
         ht.run()
 
-        if not os.path.exists("isgri_sky_ima.fits"):
+        if not os.path.exists("isgri_mosa_ima.fits"):
             print("no image produced: since there was no exception in the binary, assuming empty results")
             self.empty_results = True
             return
@@ -1706,17 +1701,10 @@ class mosaic_ii_skyimage(DataAnalysis):
         self.srclres = DataFile("isgri_srcl_res.fits")
 
         if self.save_image:
-            self.skyima = DataFile("isgri_sky_ima.fits")
-        self.skyres = DataFile("isgri_sky_res.fits")
+            self.skyima = DataFile("isgri_mosa_ima.fits")
+        self.skyres = DataFile("isgri_mosa_res.fits")
 
-        if self.image_tag is not None:
-            try:
-                tag = str(self.image_tag)
-                shutil.copyfile("isgri_sky_res.fits", "isgri_sky_res_%s.fits" % tag)
-                if self.save_image:
-                    shutil.copyfile("isgri_sky_ima.fits", "isgri_sky_ima_%s.fits" % tag)
-            except:
-                print("something went wrong")
+        self.mosaic=self.skyima
 
         self.post_process()
 
