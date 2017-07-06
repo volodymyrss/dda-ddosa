@@ -633,6 +633,78 @@ class GetEcorrCalDB(DataAnalysis):
         self.supodol=self.input_ibisic.ibisicroot+"/mod/isgr_off2_mod_"+newest_ver+".fits[ISGR-OFF2-MOD,1,BINTABLE]"
         self.risedol=self.input_lut2.datafile
 
+class BinnedDataProcessingSummary(DataAnalysis):
+    run_for_hashe=True
+
+    def main(self):
+        mf=BinEventsImage(assume=ScWData(input_scwid="any",use_abstract=True)) # arbitrary choice of scw, should be the same: assumption of course
+        ahash=mf.process(output_required=False,run_if_haveto=False)[0]
+       # print("one scw hash:",ahash)
+        #ahash=hashtools.hashe_replace_object(ahash,'AnyScW','None')
+        print("generalized hash:",ahash)
+        rh=shhash(ahash)
+        print("reduced hash",rh)
+        return [dataanalysis.DataHandle('processing_definition:'+rh[:8])]
+
+class BasicEventProcessingSummary(DataAnalysis):
+    run_for_hashe=True
+
+    def main(self):
+        mf=ISGRIEvents(assume=ScWData(input_scwid="any",use_abstract=True)) # arbitrary choice of scw, should be the same: assumption of course
+        ahash=mf.process(output_required=False,run_if_haveto=False)[0]
+       # print("one scw hash:",ahash)
+        #ahash=hashtools.hashe_replace_object(ahash,'AnyScW','None')
+        print("generalized hash:",ahash)
+        rh=shhash(ahash)
+        print("reduced hash",rh)
+        return [dataanalysis.DataHandle('processing_definition:'+rh[:8])]
+
+class ImageProcessingSummary(DataAnalysis):
+    run_for_hashe=True
+
+    def main(self):
+        mf=ii_skyimage(assume=ScWData(input_scwid="any",use_abstract=True)) # arbitrary choice of scw, should be the same: assumption of course
+        ahash=mf.process(output_required=False,run_if_haveto=False)[0]
+        print("one scw hash:",ahash)
+        ahash=hashtools.hashe_replace_object(ahash,'AnyScW','None')
+        print("generalized hash:",ahash)
+        rh=shhash(ahash)
+        print("reduced hash",rh)
+        d=dataanalysis.DataHandle('processing_definition:'+rh[:8])
+        dataanalysis.AnalysisFactory.register_definition(d.handle,ahash)
+        d.hash=ahash
+        return [d]
+
+class LCProcessingSummary(DataAnalysis):
+    run_for_hashe=True
+
+    def main(self):
+        mf=ii_lc_extract(assume=ScWData(input_scwid="any",use_abstract=True)) # arbitrary choice of scw, should be the same: assumption of course
+        ahash=mf.process(output_required=False,run_if_haveto=False)[0]
+        print("one scw hash:",ahash)
+        ahash=hashtools.hashe_replace_object(ahash,'AnyScW','None')
+        print("generalized hash:",ahash)
+        rh=shhash(ahash)
+        print("reduced hash",rh)
+        d=dataanalysis.DataHandle('processing_definition:'+rh[:8])
+        dataanalysis.AnalysisFactory.register_definition(d.handle,ahash)
+        d.hash=ahash
+        return [d]
+
+class SpectraProcessingSummary(DataAnalysis):
+    run_for_hashe=True
+
+    def main(self):
+        mf=ii_spectra_extract(assume=[ScWData(input_scwid="any",use_abstract=True),Revolution(input_revid="any",use_abstract=True)]) # arbitrary choice of scw, should be the same: assumption of course
+        #mf=ii_spectra_extract(assume=[ScWData(input_scwid=AnyScW),Revolution(input_revid=AnyRevID)]) # arbitrary choice of scw, should be the same: assumption of course
+        ahash=mf.process(output_required=False,run_if_haveto=False)[0]
+        #print("one scw hash:",ahash)
+        #ahash=dataanalysis.hashe_replacI#e_object(ahash,'AnyScW','None')
+        #ahash=hashtools.hashe_replace_object(ahash,'AnyRevID','None')
+        print("generalized hash:",ahash)
+        rh=shhash(ahash)
+        print("reduced hash",rh)
+        return [dataanalysis.DataHandle('processing_definition:'+rh[:8])]
 
 class ibis_isgr_energy_standard(DataAnalysis):
     cached=False
@@ -1577,9 +1649,11 @@ class ii_skyimage(DataAnalysis):
 
 class ImageGroups(DataAnalysis):
     input_scwlist=None
+    input_image_processing=ImageProcessingSummary
 
     allow_alias=True
     run_for_hashe=True
+
 
     outtype="BIN_I"
 
@@ -1622,6 +1696,76 @@ class ImageGroups(DataAnalysis):
                 CatExtract(assume=[scw])
             ) for scw in self.input_scwlist.scwlistdata
         ]
+
+class LCGroups(DataAnalysis):
+    input_scwlist=None
+    input_lc_processing=LCProcessingSummary
+
+
+    allow_alias=True
+    run_for_hashe=True
+
+    outtype="BIN_I"
+
+    def construct_og(self,og_fn):
+        scw_og_fns = []
+
+        for scw,lc in self.members:
+            fn = "og_%s.fits" % scw.input_scwid.str()
+            construct_gnrl_scwg_grp(scw, children=
+                [
+                    lc.lightcurve.get_path(),
+                    scw.auxadppath + "/time_correlation.fits[AUXL-TCOR-HIS]",
+                ], fn=fn)
+
+            import_attr(scw.scwpath + "/swg.fits",
+                        ["OBTSTART", "OBTEND", "TSTART", "TSTOP", "SW_TYPE", "TELAPSE", "SWID", "SWBOUND"],fn)
+            set_attr({'ISDCLEVL': self.outtype}, fn)
+            set_attr({'INSTRUME': "IBIS"}, fn)
+
+            scw_og_fns.append(fn)
+
+        construct_gnrl_scwg_grp_idx(scw_og_fns,fn="og_idx.fits")
+        set_attr({'ISDCLEVL': self.outtype}, "og_idx.fits")
+
+        construct_og(["og_idx.fits"], fn=og_fn)
+
+        set_attr({'ISDCLEVL': self.outtype}, og_fn)
+
+    def main(self):
+        self.members=[
+            (
+                scw,
+                ii_lc_extract(assume=[scw]),
+            ) for scw in self.input_scwlist.scwlistdata
+        ]
+
+class lc_pick(DataAnalysis):
+    input_lcgroups = LCGroups
+    source_names=["Crab"]
+
+    cached=True
+
+    def get_version(self):
+        return super(lc_pick, self).get_version()+".".join(self.source_names)
+
+    def main(self):
+        self.input_lcgroups.construct_og("ogg.fits")
+
+        for source_name in self.source_names:
+            fn = "lc_%s.fits" % source_name
+            remove_withtemplate(fn+"(ISGR-SRC.-LCR-IDX.tpl)")
+
+            ht = heatool("lc_pick")
+            ht['group'] = "ogg.fits[1]"
+            ht['source']=source_name
+            ht['instrument']="isgri"
+            ht['lc']=fn
+            ht.run()
+
+
+
+
 
 class mosaic_ii_skyimage(DataAnalysis):
     input_maps = BinMapsImage
@@ -2185,62 +2329,7 @@ class AnyScW(da.AnyAnalysis):
 class AnyRev(da.AnyAnalysis):
     pass
 
-class BinnedDataProcessingSummary(DataAnalysis):
-    run_for_hashe=True
 
-    def main(self):
-        mf=BinEventsImage(assume=ScWData(input_scwid="any",use_abstract=True)) # arbitrary choice of scw, should be the same: assumption of course
-        ahash=mf.process(output_required=False,run_if_haveto=False)[0]
-       # print("one scw hash:",ahash)
-        #ahash=hashtools.hashe_replace_object(ahash,'AnyScW','None')
-        print("generalized hash:",ahash)
-        rh=shhash(ahash)
-        print("reduced hash",rh)
-        return [dataanalysis.DataHandle('processing_definition:'+rh[:8])]
-
-class BasicEventProcessingSummary(DataAnalysis):
-    run_for_hashe=True
-
-    def main(self):
-        mf=ISGRIEvents(assume=ScWData(input_scwid="any",use_abstract=True)) # arbitrary choice of scw, should be the same: assumption of course
-        ahash=mf.process(output_required=False,run_if_haveto=False)[0]
-       # print("one scw hash:",ahash)
-        #ahash=hashtools.hashe_replace_object(ahash,'AnyScW','None')
-        print("generalized hash:",ahash)
-        rh=shhash(ahash)
-        print("reduced hash",rh)
-        return [dataanalysis.DataHandle('processing_definition:'+rh[:8])]
-
-class ImageProcessingSummary(DataAnalysis):
-    run_for_hashe=True
-
-    def main(self):
-        mf=ii_skyimage(assume=ScWData(input_scwid="any",use_abstract=True)) # arbitrary choice of scw, should be the same: assumption of course
-        ahash=mf.process(output_required=False,run_if_haveto=False)[0]
-        print("one scw hash:",ahash)
-        ahash=hashtools.hashe_replace_object(ahash,'AnyScW','None')
-        print("generalized hash:",ahash)
-        rh=shhash(ahash)
-        print("reduced hash",rh)
-        d=dataanalysis.DataHandle('processing_definition:'+rh[:8])
-        dataanalysis.AnalysisFactory.register_definition(d.handle,ahash)
-        d.hash=ahash
-        return [d]
-
-class SpectraProcessingSummary(DataAnalysis):
-    run_for_hashe=True
-
-    def main(self):
-        mf=ii_spectra_extract(assume=[ScWData(input_scwid="any",use_abstract=True),Revolution(input_revid="any",use_abstract=True)]) # arbitrary choice of scw, should be the same: assumption of course
-        #mf=ii_spectra_extract(assume=[ScWData(input_scwid=AnyScW),Revolution(input_revid=AnyRevID)]) # arbitrary choice of scw, should be the same: assumption of course
-        ahash=mf.process(output_required=False,run_if_haveto=False)[0]
-        #print("one scw hash:",ahash)
-        #ahash=dataanalysis.hashe_replacI#e_object(ahash,'AnyScW','None')
-        #ahash=hashtools.hashe_replace_object(ahash,'AnyRevID','None')
-        print("generalized hash:",ahash)
-        rh=shhash(ahash)
-        print("reduced hash",rh)
-        return [dataanalysis.DataHandle('processing_definition:'+rh[:8])]
 
 class IDScWList(DataAnalysis):
     scwid_list=None

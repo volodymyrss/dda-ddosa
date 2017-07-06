@@ -28,4 +28,14 @@ def test_mosaic_ii_skyimage():
 #    assert os.path.exists(fa.lightcurve.get_path())
 
 
+def test_lc_pick():
+    #da.debug_output()
 
+    ig = ddosa.LCGroups(input_scwlist=ddosa.IDScWList(use_scwid_list=["066500230010.001", "066500240010.001"]))
+
+    fa = ddosa.lc_pick(input_lcgroups=ig)
+    fa.read_caches = []
+
+    fa.get()
+
+#    assert os.path.exi
