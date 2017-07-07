@@ -1752,8 +1752,10 @@ class lc_pick(DataAnalysis):
     def main(self):
         self.input_lcgroups.construct_og("ogg.fits")
 
+        assert len(self.source_name)==1
+
         for source_name in self.source_names:
-            fn = "lc_%s.fits" % source_name
+            fn = "lc_%s.fits" % source_name.replace(" ","_")
             remove_withtemplate(fn+"(ISGR-SRC.-LCR-IDX.tpl)")
 
             ht = heatool("lc_pick")
@@ -1762,6 +1764,7 @@ class lc_pick(DataAnalysis):
             ht['instrument']="isgri"
             ht['lc']=fn
             ht.run()
+            setattr(self,'lightcurve',da.DataFile(fn))
 
 
 
@@ -1876,7 +1879,7 @@ class CatForSpectraFromImaging(DataAnalysis):
         f=pyfits.open(self.input_imaging.srclres.path)
 
         print("image catalog contains",len(f[1].data))
-        print("image catalog contains",f[1].data['DETSIG'].max())
+        print("image catalog contains sig from",f[1].data['DETSIG'].min(),"to",f[1].data['DETSIG'].max())
 
         if self.minsig is not None:
             f[1].data=f[1].data[f[1].data['DETSIG']>self.minsig]

@@ -30,10 +30,12 @@ def test_mosaic_ii_skyimage():
 
 def test_lc_pick():
     #da.debug_output()
+    from dataanalysis import analysisfactory
 
+    analysisfactory.AnalysisFactory.WhatIfCopy("timebin",ddosa.LCTimeBin(use_time_bin_seconds=200))
     ig = ddosa.LCGroups(input_scwlist=ddosa.IDScWList(use_scwid_list=["066500230010.001", "066500240010.001"]))
 
-    fa = ddosa.lc_pick(input_lcgroups=ig)
+    fa = ddosa.lc_pick(input_lcgroups=ig,use_source_names=["Crab"])
     fa.read_caches = []
 
     fa.get()
