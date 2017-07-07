@@ -1747,7 +1747,7 @@ class lc_pick(DataAnalysis):
     cached=True
 
     def get_version(self):
-        return super(lc_pick, self).get_version()+".".join(self.source_names)
+        return super(lc_pick, self).get_version()+"."+(".".join([m.replace(" ","_") for m in self.source_names]))
 
     def main(self):
         self.input_lcgroups.construct_og("ogg.fits")
