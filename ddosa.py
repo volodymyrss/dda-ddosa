@@ -1752,7 +1752,7 @@ class lc_pick(DataAnalysis):
     def main(self):
         self.input_lcgroups.construct_og("ogg.fits")
 
-        assert len(self.source_name)==1
+        assert len(self.source_names)==1
 
         for source_name in self.source_names:
             fn = "lc_%s.fits" % source_name.replace(" ","_")
