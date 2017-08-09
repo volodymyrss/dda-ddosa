@@ -46,6 +46,11 @@ from astropy import wcs as pywcs
 import subprocess,os
 import ast
 
+import pandas as pd
+import yaml
+
+import numpy as np
+
 if hasattr(da,'DataAnalysisPrototype'):
     DataAnalysisPrototype=da.DataAnalysisPrototype
 else:
@@ -1460,9 +1465,46 @@ class ghost_bustersSpectra(ghost_bustersVirtual):
     input_shadow=ShadowUBCSpectra
     level="BIN_S"
 
+
 class ghost_bustersLC(ghost_bustersVirtual):
     input_shadow=ShadowUBCLC
     level="BIN_T"
+
+class BinnedBackgroundSpectrumFromGB(DataAnalysis):
+    input_gb=ghost_bustersSpectra
+
+    copy_cached_input=False
+
+    cached=True
+
+    def main(self):
+        corshad=pyfits.open(self.input_gb.corshad.get_path())
+
+        corr_effi=[_e for _e in corshad[2:] if _e.header['SHD_TYPE']=='EFFICIENCY']
+        corr_dete=[_e for _e in corshad[2:] if _e.header['SHD_TYPE']=='DETECTOR']
+        corr_var=[_e for _e in corshad[2:] if _e.header['SHD_TYPE']=='VARIANCE']
+
+        spectrum=[]
+        for ef,dete,var in zip(corr_effi,corr_dete,corr_var):
+            print("reading:",ef.header['E_MIN'])
+            spectrum.append(dict(
+                            e1=ef.header['E_MIN'],
+                            e2=ef.header['E_MAX'],
+                            effi_mean=ef.data.mean(),
+                            effi_sum=np.nansum(ef.data),
+                            counts_mean=dete.data.mean(),
+                            counts_sum=np.nansum(dete.data),
+                            var_mean=var.data.mean(),
+                            var_sum=np.nansum(var.data),
+                        ))
+
+        spectrum=pd.DataFrame(spectrum)
+        spectrum['ec']=(spectrum.e1+spectrum.e2)/2.
+
+        fn="background_spectrum.csv"
+        spectrum.to_csv(fn)
+        self.spectrum=da.DataFile(fn)
+
 
 class ISGRIRefCat(DataAnalysis):
     input=GRcat
