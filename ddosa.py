@@ -467,6 +467,7 @@ class ScWData(DataAnalysis):
 
     version="v1"
 
+    scwver="001"
 
     def main(self):
         try:
@@ -477,12 +478,12 @@ class ScWData(DataAnalysis):
         self.revid=self.scwid[:4]
         
         try:
-            print("searching in "+os.environ['REP_BASE_PROD'])
-            self.assume_rbp(os.environ['REP_BASE_PROD'])
+            print("searching in "+detect_rbp(self.scwver))
+            self.assume_rbp(detect_rbp(self.scwver))
         except da.AnalysisException:
             if self.scwver=="000":
-                print("searching in "+os.environ['REP_BASE_PROD']+"/nrt")
-                self.assume_rbp(os.environ['REP_BASE_PROD']+"/nrt")
+                print("searching in "+detect_rbp(self.scwver)+"/nrt")
+                self.assume_rbp(detect_rbp(self.scwver)+"/nrt")
             else:
                 raise
 
@@ -521,6 +522,17 @@ class ScWData(DataAnalysis):
     def __repr__(self):
         return "[%s:%s]"%(self.__class__.__name__,self.input_scwid)
 
+def detect_rbp(scwver="001"):
+    if scwver=="001":
+        if "REP_BASE_PROD_CONS" in os.environ:
+            return os.environ["REP_BASE_PROD_CONS"]
+    
+    if scwver=="000":
+        if "REP_BASE_PROD_NRT" in os.environ:
+            return os.environ["REP_BASE_PROD_NRT"]
+
+    return os.environ["REP_BASE_PROD"]
+
 class Revolution(DataAnalysis):
     input_revid=None
 
@@ -530,7 +542,8 @@ class Revolution(DataAnalysis):
         return self.input_revid.handle
 
     def main(self):
-        rbp=os.environ["REP_BASE_PROD"]
+        rbp=detect_rbp(scwver=self.scwver)
+
         self.revroot=rbp+"/scw/%s/"%self.get_revid()
         self.revdir=self.revroot+"/rev.001/"
         self.auxadppath=rbp+"/aux/adp/"+self.get_revid()+"."+self.scwver
@@ -1244,9 +1257,9 @@ class GRcat(DataAnalysis):
             pass
         else:
             if self.suffix is None:
-                self.cat=os.environ['REP_BASE_PROD']+"/cat/hec/gnrl_refr_cat_0040.fits[1]"
+                self.cat=detect_rbp()+"/cat/hec/gnrl_refr_cat_0040.fits[1]"
             else:
-                self.cat=os.environ['REP_BASE_PROD']+"/cat/hec/gnrl_refr_cat_0040_%s.fits[1]"%self.suffix
+                self.cat=detect_rbp()+"/cat/hec/gnrl_refr_cat_0040_%s.fits[1]"%self.suffix
 
 
 class BrightCat(DataAnalysis):
