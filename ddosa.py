@@ -47,7 +47,12 @@ import subprocess,os
 import ast
 
 import pandas as pd
-import yaml
+
+try:
+    import yaml
+except ImportError:
+    print("no yaml!")
+
 
 import numpy as np
 
