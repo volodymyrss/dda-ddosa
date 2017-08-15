@@ -1559,9 +1559,21 @@ class CatExtractEmpty(DataAnalysis):
 
         self.cat=DataFile("isgri_catalog.fits")
 
+
+class SourceList(DataAnalysis):
+    sources=[]
+
+    def get_version(self):
+        v=self.get_signature()+"."+self.version
+        for source in self.sources:
+            v+="%(name)s_%(ra).5lg_%(dec).5lg"%source
+        return v
+
 class CatExtract(DataAnalysis):
     input_cat=ISGRIRefCat
     input_scw=ScWData
+
+    #input_extra_sources=SourceList
     
     cached=True
 
@@ -1581,7 +1593,30 @@ class CatExtract(DataAnalysis):
         ht['refCat']=self.input_cat.cat
         ht.run()
 
-        self.cat=DataFile("isgri_catalog.fits")
+        fn="isgri_catalog.fits"
+        if hasattr(self,'input_extra_sources'):
+            f=pyfits.open("isgri_catalog.fits")
+            t_orig=f[1]
+
+            t_new=pyfits.BinTableHDU.from_columns(t_orig.columns,nrows=len(t_orig.data)+len(self.input_extra_sources.sources))
+            t_new.data[:len(t_orig.data)]=t_orig.data[:]
+
+            i_offset=len(t_orig.data)
+
+            for i,source in enumerate(self.input_extra_sources.sources):
+                print("adding",source)
+                t_new.data[i_offset + i]['NAME'] = source['name']
+                t_new.data[i_offset + i]['RA_OBJ'] = source['ra']
+                t_new.data[i_offset + i]['DEC_OBJ'] = source['dec']
+
+            f[1].data=t_new.data
+
+            fn="isgri_catalog_extra.fits"
+            f.writeto(fn)
+
+        print("storing cat as",fn)
+        self.cat=DataFile(fn)
+
 
 class ImagingConfig(DataAnalysis):
     input="onesource_negmod"
