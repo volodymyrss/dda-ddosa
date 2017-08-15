@@ -46,7 +46,10 @@ from astropy import wcs as pywcs
 import subprocess,os
 import ast
 
-import pandas as pd
+try:
+    import pandas as pd
+except ImportError:
+    print "no pandas!"
 
 try:
     import yaml
@@ -1608,11 +1611,12 @@ class CatExtract(DataAnalysis):
                 t_new.data[i_offset + i]['NAME'] = source['name']
                 t_new.data[i_offset + i]['RA_OBJ'] = source['ra']
                 t_new.data[i_offset + i]['DEC_OBJ'] = source['dec']
+                t_new.data[i_offset + i]['ISGRI_FLAG'] = 1
 
             f[1].data=t_new.data
 
             fn="isgri_catalog_extra.fits"
-            f.writeto(fn)
+            f.writeto(fn,clobber=True)
 
         print("storing cat as",fn)
         self.cat=DataFile(fn)
