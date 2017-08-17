@@ -995,7 +995,22 @@ class ImageBins(DataAnalysis):
     input_binsname="g25-80"
     ebins=None
 
+    autoversion=False
+
     rmfbins=False
+
+    def get_version(self):
+        v=self.get_signature()+"."+self.version
+
+        if self.autoversion:
+            if self.ebins is None:
+                v+=".std_one_25_80"
+            else:
+                if len(self.ebins)==1:
+                    v+=".one_bin_%.5lg_%.5lg"%(self.ebins[0][0],self.ebins[0][1])
+
+        return v
+
 
     def main(self):
         if self.ebins is None:
@@ -1763,11 +1778,11 @@ class ImageGroups(DataAnalysis):
             fn = "og_%s.fits" % scw.input_scwid.str()
             construct_gnrl_scwg_grp(scw, children=
                 [
-                    image.skyima.get_path(),
-                    image.skyres.get_path(),
-                    gti.output_gti.get_path(),
-                    gb.corshad.get_path(),
-                    cat.cat.get_path(),
+                    image.skyima.get_cached_path(),
+                    image.skyres.get_cached_path(),
+                    gti.output_gti.get_cached_path(),
+                    gb.corshad.get_cached_path(),
+                    cat.cat.get_cached_path(),
                     scw.auxadppath + "/time_correlation.fits[AUXL-TCOR-HIS]",
                 ], fn=fn)
 

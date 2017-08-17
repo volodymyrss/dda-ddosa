@@ -67,6 +67,21 @@ def test_image():
     print fa.skyima
 
 
+def test_imagebins():
+    #
+    # da.debug_output()
+
+
+    fa = ddosa.BinEventsImage(assume=[
+        ddosa.ScWData(input_scwid="066500230010.001"),
+        ddosa.ImageBins(use_autoversion=True,use_ebins=[(25,45)])
+    ])
+    fa.read_caches = []
+
+    fa.get()
+
+    print fa.shadow_detector
+
 def test_image_cached():
     fa = ddosa.ii_skyimage(assume=[
         ddosa.ScWData(input_scwid="066500230010.001"),
