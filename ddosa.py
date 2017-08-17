@@ -1929,6 +1929,7 @@ class mosaic_ii_skyimage(DataAnalysis):
         else:
             ii_skyimage_binary = self.ii_skyimage_binary
 
+
         ht = heatool(ii_skyimage_binary)
         ht['outOG'] = "ogg.fits[1]"
         ht['outCat'] = "isgri_srcl_res.fits(ISGR-SRCL-RES.tpl)"
