@@ -1768,6 +1768,7 @@ class ImageGroups(DataAnalysis):
     allow_alias=True
     run_for_hashe=True
 
+    copy_cached_input=True
 
     outtype="BIN_I"
 
@@ -1778,11 +1779,11 @@ class ImageGroups(DataAnalysis):
             fn = "og_%s.fits" % scw.input_scwid.str()
             construct_gnrl_scwg_grp(scw, children=
                 [
-                    image.skyima.get_cached_path(),
-                    image.skyres.get_cached_path(),
-                    gti.output_gti.get_cached_path(),
-                    gb.corshad.get_cached_path(),
-                    cat.cat.get_cached_path(),
+                    image.skyima._da_unique_local_path,
+                    image.skyres._da_unique_local_path,
+                    gti.output_gti._da_unique_local_path,
+                    gb.corshad._da_unique_local_path,
+                    cat.cat._da_unique_local_path,
                     scw.auxadppath + "/time_correlation.fits[AUXL-TCOR-HIS]",
                 ], fn=fn)
 
@@ -1897,6 +1898,7 @@ class mosaic_ii_skyimage(DataAnalysis):
     #input_gti = ibis_gti
 
     cached = True
+    copy_cached_input=True
 
     ii_skyimage_binary = None
 
