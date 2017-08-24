@@ -464,7 +464,12 @@ class DataAnalysis(DataAnalysisPrototype):
 
 class NoScWData(da.AnalysisException):
     pass
+
+class NoDeadData(da.AnalysisException):
+    pass
     
+class NoISGRIEvents(da.AnalysisException):
+    pass
 
 class ScWData(DataAnalysis):
     input_scwid=None
@@ -785,6 +790,9 @@ class ibis_isgr_energy(DataAnalysis):
 
         remove_withtemplate("isgri_events_corrected.fits(ISGR-EVTS-COR.tpl)")
 
+        if not os.path.exists(self.input_scw.scwpath+"/isgri_events.fits"):
+            raise NoISGRIEvents()
+
         construct_gnrl_scwg_grp(self.input_scw,[\
             self.input_scw.scwpath+"/isgri_events.fits[3]", \
             self.input_scw.scwpath+"/ibis_hk.fits[IBIS-DPE.-CNV]", \
@@ -971,6 +979,10 @@ class ibis_dead(DataAnalysis):
         ht['disablePICsIT']="YES"
         ht['disableCompton']="YES"
         ht.run()
+
+        if not os.path.exists(ht.cwd+"/isgri_dead.fits"):
+            print("not found dead!")
+            raise NoDeadData()
 
         shutil.copy(ht.cwd+"/isgri_dead.fits","./isgri_dead.fits")
         self.output_dead=DataFile("isgri_dead.fits")
@@ -1674,6 +1686,8 @@ class ii_skyimage(DataAnalysis):
     version="v2"
 
     outtype="BIN_I"
+        
+    empty_results=False
 
     def get_version(self):
         v=self.get_signature()+"."+self.version
@@ -1682,7 +1696,30 @@ class ii_skyimage(DataAnalysis):
                 v+="_"+k+"_"+str(getattr(self,'ii_'+k))
         return v
 
+    def treat_input_analysis_exceptions(self,exceptions):
+        for e in exceptions:
+            print("ii_skyimage experienced",e)
+
+            if isinstance(e[1],NoDeadData):
+                self.empty_results=True
+                continue
+
+            if isinstance(e[1],NoISGRIEvents):
+                self.empty_results=True
+                continue
+
+            return False
+
+        return True
+
+
     def main(self):
+        print("results marker",self.empty_results)
+        print("")
+        if self.empty_results:
+            print("it's so empty... probably excepted")
+            return
+
         construct_gnrl_scwg_grp(self.input_scw,[\
                     self.input_gb.corshad.path,
                     self.input_cat.cat.path,
@@ -1866,7 +1903,10 @@ class lc_pick(DataAnalysis):
     cached=True
 
     def get_version(self):
-        return super(lc_pick, self).get_version()+"."+(".".join([m.replace(" ","_") for m in self.source_names]))
+        try:
+            return super(lc_pick, self).get_version()+"."+(".".join([m.replace(" ","_") for m in self.source_names]))
+        except:
+            return "lc_pick.UNDEFINED"
 
     def main(self):
         self.input_lcgroups.construct_og("ogg.fits")
