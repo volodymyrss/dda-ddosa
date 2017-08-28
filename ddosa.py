@@ -1403,6 +1403,8 @@ class ShadowUBCVirtual(DataAnalysis):
         return self.get_signature()+"."+self.version+(".brthr%.5lg"%self.brPifThreshold if self.brPifThreshold!=1e-4 else "")
 
     def main(self):
+        print(self.input_shadows)
+
         construct_gnrl_scwg_grp(self.input_scw,[\
                 self.input_shadows.shadow_detector.get_path(),
                 self.input_shadows.shadow_efficiency.get_path(),
