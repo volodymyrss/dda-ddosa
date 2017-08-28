@@ -790,7 +790,7 @@ class ibis_isgr_energy(DataAnalysis):
 
         remove_withtemplate("isgri_events_corrected.fits(ISGR-EVTS-COR.tpl)")
 
-        if not os.path.exists(self.input_scw.scwpath+"/isgri_events.fits"):
+        if not os.path.exists(self.input_scw.scwpath+"/isgri_events.fits") and not os.path.exists(self.input_scw.scwpath+"/isgri_events.fits.gz"):
             raise NoISGRIEvents()
 
         construct_gnrl_scwg_grp(self.input_scw,[\
