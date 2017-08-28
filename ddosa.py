@@ -1986,7 +1986,7 @@ class CatForSpectraFromImaging(DataAnalysis):
         return self.get_signature()+"."+self.version+("" if self.minsig is None else "minsig%.3lg"%self.minsig)
 
     def main(self):
-        if hasattr(self.input_imaging,'empty_results'):
+        if hasattr(self.input_imaging,'empty_results') and self.input_imaging.empty_results:
             print("no results here")
             self.empty_results=True
             return
@@ -2044,7 +2044,7 @@ class ii_spectra_extract(DataAnalysis):
     report_runtime_destination="mysql://pixels.runtime"
 
     def main(self):
-        if hasattr(self.input_cat,'empty_results'):
+        if hasattr(self.input_cat,'empty_results') and self.input_cat.empty_results:
             print("empty here")
             self.empty_results=True
             return
@@ -2156,7 +2156,7 @@ class ii_lc_extract(DataAnalysis):
     #report_runtime_destination = "mysql://pixels.runtime"
 
     def main(self):
-        if hasattr(self.input_cat, 'empty_results'):
+        if hasattr(self.input_cat, 'empty_results') and self.input_cat.empty_results:
             print("empty here")
             self.empty_results = True
             return
