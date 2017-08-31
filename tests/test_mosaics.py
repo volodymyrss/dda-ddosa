@@ -11,3 +11,4 @@ def test_mosaic_ii_skyimage():
             )
 
     mosaic.get()
+

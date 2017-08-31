@@ -2029,6 +2029,8 @@ class CatForSpectraFromImaging(DataAnalysis):
     maxsources=None
 
     def get_version(self):
+        if isinstance(self.minsig,str):
+            raise Exception("what is "+repr(self.minsig))
         return self.get_signature()+"."+self.version+("" if self.minsig is None else "minsig%.3lg"%self.minsig)
 
     def main(self):
