@@ -1956,6 +1956,8 @@ class mosaic_ii_skyimage(DataAnalysis):
 
     outtype = "BIN_I"
 
+    ii_NegModels=1
+
     def get_version(self):
         v = self.get_signature() + "." + self.version
         for k in ['SouFit', 'SearchMode', 'ToSearch', 'CleanMode', 'MinCatSouSnr', 'MinNewSouSnr', 'NegModels']:
