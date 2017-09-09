@@ -46,6 +46,19 @@ from astropy import wcs as pywcs
 import subprocess,os
 import ast
 
+try:
+    import pandas as pd
+except ImportError:
+    print "no pandas!"
+
+try:
+    import yaml
+except ImportError:
+    print("no yaml!")
+
+
+import numpy as np
+
 if hasattr(da,'DataAnalysisPrototype'):
     DataAnalysisPrototype=da.DataAnalysisPrototype
 else:
@@ -451,7 +464,12 @@ class DataAnalysis(DataAnalysisPrototype):
 
 class NoScWData(da.AnalysisException):
     pass
+
+class NoDeadData(da.AnalysisException):
+    pass
     
+class NoISGRIEvents(da.AnalysisException):
+    pass
 
 class ScWData(DataAnalysis):
     input_scwid=None
@@ -462,6 +480,7 @@ class ScWData(DataAnalysis):
 
     version="v1"
 
+    scwver="001"
 
     def main(self):
         try:
@@ -472,12 +491,12 @@ class ScWData(DataAnalysis):
         self.revid=self.scwid[:4]
         
         try:
-            print("searching in "+os.environ['REP_BASE_PROD'])
-            self.assume_rbp(os.environ['REP_BASE_PROD'])
+            print("searching in "+detect_rbp(self.scwver))
+            self.assume_rbp(detect_rbp(self.scwver))
         except da.AnalysisException:
             if self.scwver=="000":
-                print("searching in "+os.environ['REP_BASE_PROD']+"/nrt")
-                self.assume_rbp(os.environ['REP_BASE_PROD']+"/nrt")
+                print("searching in "+detect_rbp(self.scwver)+"/nrt")
+                self.assume_rbp(detect_rbp(self.scwver)+"/nrt")
             else:
                 raise
 
@@ -516,6 +535,17 @@ class ScWData(DataAnalysis):
     def __repr__(self):
         return "[%s:%s]"%(self.__class__.__name__,self.input_scwid)
 
+def detect_rbp(scwver="001"):
+    if scwver=="001":
+        if "REP_BASE_PROD_CONS" in os.environ:
+            return os.environ["REP_BASE_PROD_CONS"]
+    
+    if scwver=="000":
+        if "REP_BASE_PROD_NRT" in os.environ:
+            return os.environ["REP_BASE_PROD_NRT"]
+
+    return os.environ["REP_BASE_PROD"]
+
 class Revolution(DataAnalysis):
     input_revid=None
 
@@ -525,16 +555,11 @@ class Revolution(DataAnalysis):
         return self.input_revid.handle
 
     def main(self):
-        if self.scwver=="001":
-            rbp=os.environ["REP_BASE_PROD_CONS"]
-            self.revroot=rbp+"/scw/%s/"%self.get_revid()
-            self.revdir=self.revroot+"/rev.001/"
-            self.auxadppath=rbp+"/aux/adp/"+self.get_revid()+"."+self.scwver
-        if self.scwver=="000":
-            rbp=os.environ["REP_BASE_PROD_NRT"]
-            self.revroot=rbp+"/scw/%s/"%self.get_revid()
-            self.revdir=self.revroot+"/rev.000/"
-            self.auxadppath=rbp+"/aux/adp/"+self.get_revid()+"."+self.scwver
+        rbp=detect_rbp(scwver=self.scwver)
+
+        self.revroot=rbp+"/scw/%s/"%self.get_revid()
+        self.revdir=self.revroot+"/rev.001/"
+        self.auxadppath=rbp+"/aux/adp/"+self.get_revid()+"."+self.scwver
 
     def get_ijd(self):
         r1100=4306.5559396296
@@ -766,6 +791,9 @@ class ibis_isgr_energy(DataAnalysis):
 
         remove_withtemplate("isgri_events_corrected.fits(ISGR-EVTS-COR.tpl)")
 
+        if not os.path.exists(self.input_scw.scwpath+"/isgri_events.fits") and not os.path.exists(self.input_scw.scwpath+"/isgri_events.fits.gz"):
+            raise NoISGRIEvents()
+
         construct_gnrl_scwg_grp(self.input_scw,[\
             self.input_scw.scwpath+"/isgri_events.fits[3]", \
             self.input_scw.scwpath+"/ibis_hk.fits[IBIS-DPE.-CNV]", \
@@ -953,6 +981,10 @@ class ibis_dead(DataAnalysis):
         ht['disableCompton']="YES"
         ht.run()
 
+        if not os.path.exists(ht.cwd+"/isgri_dead.fits"):
+            print("not found dead!")
+            raise NoDeadData()
+
         shutil.copy(ht.cwd+"/isgri_dead.fits","./isgri_dead.fits")
         self.output_dead=DataFile("isgri_dead.fits")
 
@@ -976,7 +1008,26 @@ class ImageBins(DataAnalysis):
     input_binsname="g25-80"
     ebins=None
 
+    autoversion=False
+
     rmfbins=False
+
+    def get_version(self):
+        v=self.get_signature()+"."+self.version
+
+        if self.autoversion:
+            if self.ebins is None:
+                v+=".std_one_25_80"
+            else:
+                if len(self.ebins)==1:
+                    v+=".one_bin_%.5lg_%.5lg"%(self.ebins[0][0],self.ebins[0][1])
+                else:
+                    v+=".%i_bins"%len(self.ebins)
+                    for ebin in self.ebins:
+                        v+=".%.5lg_%.5lg"%(ebin[0],ebin[1])
+
+        return v
+
 
     def main(self):
         if self.ebins is None:
@@ -1246,9 +1297,9 @@ class GRcat(DataAnalysis):
             pass
         else:
             if self.suffix is None:
-                self.cat=os.environ['REP_BASE_PROD']+"/cat/hec/gnrl_refr_cat_0040.fits[1]"
+                self.cat=detect_rbp()+"/cat/hec/gnrl_refr_cat_0040.fits[1]"
             else:
-                self.cat=os.environ['REP_BASE_PROD']+"/cat/hec/gnrl_refr_cat_0040_%s.fits[1]"%self.suffix
+                self.cat=detect_rbp()+"/cat/hec/gnrl_refr_cat_0040_%s.fits[1]"%self.suffix
 
 
 class BrightCat(DataAnalysis):
@@ -1353,6 +1404,8 @@ class ShadowUBCVirtual(DataAnalysis):
         return self.get_signature()+"."+self.version+(".brthr%.5lg"%self.brPifThreshold if self.brPifThreshold!=1e-4 else "")
 
     def main(self):
+        print(self.input_shadows)
+
         construct_gnrl_scwg_grp(self.input_scw,[\
                 self.input_shadows.shadow_detector.get_path(),
                 self.input_shadows.shadow_efficiency.get_path(),
@@ -1467,9 +1520,46 @@ class ghost_bustersSpectra(ghost_bustersVirtual):
     input_shadow=ShadowUBCSpectra
     level="BIN_S"
 
+
 class ghost_bustersLC(ghost_bustersVirtual):
     input_shadow=ShadowUBCLC
     level="BIN_T"
+
+class BinnedBackgroundSpectrumFromGB(DataAnalysis):
+    input_gb=ghost_bustersSpectra
+
+    copy_cached_input=False
+
+    cached=True
+
+    def main(self):
+        corshad=pyfits.open(self.input_gb.corshad.get_path())
+
+        corr_effi=[_e for _e in corshad[2:] if _e.header['SHD_TYPE']=='EFFICIENCY']
+        corr_dete=[_e for _e in corshad[2:] if _e.header['SHD_TYPE']=='DETECTOR']
+        corr_var=[_e for _e in corshad[2:] if _e.header['SHD_TYPE']=='VARIANCE']
+
+        spectrum=[]
+        for ef,dete,var in zip(corr_effi,corr_dete,corr_var):
+            print("reading:",ef.header['E_MIN'])
+            spectrum.append(dict(
+                            e1=ef.header['E_MIN'],
+                            e2=ef.header['E_MAX'],
+                            effi_mean=ef.data.mean(),
+                            effi_sum=np.nansum(ef.data),
+                            counts_mean=dete.data.mean(),
+                            counts_sum=np.nansum(dete.data),
+                            var_mean=var.data.mean(),
+                            var_sum=np.nansum(var.data),
+                        ))
+
+        spectrum=pd.DataFrame(spectrum)
+        spectrum['ec']=(spectrum.e1+spectrum.e2)/2.
+
+        fn="background_spectrum.csv"
+        spectrum.to_csv(fn)
+        self.spectrum=da.DataFile(fn)
+
 
 class ISGRIRefCat(DataAnalysis):
     input=GRcat
@@ -1506,9 +1596,21 @@ class CatExtractEmpty(DataAnalysis):
 
         self.cat=DataFile("isgri_catalog.fits")
 
+
+class SourceList(DataAnalysis):
+    sources=[]
+
+    def get_version(self):
+        v=self.get_signature()+"."+self.version
+        for source in self.sources:
+            v+="%(name)s_%(ra).5lg_%(dec).5lg"%source
+        return v
+
 class CatExtract(DataAnalysis):
     input_cat=ISGRIRefCat
     input_scw=ScWData
+
+    #input_extra_sources=SourceList
     
     cached=True
 
@@ -1528,7 +1630,31 @@ class CatExtract(DataAnalysis):
         ht['refCat']=self.input_cat.cat
         ht.run()
 
-        self.cat=DataFile("isgri_catalog.fits")
+        fn="isgri_catalog.fits"
+        if hasattr(self,'input_extra_sources'):
+            f=pyfits.open("isgri_catalog.fits")
+            t_orig=f[1]
+
+            t_new=pyfits.BinTableHDU.from_columns(t_orig.columns,nrows=len(t_orig.data)+len(self.input_extra_sources.sources))
+            t_new.data[:len(t_orig.data)]=t_orig.data[:]
+
+            i_offset=len(t_orig.data)
+
+            for i,source in enumerate(self.input_extra_sources.sources):
+                print("adding",source)
+                t_new.data[i_offset + i]['NAME'] = source['name']
+                t_new.data[i_offset + i]['RA_OBJ'] = source['ra']
+                t_new.data[i_offset + i]['DEC_OBJ'] = source['dec']
+                t_new.data[i_offset + i]['ISGRI_FLAG'] = 1
+
+            f[1].data=t_new.data
+
+            fn="isgri_catalog_extra.fits"
+            f.writeto(fn,clobber=True)
+
+        print("storing cat as",fn)
+        self.cat=DataFile(fn)
+
 
 class ImagingConfig(DataAnalysis):
     input="onesource_negmod"
@@ -1539,7 +1665,7 @@ class ImagingConfig(DataAnalysis):
     MinCatSouSnr=4
     MinNewSouSnr=5
     NegModels=1
-    DoPart2=0
+    DoPart2=1
     SouFit=0
 
 class ii_skyimage(DataAnalysis):
@@ -1563,6 +1689,8 @@ class ii_skyimage(DataAnalysis):
     version="v2"
 
     outtype="BIN_I"
+        
+    empty_results=False
 
     def get_version(self):
         v=self.get_signature()+"."+self.version
@@ -1571,7 +1699,30 @@ class ii_skyimage(DataAnalysis):
                 v+="_"+k+"_"+str(getattr(self,'ii_'+k))
         return v
 
+    def treat_input_analysis_exceptions(self,exceptions):
+        for e in exceptions:
+            print("ii_skyimage experienced",e)
+
+            if isinstance(e[1],NoDeadData):
+                self.empty_results=True
+                continue
+
+            if isinstance(e[1],NoISGRIEvents):
+                self.empty_results=True
+                continue
+
+            return False
+
+        return True
+
+
     def main(self):
+        print("results marker",self.empty_results)
+        print("")
+        if self.empty_results:
+            print("it's so empty... probably excepted")
+            return
+
         construct_gnrl_scwg_grp(self.input_scw,[\
                     self.input_gb.corshad.path,
                     self.input_cat.cat.path,
@@ -1661,6 +1812,7 @@ class ImageGroups(DataAnalysis):
     allow_alias=True
     run_for_hashe=True
 
+    copy_cached_input=True
 
     outtype="BIN_I"
 
@@ -1671,11 +1823,11 @@ class ImageGroups(DataAnalysis):
             fn = "og_%s.fits" % scw.input_scwid.str()
             construct_gnrl_scwg_grp(scw, children=
                 [
-                    image.skyima.get_path(),
-                    image.skyres.get_path(),
-                    gti.output_gti.get_path(),
-                    gb.corshad.get_path(),
-                    cat.cat.get_path(),
+                    image.skyima._da_unique_local_path,
+                    image.skyres._da_unique_local_path,
+                    gti.output_gti._da_unique_local_path,
+                    gb.corshad._da_unique_local_path,
+                    cat.cat._da_unique_local_path,
                     scw.auxadppath + "/time_correlation.fits[AUXL-TCOR-HIS]",
                 ], fn=fn)
 
@@ -1754,7 +1906,10 @@ class lc_pick(DataAnalysis):
     cached=True
 
     def get_version(self):
-        return super(lc_pick, self).get_version()+"."+(".".join([m.replace(" ","_") for m in self.source_names]))
+        try:
+            return super(lc_pick, self).get_version()+"."+(".".join([m.replace(" ","_") for m in self.source_names]))
+        except:
+            return "lc_pick.UNDEFINED"
 
     def main(self):
         self.input_lcgroups.construct_og("ogg.fits")
@@ -1790,6 +1945,7 @@ class mosaic_ii_skyimage(DataAnalysis):
     #input_gti = ibis_gti
 
     cached = True
+    copy_cached_input=True
 
     ii_skyimage_binary = None
 
@@ -1821,6 +1977,7 @@ class mosaic_ii_skyimage(DataAnalysis):
             ii_skyimage_binary = "ii_skyimage"
         else:
             ii_skyimage_binary = self.ii_skyimage_binary
+
 
         ht = heatool(ii_skyimage_binary)
         ht['outOG'] = "ogg.fits[1]"
@@ -1873,10 +2030,12 @@ class CatForSpectraFromImaging(DataAnalysis):
     maxsources=None
 
     def get_version(self):
+        if isinstance(self.minsig,str):
+            raise Exception("what is "+repr(self.minsig))
         return self.get_signature()+"."+self.version+("" if self.minsig is None else "minsig%.3lg"%self.minsig)
 
     def main(self):
-        if hasattr(self.input_imaging,'empty_results'):
+        if hasattr(self.input_imaging,'empty_results') and self.input_imaging.empty_results:
             print("no results here")
             self.empty_results=True
             return
@@ -1934,7 +2093,7 @@ class ii_spectra_extract(DataAnalysis):
     report_runtime_destination="mysql://pixels.runtime"
 
     def main(self):
-        if hasattr(self.input_cat,'empty_results'):
+        if hasattr(self.input_cat,'empty_results') and self.input_cat.empty_results:
             print("empty here")
             self.empty_results=True
             return
@@ -2046,7 +2205,7 @@ class ii_lc_extract(DataAnalysis):
     #report_runtime_destination = "mysql://pixels.runtime"
 
     def main(self):
-        if hasattr(self.input_cat, 'empty_results'):
+        if hasattr(self.input_cat, 'empty_results') and self.input_cat.empty_results:
             print("empty here")
             self.empty_results = True
             return

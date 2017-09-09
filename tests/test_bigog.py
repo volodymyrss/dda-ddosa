@@ -8,7 +8,7 @@ def test_construct_many_images():
     print ig
 
     assert len(ig.members)==2
-    assert len(ig.members[0]) == 4
+    assert len(ig.members[0]) == 5
 
     assert hasattr(ig.members[0][1],'skyima')
     assert os.path.exists(ig.members[0][1].skyima.get_path())
