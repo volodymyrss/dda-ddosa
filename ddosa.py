@@ -525,10 +525,16 @@ class Revolution(DataAnalysis):
         return self.input_revid.handle
 
     def main(self):
-        rbp=os.environ["REP_BASE_PROD"]
-        self.revroot=rbp+"/scw/%s/"%self.get_revid()
-        self.revdir=self.revroot+"/rev.001/"
-        self.auxadppath=rbp+"/aux/adp/"+self.get_revid()+"."+self.scwver
+        if self.scwver=="001":
+            rbp=os.environ["REP_BASE_PROD_CONS"]
+            self.revroot=rbp+"/scw/%s/"%self.get_revid()
+            self.revdir=self.revroot+"/rev.001/"
+            self.auxadppath=rbp+"/aux/adp/"+self.get_revid()+"."+self.scwver
+        if self.scwver=="000":
+            rbp=os.environ["REP_BASE_PROD_NRT"]
+            self.revroot=rbp+"/scw/%s/"%self.get_revid()
+            self.revdir=self.revroot+"/rev.000/"
+            self.auxadppath=rbp+"/aux/adp/"+self.get_revid()+"."+self.scwver
 
     def get_ijd(self):
         r1100=4306.5559396296
@@ -551,8 +557,9 @@ class RevForScW(DataAnalysis):
 
     def main(self):
         revid=self.input_scw.input_scwid.handle[:4]
+        scwver=self.input_scw.input_scwid.handle[-3:]
         print("revolution id for scw:",revid)
-        return Revolution(input_revid=revid)
+        return Revolution(input_revid=revid,use_scwver=scwver)
 
 class Rev4ScW(Revolution):
     input_scw=ScWData    
