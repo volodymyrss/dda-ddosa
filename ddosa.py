@@ -2032,7 +2032,12 @@ class CatForSpectraFromImaging(DataAnalysis):
     def get_version(self):
         if isinstance(self.minsig,str):
             raise Exception("what is "+repr(self.minsig))
-        return self.get_signature()+"."+self.version+("" if self.minsig is None else "minsig%.3lg"%self.minsig)
+        v=self.get_signature()+"."+self.version+("" if self.minsig is None else "minsig%.3lg"%self.minsig)
+
+        if hasattr(self,'input_extra_sources'):
+            v+="_extrasv2"
+
+        return v
 
     def main(self):
         if hasattr(self.input_imaging,'empty_results') and self.input_imaging.empty_results:
