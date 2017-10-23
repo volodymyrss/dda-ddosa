@@ -582,8 +582,9 @@ class RevForScW(DataAnalysis):
 
     def main(self):
         revid=self.input_scw.input_scwid.handle[:4]
+        scwver=self.input_scw.input_scwid.handle[-3:]
         print("revolution id for scw:",revid)
-        return Revolution(input_revid=revid)
+        return Revolution(input_revid=revid,use_scwver=scwver)
 
 class Rev4ScW(Revolution):
     input_scw=ScWData    
