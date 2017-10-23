@@ -2053,6 +2053,27 @@ class CatForSpectraFromImaging(DataAnalysis):
         if self.maxsources is not None:
             raise Exception("not implemented")
 
+        if hasattr(self, 'input_extra_sources'):
+            t_orig = f[1]
+
+            t_new = pyfits.BinTableHDU.from_columns(t_orig.columns,
+                                                    nrows=len(t_orig.data) + len(self.input_extra_sources.sources))
+            t_new.data[:len(t_orig.data)] = t_orig.data[:]
+
+            i_offset = len(t_orig.data)
+
+            for i, source in enumerate(self.input_extra_sources.sources):
+                print("adding", source)
+                t_new.data[i_offset + i]['NAME'] = source['name']
+                t_new.data[i_offset + i]['RA_OBJ'] = source['ra']
+                t_new.data[i_offset + i]['DEC_OBJ'] = source['dec']
+                t_new.data[i_offset + i]['ISGRI_FLAG'] = 1
+
+            f[1].data = t_new.data
+
+            catfn = "isgri_catalog_extra.fits"
+            f.writeto(catfn, clobber=True)
+
         f.writeto(catfn,clobber=True)
 
         self.cat=DataFile(catfn)
