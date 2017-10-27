@@ -580,6 +580,11 @@ class ICRoot(DataAnalysis):
 
         print('current IC:',self.icroot)
 
+class FailingMedia(DataAnalysis):
+    def main(self):
+        raise Exception("exampliary failure")
+
+
 
 class IBIS_ICRoot(DataAnalysis):
     schema_hidden=True
