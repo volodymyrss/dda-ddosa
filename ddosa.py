@@ -471,6 +471,9 @@ class NoDeadData(da.AnalysisException):
 class NoISGRIEvents(da.AnalysisException):
     pass
 
+class EmptyScWList(da.AnalysisException):
+    pass
+
 class ScWData(DataAnalysis):
     input_scwid=None
 
@@ -1860,6 +1863,9 @@ class ImageGroups(DataAnalysis):
                 CatExtract(assume=[scw])
             ) for scw in self.input_scwlist.scwlistdata
         ]
+
+        if len(self.members)==0:
+            raise EmptyScWList()
 
 class LCGroups(DataAnalysis):
     input_scwlist=None
