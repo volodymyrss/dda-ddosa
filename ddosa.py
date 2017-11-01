@@ -1910,6 +1910,9 @@ class LCGroups(DataAnalysis):
             ) for scw in self.input_scwlist.scwlistdata
         ]
 
+        if len(self.members)==0:
+            raise EmptyScWList()
+
 class lc_pick(DataAnalysis):
     input_lcgroups = LCGroups
     source_names=["Crab"]
