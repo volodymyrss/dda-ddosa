@@ -377,7 +377,7 @@ class MemCacheIntegralFallback(MemCacheIntegralBase,dataanalysis.caches.cache_co
         except Exception as e:
             print("renga failed:",e)
 
-        dataanalysis.caches.cache_core.CacheNoIndex.store(self,hashe,obj)
+        return dataanalysis.caches.cache_core.CacheNoIndex.store(self,hashe,obj)
 
     def restore(self, hashe, obj, restore_config=None):
         filepath = self.construct_cached_file_path(hashe, obj)
@@ -387,7 +387,7 @@ class MemCacheIntegralFallback(MemCacheIntegralBase,dataanalysis.caches.cache_co
         except Exception as e:
             print("renga failed:", e)
 
-        dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
+        return dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
 
 
 
