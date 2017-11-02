@@ -352,7 +352,8 @@ def store_renga(filepath,obj):
     client.endpoint = "http://172.18.0.5"
 
     bucket=client.buckets.list()[-1]
-    with bucket.files.open('sample-file', 'w') as fp:
+    with bucket.files.open(filepath, 'w') as fp:
+        print("renga storing as",filepath)
         yaml.dump(obj.jsonify(), fp, default_flow_style=False)
 
 
