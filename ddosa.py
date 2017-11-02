@@ -345,8 +345,27 @@ class MemCacheIntegralBase:
 #class MemCacheIntegralLegacy(MemCacheIntegralBase,dataanalysis.MemCacheSqlite):
 #    pass
 
+
+def store_renga(filepath,obj):
+    import renga
+    client = renga.from_env()
+    client.endpoint = "http://172.18.0.5"
+
+    bucket=client.buckets.list()[-1]
+    with bucket.files.open('sample-file', 'w') as fp:
+        yaml.dump(obj.jsonify(), fp, default_flow_style=False)
+
+
 class MemCacheIntegralFallback(MemCacheIntegralBase,dataanalysis.caches.cache_core.CacheNoIndex):
-    pass
+    def store(self, hashe, obj):
+        filepath=self.construct_cached_file_path(hashe,obj)
+
+        try:
+            store_renga(filepath,obj)
+        except Exception as e:
+            print("renga failed:",e)
+
+        dataanalysis.caches.cache_core.CacheNoIndex.store(self,hashe,obj)
 
 #class MemCacheIntegralFallbackOldPath(MemCacheIntegralBaseOldPath,dataanalysis.caches.core.CacheNoIndex):
     #readonly_cache=True
