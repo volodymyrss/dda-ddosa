@@ -351,11 +351,22 @@ def store_renga(filepath,obj):
     client = renga.from_env()
     client.endpoint = "http://172.18.0.5"
 
+    print("renga searching for buckets",client.endpoint)
     bucket=client.buckets.list()[-1]
     with bucket.files.open(filepath, 'w') as fp:
         print("renga storing as",filepath)
         yaml.dump(obj.jsonify(), fp, default_flow_style=False)
 
+
+def read_renga(filepath,obj):
+    import renga
+    client = renga.from_env()
+    client.endpoint = "http://172.18.0.5"
+
+    print("renga searching for buckets",client.endpoint)
+    bucket=client.buckets.list()[-1]
+    with bucket.files.open(filepath) as fp:
+        print("renga reading as",filepath,"for",len(fp.read()))
 
 class MemCacheIntegralFallback(MemCacheIntegralBase,dataanalysis.caches.cache_core.CacheNoIndex):
     def store(self, hashe, obj):
@@ -368,7 +379,19 @@ class MemCacheIntegralFallback(MemCacheIntegralBase,dataanalysis.caches.cache_co
 
         dataanalysis.caches.cache_core.CacheNoIndex.store(self,hashe,obj)
 
-#class MemCacheIntegralFallbackOldPath(MemCacheIntegralBaseOldPath,dataanalysis.caches.core.CacheNoIndex):
+    def restore(self, hashe, obj, restore_config=None):
+        filepath = self.construct_cached_file_path(hashe, obj)
+
+        try:
+            read_renga(filepath, obj)
+        except Exception as e:
+            print("renga failed:", e)
+
+        dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
+
+
+
+        #class MemCacheIntegralFallbackOldPath(MemCacheIntegralBaseOldPath,dataanalysis.caches.core.CacheNoIndex):
     #readonly_cache=True
 
 #class MemCacheIntegralIRODS(MemCacheIntegralBase,dataanalysis.MemCacheIRODS):
