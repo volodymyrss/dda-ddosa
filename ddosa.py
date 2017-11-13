@@ -361,10 +361,7 @@ class MemCacheIntegralFallback(MemCacheIntegralBase,dataanalysis.caches.cache_co
 #mcgl=MemCacheIntegralLegacy('/Integral/data/reduced/ddcache/')
 #mcg.parent=mcgl
 
-try:
-    IntegralCacheRoots=os.environ['INTEGRAL_DDCACHE_ROOT']
-except:
-    IntegralCacheRoots='/sps/integral/data/reduced/ddcache/'
+IntegralCacheRoots=os.environ.get('INTEGRAL_DDCACHE_ROOT','/sps/integral/data/reduced/ddcache/')
 
 CacheStack=[]
 
@@ -2090,7 +2087,7 @@ class CatForSpectraFromImaging(DataAnalysis):
 class ISGRIResponse(DataAnalysis):
     input_ecorrdata=GetEcorrCalDB
 
-    path=os.environ['INTEGRAL_DATA']+"/resources/rmf_62bands.fits"
+    path=os.environ.get('INTEGRAL_DATA','')+"/resources/rmf_62bands.fits"
         
 
 class ii_spectra_extract(DataAnalysis):
