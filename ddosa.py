@@ -345,10 +345,53 @@ class MemCacheIntegralBase:
 #class MemCacheIntegralLegacy(MemCacheIntegralBase,dataanalysis.MemCacheSqlite):
 #    pass
 
-class MemCacheIntegralFallback(MemCacheIntegralBase,dataanalysis.caches.cache_core.CacheNoIndex):
-    pass
 
-#class MemCacheIntegralFallbackOldPath(MemCacheIntegralBaseOldPath,dataanalysis.caches.core.CacheNoIndex):
+def store_renga(filepath,obj):
+    import renga
+    client = renga.from_env()
+    client.endpoint = "http://172.18.0.5"
+
+    print("renga searching for buckets",client.endpoint)
+    bucket=client.buckets.list()[-1]
+    with bucket.files.open(filepath, 'w') as fp:
+        print("renga storing as",filepath)
+        yaml.dump(obj.jsonify(), fp, default_flow_style=False)
+
+
+def read_renga(filepath,obj):
+    import renga
+    client = renga.from_env()
+    client.endpoint = "http://172.18.0.5"
+
+    print("renga searching for buckets",client.endpoint)
+    bucket=client.buckets.list()[-1]
+    with bucket.files.open(filepath) as fp:
+        print("renga reading as",filepath,"for",len(fp.read()))
+
+class MemCacheIntegralFallback(MemCacheIntegralBase,dataanalysis.caches.cache_core.CacheNoIndex):
+    def store(self, hashe, obj):
+        filepath=self.construct_cached_file_path(hashe,obj)
+
+        try:
+            store_renga(filepath,obj)
+        except Exception as e:
+            print("renga failed:",e)
+
+        return dataanalysis.caches.cache_core.CacheNoIndex.store(self,hashe,obj)
+
+    def restore(self, hashe, obj, restore_config=None):
+        filepath = self.construct_cached_file_path(hashe, obj)
+
+        try:
+            read_renga(filepath, obj)
+        except Exception as e:
+            print("renga failed:", e)
+
+        return dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
+
+
+
+        #class MemCacheIntegralFallbackOldPath(MemCacheIntegralBaseOldPath,dataanalysis.caches.core.CacheNoIndex):
     #readonly_cache=True
 
 #class MemCacheIntegralIRODS(MemCacheIntegralBase,dataanalysis.MemCacheIRODS):
@@ -466,6 +509,9 @@ class NoDeadData(da.AnalysisException):
     pass
     
 class NoISGRIEvents(da.AnalysisException):
+    pass
+
+class EmptyScWList(da.AnalysisException):
     pass
 
 class ScWData(DataAnalysis):
@@ -608,6 +654,11 @@ class ICRoot(DataAnalysis):
         self.icindex=self.icroot+"/idx/ic/ic_master_file.fits[1]"
 
         print('current IC:',self.icroot)
+
+class FailingMedia(DataAnalysis):
+    def main(self):
+        raise Exception("exampliary failure")
+
 
 
 class IBIS_ICRoot(DataAnalysis):
@@ -1853,6 +1904,9 @@ class ImageGroups(DataAnalysis):
             ) for scw in self.input_scwlist.scwlistdata
         ]
 
+        if len(self.members)==0:
+            raise EmptyScWList()
+
 class LCGroups(DataAnalysis):
     input_scwlist=None
     input_lc_processing=LCProcessingSummary
@@ -1895,6 +1949,9 @@ class LCGroups(DataAnalysis):
                 ii_lc_extract(assume=[scw]),
             ) for scw in self.input_scwlist.scwlistdata
         ]
+
+        if len(self.members)==0:
+            raise EmptyScWList()
 
 class lc_pick(DataAnalysis):
     input_lcgroups = LCGroups
