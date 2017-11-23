@@ -737,7 +737,18 @@ class BasicEventProcessingSummary(DataAnalysis):
         print("generalized hash:",ahash)
         rh=shhash(ahash)
         print("reduced hash",rh)
-        return [dataanalysis.DataHandle('processing_definition:'+rh[:8])]
+
+        handle=dataanalysis.DataHandle('processing_definition:' + rh[:8])
+
+        self.factory.note_factorization(dict(
+            origin_object=self.__class__.__name__,
+            origin_module=__name__,
+            generalized_hash=ahash,
+            reduced_hash=rh,
+            handle=handle.handle,
+        ))
+
+        return [handle]
 
 class ImageProcessingSummary(DataAnalysis):
     run_for_hashe=True
@@ -752,6 +763,15 @@ class ImageProcessingSummary(DataAnalysis):
         print("reduced hash",rh)
         d=dataanalysis.DataHandle('processing_definition:'+rh[:8])
         dataanalysis.AnalysisFactory.register_definition(d.handle,ahash)
+
+        self.factory.note_factorization(dict(
+            origin_object=self.__class__.__name__,
+            origin_module=__name__,
+            generalized_hash=ahash,
+            reduced_hash=rh,
+            handle=d.handle,
+        ))
+
         d.hash=ahash
         return [d]
 
@@ -766,9 +786,19 @@ class LCProcessingSummary(DataAnalysis):
         print("generalized hash:",ahash)
         rh=shhash(ahash)
         print("reduced hash",rh)
-        d=dataanalysis.DataHandle('processing_definition:'+rh[:8])
-        dataanalysis.AnalysisFactory.register_definition(d.handle,ahash)
-        d.hash=ahash
+
+        handle = dataanalysis.DataHandle('processing_definition:' + rh[:8])
+        self.factory.note_factorization(dict(
+            origin_object=self.__class__.__name__,
+            origin_module=__name__,
+            generalized_hash=ahash,
+            reduced_hash=rh,
+            handle=handle,
+        ))
+
+
+        dataanalysis.AnalysisFactory.register_definition(handle.handle, ahash)
+        d.hash = ahash
         return [d]
 
 class SpectraProcessingSummary(DataAnalysis):
@@ -786,10 +816,11 @@ class SpectraProcessingSummary(DataAnalysis):
         print("reduced hash",rh)
         handle=dataanalysis.DataHandle('processing_definition:'+rh[:8])
         self.factory.note_factorization(dict(
-            origin=self.__class__.__name,
+            origin_object=self.__class__.__name__,
+            origin_module=__name__,
             generalized_hash=ahash,
             reduced_hash=rh,
-            handle=handle,
+            handle=handle.handle,
         ))
         return [handle]
 
