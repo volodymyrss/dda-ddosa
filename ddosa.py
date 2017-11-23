@@ -1561,7 +1561,7 @@ class ghost_bustersVirtual(DataAnalysis):
 
     version="v2"
     
-    cached=True
+    cached=False
 
     gb_binary=None
 
