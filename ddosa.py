@@ -787,7 +787,14 @@ class SpectraProcessingSummary(DataAnalysis):
         print("generalized hash:",ahash)
         rh=shhash(ahash)
         print("reduced hash",rh)
-        return [dataanalysis.DataHandle('processing_definition:'+rh[:8])]
+        handle=dataanalysis.DataHandle('processing_definition:'+rh[:8])
+        self.factory.note_factorization(dict(
+            origin=self.__class__.__name,
+            generalized_hash=ahash,
+            reduced_hash=rh,
+            handle=handle,
+        ))
+        return [handle]
 
 class ibis_isgr_energy_standard(DataAnalysis):
     cached=False
