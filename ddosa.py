@@ -798,8 +798,8 @@ class LCProcessingSummary(DataAnalysis):
 
 
         dataanalysis.AnalysisFactory.register_definition(handle.handle, ahash)
-        d.hash = ahash
-        return [d]
+        handle.hash = ahash
+        return [handle]
 
 class SpectraProcessingSummary(DataAnalysis):
     run_for_hashe=True
