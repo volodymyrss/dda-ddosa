@@ -2611,11 +2611,11 @@ def construct_empty_shadidx(bins,fn="og.fits",levl="BIN_I"):
         og[2+i].header['ISDCLEVL']=levl
     og.writeto(fn,clobber=True)
 
-class AnyScW(da.AnyAnalysis):
-    pass
+#class AnyScW(da.AnyAnalysis):
+#    pass
 
-class AnyRev(da.AnyAnalysis):
-    pass
+#class AnyRev(da.AnyAnalysis):
+#    pass
 
 
 
