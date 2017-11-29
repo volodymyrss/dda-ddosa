@@ -1911,6 +1911,9 @@ class ImageGroups(DataAnalysis):
 
         for scw,image,gb,gti,cat in self.members:
             fn = "og_%s.fits" % scw.input_scwid.str()
+            if not hasattr(image,'skyima'):
+                print("skipping",scw)
+                continue
             construct_gnrl_scwg_grp(scw, children=
                 [
                     image.skyima._da_unique_local_path,
