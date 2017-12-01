@@ -2525,8 +2525,8 @@ def import_attr(obj,attr,target="og.fits"):
     
 def set_attr(attrs,fn="og.fits"):
 
-    pt2dt={int:"DAL_INT",str:"DAL_CHAR", float:'DAL_FLOAT'}
-    pt2k={int:"i",str:"s"}
+    pt2dt={int:"DAL_INT",str:"DAL_CHAR", float:'DAL_DOUBLE'}
+    pt2k={int:"i",str:"s", float:'r'}
 
     for k,v in attrs.items():
         da=heatool("dal_attr")
