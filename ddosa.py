@@ -1136,6 +1136,9 @@ class SpectraBins(DataAnalysis):
         else:
             self.binrmf=os.environ['INTEGRAL_DATA']+"/resources/rmf_62bands.fits"
 
+        if not os.path.exists(self.binrmf):
+            self.binrmf="/unsaved_data/savchenk/rmf_62bands.fits"
+
         #self.binrmf=os.environ['CURRENT_IC']+"/ic/ibis/rsp/rmf_62bands.fits" # noo!!!
         #self.binrmf=os.environ['CURRENT_IC']+"/ic/ibis/rsp/isgr_ebds_mod_0001.fits" # noo!!!
         e=pyfits.open(self.binrmf)[self.rmfext].data
@@ -1908,6 +1911,9 @@ class ImageGroups(DataAnalysis):
 
         for scw,image,gb,gti,cat in self.members:
             fn = "og_%s.fits" % scw.input_scwid.str()
+            if not hasattr(image,'skyima'):
+                print("skipping",scw)
+                continue
             construct_gnrl_scwg_grp(scw, children=
                 [
                     image.skyima._da_unique_local_path,
