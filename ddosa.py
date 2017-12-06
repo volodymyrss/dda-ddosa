@@ -1606,6 +1606,8 @@ class ghost_bustersImage(ghost_bustersVirtual):
     input_shadow=ShadowUBCImage
     level="BIN_I"
 
+    cached=True
+
 class ghost_bustersSpectra(ghost_bustersVirtual):
     input_shadow=ShadowUBCSpectra
     level="BIN_S"
