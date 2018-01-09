@@ -349,7 +349,6 @@ class MemCacheIntegralBase:
 def store_renga(filepath,obj):
     import renga
     client = renga.from_env()
-    client.endpoint = "http://172.18.0.5"
 
     print("renga searching for buckets",client.endpoint)
     bucket=client.buckets.list()[-1]
@@ -361,7 +360,6 @@ def store_renga(filepath,obj):
 def read_renga(filepath,obj):
     import renga
     client = renga.from_env()
-    client.endpoint = "http://172.18.0.5"
 
     print("renga searching for buckets",client.endpoint)
     bucket=client.buckets.list()[-1]
