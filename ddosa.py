@@ -350,7 +350,7 @@ def store_renga(filepath,obj):
     import renga
     client = renga.from_env()
 
-    print("renga searching for buckets",client.endpoint)
+    print("renga searching for buckets",client.api.endpoint)
     bucket=client.buckets.list()[-1]
     with bucket.files.open(filepath, 'w') as fp:
         print("renga storing as",filepath)
@@ -361,7 +361,7 @@ def read_renga(filepath,obj):
     import renga
     client = renga.from_env()
 
-    print("renga searching for buckets",client.endpoint)
+    print("renga searching for buckets",client.api.endpoint)
     bucket=client.buckets.list()[-1]
     with bucket.files.open(filepath) as fp:
         print("renga reading as",filepath,"for",len(fp.read()))
