@@ -2783,3 +2783,16 @@ def fromUTC(utc):
             #print(g                                                                                                                                                                                           )
     return d    
 
+
+import dataanalysis.callback
+
+class CallbackRareDDOSAFilter(dataanalysis.callback.Callback):
+    def extract_data(self,obj):
+        scw=obj.cache.get_scw(obj._da_locally_complete)
+        if scw is None:
+            scw=obj.cache.get_scw(obj._da_expected_full_hashe)
+        return {"scwid":scw}
+
+dataanalysis.callback.default_callback_filter=CallbackRareDDOSAFilter
+CallbackRareDDOSAFilter.set_callback_accepted_classes([mosaic_ii_skyimage, ii_skyimage, BinEventsImage, ii_spectra_extract, BinEventsSpectra, ii_lc_extract, BinEventsLC])
+
