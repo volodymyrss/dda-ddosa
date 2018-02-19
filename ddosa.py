@@ -486,7 +486,7 @@ class DataAnalysis(DataAnalysisPrototype):
     def get_scw(self):
         if self._da_locally_complete is not None:
             try:
-                return "(completescw:%s)"%self.cache.get_scw(self._da_locally_complete)
+                return "(completescw:%s)"%self.cache.get_scw(getattr(self,'_da_locally_complete',None))
             except:
                 return "(complete)"
 
@@ -2790,9 +2790,11 @@ class CallbackRareDDOSAFilter(dataanalysis.callback.Callback):
     def extract_data(self,obj):
         scw=obj.cache.get_scw(obj._da_locally_complete)
         if scw is None:
-            scw=obj.cache.get_scw(obj._da_expected_full_hashe)
+            scw=obj.cache.get_scw(getattr(obj,'_da_expected_full_hashe',None))
+        if scw is None:
+            return None
         return {"scwid":scw}
 
 dataanalysis.callback.default_callback_filter=CallbackRareDDOSAFilter
-CallbackRareDDOSAFilter.set_callback_accepted_classes([mosaic_ii_skyimage, ii_skyimage, BinEventsImage, ii_spectra_extract, BinEventsSpectra, ii_lc_extract, BinEventsLC])
+CallbackRareDDOSAFilter.set_callback_accepted_classes([mosaic_ii_skyimage, ii_skyimage, BinEventsImage, ibis_gti, ibis_dead, ISGRIEvents, ii_spectra_extract, BinEventsSpectra, ii_lc_extract, BinEventsLC])
 
