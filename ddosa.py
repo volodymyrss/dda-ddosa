@@ -2792,7 +2792,7 @@ class CallbackRareDDOSAFilter(dataanalysis.callback.Callback):
         if scw is None:
             scw=obj.cache.get_scw(getattr(obj,'_da_expected_full_hashe',None))
         if scw is None:
-            return None
+            return {}
         return {"scwid":scw}
 
 dataanalysis.callback.default_callback_filter=CallbackRareDDOSAFilter
