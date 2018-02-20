@@ -512,6 +512,9 @@ class NoISGRIEvents(da.AnalysisException):
 class EmptyScWList(da.AnalysisException):
     pass
 
+class NoValidScW(da.AnalysisException):
+    pass
+
 class EmptyImageList(da.AnalysisException):
     pass
 
@@ -1913,7 +1916,7 @@ class ImageGroups(DataAnalysis):
         scw_og_fns = []
 
         if len(self.members)==0:
-            raise EmptyImageList
+            raise EmptyImageList()
 
         for scw,image,gb,gti,cat in self.members:
             fn = "og_%s.fits" % scw.input_scwid.str()
@@ -2486,6 +2489,9 @@ def construct_gnrl_scwg_grp(scw,children=[],fn="og.fits"):
 
 def construct_gnrl_scwg_grp_idx(children=[],fn="og_idx.fits"):
     remove_withtemplate(fn+"(GNRL-SCWG-GRP-IDX.tpl)")
+
+    if len(children)==0:
+        raise NoValidScW()
 
     open("swgs.txt","w").write("\n".join(children))
     dc=heatool("txt2idx")
