@@ -512,6 +512,9 @@ class NoISGRIEvents(da.AnalysisException):
 class EmptyScWList(da.AnalysisException):
     pass
 
+class EmptyImageList(da.AnalysisException):
+    pass
+
 class ScWData(DataAnalysis):
     input_scwid=None
 
@@ -1908,6 +1911,9 @@ class ImageGroups(DataAnalysis):
 
     def construct_og(self,og_fn):
         scw_og_fns = []
+
+        if len(self.members)==0:
+            raise EmptyImageList
 
         for scw,image,gb,gti,cat in self.members:
             fn = "og_%s.fits" % scw.input_scwid.str()
