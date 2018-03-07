@@ -29,6 +29,8 @@
 # maks environment, osa, as input
 # make aliases for evolutions
 
+print("actually importing ddosa")
+
 from dataanalysis.core import DataFile
 from dataanalysis.caches import cache_core
 from dataanalysis import hashtools
@@ -493,6 +495,9 @@ class DataAnalysis(DataAnalysisPrototype):
         for a in self.assumptions:
             if isinstance(a,ScWData):
                 return "(assumescw:%s)"%str(a.input_scwid)
+        
+        if hasattr(self,'input_scw'):
+            return "(inputscw:%s)"%str(self.input_scw)
 
         return ""
 
@@ -1106,15 +1111,18 @@ class ImageBins(DataAnalysis):
         v=self.get_signature()+"."+self.version
 
         if self.autoversion:
-            if self.ebins is None:
-                v+=".std_one_25_80"
-            else:
-                if len(self.ebins)==1:
-                    v+=".one_bin_%.5lg_%.5lg"%(self.ebins[0][0],self.ebins[0][1])
+            try:
+                if self.ebins is None:
+                    v+=".std_one_25_80"
                 else:
-                    v+=".%i_bins"%len(self.ebins)
-                    for ebin in self.ebins:
-                        v+=".%.5lg_%.5lg"%(ebin[0],ebin[1])
+                    if len(self.ebins)==1:
+                        v+=".one_bin_%.5lg_%.5lg"%(self.ebins[0][0],self.ebins[0][1])
+                    else:
+                        v+=".%i_bins"%len(self.ebins)
+                        for ebin in self.ebins:
+                            v+=".%.5lg_%.5lg"%(bin[0],bin[1])
+            except Exception as e:
+                raise Exception("autoversion failed:",self.ebins,e)
 
         return v
 
@@ -1903,9 +1911,10 @@ class ii_skyimage(DataAnalysis):
 
 class ImageGroups(DataAnalysis):
     input_scwlist=None
-    input_image_processing=ImageProcessingSummary
+    #input_image_processing=ImageProcessingSummary
 
-    allow_alias=True
+    #allow_alias=True
+    allow_alias=False
     run_for_hashe=True
 
     copy_cached_input=True
@@ -1955,7 +1964,7 @@ class ImageGroups(DataAnalysis):
                 ghost_bustersImage(assume=[scw]),
                 ibis_gti(assume=[scw]),
                 CatExtract(assume=[scw])
-            ) for scw in self.input_scwlist.scwlistdata
+            ) for scw in self.input_scwlist #.scwlistdata
         ]
 
         if len(self.members)==0:
@@ -2074,7 +2083,12 @@ class mosaic_ii_skyimage(DataAnalysis):
         return v
 
     def main(self):
-        self.input_imagegroups.construct_og("ogg.fits")
+        ig=ImageGroups()
+        ig.members=[]
+        for i in range(len(self.input_imagegroups)/5):
+            ig.members.append(self.input_imagegroups[i*5:i*5+5])
+        ig.construct_og("ogg.fits")
+        #self.input_imagegroups.construct_og("ogg.fits")
 
         remove_withtemplate("isgri_srcl_res.fits(ISGR-SRCL-RES.tpl)")
         remove_withtemplate("isgri_mosa_ima.fits(ISGR-MOSA-IMA-IDX.tpl)")
@@ -2640,7 +2654,7 @@ def construct_empty_shadidx(bins,fn="og.fits",levl="BIN_I"):
 
 class IDScWList(DataAnalysis):
     scwid_list=None
-    allow_alias=True
+    #allow_alias=True
 
     def get_version(self):
         v=self.get_signature()+"."+self.version
