@@ -2798,17 +2798,18 @@ def fromUTC(utc):
 
 import dataanalysis.callback
 
-if dataanalysis.callback.default_callback_filter.__class__.__name__=="CallbackRareDDOSAFilter":
-    class CallbackRareDDOSAFilter(dataanalysis.callback.Callback):
-        def extract_data(self,obj):
-            scw=obj.cache.get_scw(obj._da_locally_complete)
-            if scw is None:
-                scw=obj.cache.get_scw(getattr(obj,'_da_expected_full_hashe',None))
-            if scw is None:
-                return {}
-            return {"scwid":scw}
+previously_accepted_classes=dataanalysis.callback.default_callback_filter.callback_accepted_classes
 
-    dataanalysis.callback.default_callback_filter=CallbackRareDDOSAFilter
+class CallbackRareDDOSAFilter(dataanalysis.callback.Callback):
+    def extract_data(self,obj):
+        scw=obj.cache.get_scw(obj._da_locally_complete)
+        if scw is None:
+            scw=obj.cache.get_scw(getattr(obj,'_da_expected_full_hashe',None))
+        if scw is None:
+            return {}
+        return {"scwid":scw}
 
-dataanalysis.callback.default_callback_filter.set_callback_accepted_classes([mosaic_ii_skyimage, ii_skyimage, BinEventsImage, ibis_gti, ibis_dead, ISGRIEvents, ii_spectra_extract, BinEventsSpectra, ii_lc_extract, BinEventsLC])
+dataanalysis.callback.default_callback_filter=CallbackRareDDOSAFilter
+
+dataanalysis.callback.default_callback_filter.set_callback_accepted_classes([mosaic_ii_skyimage, ii_skyimage, BinEventsImage, ibis_gti, ibis_dead, ISGRIEvents, ii_spectra_extract, BinEventsSpectra, ii_lc_extract, BinEventsLC]+previously_accepted_classes)
 
