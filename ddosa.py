@@ -2817,7 +2817,7 @@ class CallbackRareDDOSAFilter(dataanalysis.callback.Callback):
             scw=obj.cache.get_scw(expected_hashe)
 
         if scw is not None:
-            data.update({"scwid":scw,"tag":}
+            data.update({"scwid":scw,"tag":})
 
         return data
 
