@@ -168,7 +168,7 @@ class MemCacheIntegralBaseOldPath:
         rev=self.get_rev(hashe)
 
         def hash_to_path2(hashe):                                                                                                                                      
-            return shhash(repr(hashe[1]))[:8]                                                                                                           
+            return shhash(hashe[1])[:8]                                                                                                           
             
         marked=self.get_marked(hashe[1])
         marked=remove_repeating(marked)
@@ -290,13 +290,13 @@ class MemCacheIntegralBase:
 
     def construct_cached_file_path(self,hashe,obj=None):                                                                                                                        
         #print("will construct INTEGRAL cached file path for",hashe)
-        hashe= hashtools.hashe_replace_object(hashe, None, "None")
+        #hashe= hashtools.hashe_replace_object(hashe, None, "None")
 
         scw=self.get_scw(hashe)
         rev=self.get_rev(hashe)
 
         def hash_to_path2(hashe):                                                                                                                                      
-            return shhash(repr(hashe[1]))[:8]                                                                                                           
+            return shhash(hashe[1])[:8]                                                                                                           
             
         marked=self.get_marked(hashe[1])
         marked=remove_repeating(marked)
