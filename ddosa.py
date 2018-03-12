@@ -2809,7 +2809,7 @@ class CallbackRareDDOSAFilter(dataanalysis.callback.Callback):
         expected_hashe=getattr(obj,'_da_expected_full_hashe',None)
 
         if expected_hashe is not None:
-            data['node_id']=hashe2signature(expected_hashe)
+            data['node_id']=obj.cache.hashe2signature(expected_hashe)
         else:
             data['node_id']="undefined_expected_hashe_please_complain" # add sentry
 
