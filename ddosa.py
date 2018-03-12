@@ -2802,12 +2802,24 @@ previously_accepted_classes=dataanalysis.callback.default_callback_filter.callba
 
 class CallbackRareDDOSAFilter(dataanalysis.callback.Callback):
     def extract_data(self,obj):
+        data={'scwid':'inapplicable',}
+
         scw=obj.cache.get_scw(obj._da_locally_complete)
+        
+        expected_hashe=getattr(obj,'_da_expected_full_hashe',None)
+
+        if expected_hashe is not None:
+            data['node_id']=hashe2signature(expected_hashe)
+        else:
+            data['node_id']="undefined_expected_hashe_please_complain" # add sentry
+
         if scw is None:
-            scw=obj.cache.get_scw(getattr(obj,'_da_expected_full_hashe',None))
-        if scw is None:
-            return {}
-        return {"scwid":scw}
+            scw=obj.cache.get_scw(expected_hashe)
+
+        if scw is not None:
+            data.update({"scwid":scw,"tag":}
+
+        return data
 
 dataanalysis.callback.default_callback_filter=CallbackRareDDOSAFilter
 
