@@ -290,6 +290,7 @@ class MemCacheIntegralBase:
 
     def construct_cached_file_path(self,hashe,obj=None):                                                                                                                        
         #print("will construct INTEGRAL cached file path for",hashe)
+        hashe= hashtools.hashe_replace_object(hashe, None, "None")
 
         scw=self.get_scw(hashe)
         rev=self.get_rev(hashe)
