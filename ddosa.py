@@ -2172,13 +2172,20 @@ class CatForSpectraFromImaging(DataAnalysis):
         if hasattr(self, 'input_extra_sources'):
             t_orig = f[1]
 
+            new_extra_sources=[]
+            for source in self.input_extra_sources.sources:
+                if source['name'] not in [str(s).strip() for s in t_orig.data['NAME']]:
+                    new_extra_sources.append(source)
+
+            print("new extra sources",new_extra_sources)
+
             t_new = pyfits.BinTableHDU.from_columns(t_orig.columns,
-                                                    nrows=len(t_orig.data) + len(self.input_extra_sources.sources))
+                                                    nrows=len(t_orig.data) + len(new_extra_sources))
             t_new.data[:len(t_orig.data)] = t_orig.data[:]
 
             i_offset = len(t_orig.data)
 
-            for i, source in enumerate(self.input_extra_sources.sources):
+            for i, source in enumerate(new_extra_sources):
                 print("adding", source)
                 t_new.data[i_offset + i]['NAME'] = source['name']
                 t_new.data[i_offset + i]['RA_OBJ'] = source['ra']
@@ -2201,6 +2208,10 @@ class ISGRIResponse(DataAnalysis):
     input_ecorrdata=GetEcorrCalDB
 
     path=os.environ.get('INTEGRAL_DATA','')+"/resources/rmf_62bands.fits"
+
+    
+    def rmf_path(self):
+        return self.path
         
 
 class ii_spectra_extract(DataAnalysis):
@@ -2284,7 +2295,7 @@ class ii_spectra_extract(DataAnalysis):
         ht['tungAtt']=self.input_ic.ibisicroot+"/mod/isgr_attn_mod_0010.fits[ISGR-ATTN-MOD,1,BINTABLE]"
         ht['aluAtt']=self.input_ic.ibisicroot+"/mod/isgr_attn_mod_0011.fits[ISGR-ATTN-MOD,1,BINTABLE]"
         ht['leadAtt']=self.input_ic.ibisicroot+"/mod/isgr_attn_mod_0012.fits[ISGR-ATTN-MOD,1,BINTABLE]"
-        ht['idx_isgrResp']=self.input_response.path
+        ht['idx_isgrResp']=self.input_response.rmf_path
         ht['isgrUnifDol']=self.input_maps.unif.path
         if self.usebkg:
             ht['isgrBkgDol']=self.input_maps.back.path
@@ -2299,7 +2310,7 @@ class ii_spectra_extract(DataAnalysis):
             ht['num_band']=len(ebins)
             ht['E_band_min'],ht['E_band_max']=[" ".join(["%.5lg"%b for b in a]) for a in zip(*ebins)]
         else:
-            rmf=self.input_bins.get_binrmfext() if hasattr(self,'input_bins') else self.input_response.path
+            rmf=self.input_bins.get_binrmfext() if hasattr(self,'input_bins') else self.input_response.rmf_path
             ht['num_band'] = -1
             ht['idx_isgrResp'] = rmf #  +"[1]" will this work?
 
