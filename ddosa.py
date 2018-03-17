@@ -599,7 +599,13 @@ class Revolution(DataAnalysis):
     scwver="001"
 
     def get_revid(self):
-        return self.input_revid.handle
+        try:
+            return self.input_revid.handle
+        except Exception as e:
+            try:
+                return self.input_revid.str()
+            except:
+                return self.input_revid
 
     def main(self):
         rbp=detect_rbp(scwver=self.scwver)
