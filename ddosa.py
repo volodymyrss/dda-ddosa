@@ -611,7 +611,7 @@ class Revolution(DataAnalysis):
         rbp=detect_rbp(scwver=self.scwver)
 
         self.revroot=rbp+"/scw/%s/"%self.get_revid()
-        self.revdir=self.revroot+"/rev.001/"
+        self.revdir=self.revroot+"/rev."+self.scwver+"/"
         self.auxadppath=rbp+"/aux/adp/"+self.get_revid()+"."+self.scwver
 
     def get_ijd(self):
