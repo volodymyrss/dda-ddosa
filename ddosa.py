@@ -1916,9 +1916,8 @@ class ii_skyimage(DataAnalysis):
 
 class ImageGroups(DataAnalysis):
     input_scwlist=None
-    input_image_processing=ImageProcessingSummary
 
-    allow_alias=True
+    allow_alias=False
     run_for_hashe=True
 
     copy_cached_input=True
