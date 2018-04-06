@@ -2086,6 +2086,10 @@ class mosaic_ii_skyimage(DataAnalysis):
         return v
 
     def main(self):
+        self.input_imagegroups=ImageGroups()
+        self.input_imagegroups.members=[]
+        for i in range(0,len(self.input_imagegroups)/5):
+            self.input_imagegroups.members.append(self.input_imagegroups[i*5:(i+1)*5])
         self.input_imagegroups.construct_og("ogg.fits")
 
         remove_withtemplate("isgri_srcl_res.fits(ISGR-SRCL-RES.tpl)")
