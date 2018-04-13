@@ -2330,10 +2330,13 @@ class ii_spectra_extract(DataAnalysis):
         #for k in ['SearchMode','ToSearch','CleanMode','MinCatSouSnr','MinNewSouSnr','NegModels','DoPart2']: # dopart2 is flow control, separately
         #    ht[k]=getattr(self.input_imgconfig,k)
 
-        ht.run()
+        try:
+            ht.run()
+            self.spectrum=DataFile(spec_fn)
+            self.pifs=DataFile(pif_fn)
+        except pilton.HEAToolException as e:
+            self.empty_results=True
 
-        self.spectrum=DataFile(spec_fn)
-        self.pifs=DataFile(pif_fn)
 
 class CatForLC(CatForSpectraFromImaging):
     pass
