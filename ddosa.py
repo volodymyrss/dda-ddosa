@@ -37,6 +37,7 @@ import dataanalysis.printhook
 import dataanalysis.core as da
 
 from pilton import heatool
+import pilton
 
 import pprint
 import os,shutil,re,time,glob
