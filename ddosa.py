@@ -1989,6 +1989,10 @@ class LCGroups(DataAnalysis):
         scw_og_fns = []
 
         for scw,lc in self.members:
+            if not hasattr(lc,'lightcurve'):
+                print("lcgroups skipping this:",scw,lc)
+                continue
+
             fn = "og_%s.fits" % scw.input_scwid.str()
             construct_gnrl_scwg_grp(scw, children=
                 [
