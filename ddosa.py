@@ -1912,7 +1912,7 @@ class ii_skyimage(DataAnalysis):
             self.empty_results=True
             return
 
-        if hk['DoPart2']>0:
+        if ht['DoPart2']>0:
             self.srclres=DataFile("isgri_srcl_res.fits")
 
         if self.save_image:
