@@ -2076,7 +2076,7 @@ class lc_pick(DataAnalysis):
 
 
 class MosaicImagingConfig(DataAnalysis):
-    input="source50p21sm3"
+    input="source50p22sm3"
 
     SearchMode=3
     ToSearch=10
