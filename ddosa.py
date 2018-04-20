@@ -861,7 +861,7 @@ class ibis_isgr_energy_standard(DataAnalysis):
         remove_withtemplate("isgri_events_corrected.fits(ISGR-EVTS-COR.tpl)")
     
         construct_gnrl_scwg_grp(self.input_scw,[\
-            self.input_scw.scwpath+"/isgri_events.fits[3]", \
+            self.input_scw.scwpath+"/isgri_events.fits[ISGR-EVTS-ALL]", \
             self.input_scw.scwpath+"/ibis_hk.fits[IBIS-DPE.-CNV]" \
         ])
 
@@ -944,7 +944,7 @@ class ibis_isgr_evts_tag(DataAnalysis):
         shutil.copyfile(self.input_events_corrected.output_events.path,cte)
     
         construct_gnrl_scwg_grp(self.input_scw,[\
-            self.input_scw.scwpath+"/isgri_events.fits[3]", \
+            self.input_scw.scwpath+"/isgri_events.fits[ISGR-EVTS-ALL]", \
             cte \
         ])
             #self.input_scw.scwpath+"/ibis_hk.fits[IBIS-DPE.-CNV]" \
@@ -1211,7 +1211,7 @@ class BinEventsVirtual(DataAnalysis):
         # ask stephane why need raw events
         construct_gnrl_scwg_grp(self.input_scw,[\
             self.input_events.events.get_path(), \
-            self.input_scw.scwpath+"/isgri_events.fits[3]", \
+            self.input_scw.scwpath+"/isgri_events.fits[ISGR-EVTS-ALL]", \
             self.input_scw.scwpath+"/ibis_hk.fits[IBIS-DPE.-CNV]", \
             self.input_scw.auxadppath+"/time_correlation.fits[AUXL-TCOR-HIS]" \
         ]) # get separately tc etc
@@ -2710,7 +2710,7 @@ class RevScWList(DataAnalysis):
         for event_file in glob.glob(self.input_rev.revroot+"/*/isgri_events.fits*"):
             print(event_file)
             try:
-                evts=pyfits.open(event_file)[3]
+                evts=pyfits.open(event_file)['ISGR-EVTS-ALL']
                 print(evts)
                 if evts.data.shape[0]<10000:
                     raise Exception("very few events!")
