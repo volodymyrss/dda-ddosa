@@ -2084,7 +2084,7 @@ class MosaicImagingConfig(DataAnalysis):
     MinCatSouSnr=4
     MinNewSouSnr=5
     NegModels=0
-    DoPart2=2
+    DoPart2=1
     SouFit=0
 
 class mosaic_ii_skyimage(DataAnalysis):
