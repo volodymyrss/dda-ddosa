@@ -520,6 +520,9 @@ class NoValidScW(da.AnalysisException):
 class EmptyImageList(da.AnalysisException):
     pass
 
+class ScWDataCorrupted(da.AnalysisException):
+    pass
+
 class ScWData(DataAnalysis):
     input_scwid=None
 
@@ -548,6 +551,16 @@ class ScWData(DataAnalysis):
                 self.assume_rbp(detect_rbp(self.scwver)+"/nrt")
             else:
                 raise
+
+    def test_scw(self):
+        try:
+            f=pyfits.open(self.scwpath+"/swg.fits")
+            print("valid file:",f)
+        except IOError as e:
+            if e.message=="Header missing END card.":
+                raise ScWDataCorrupted(self.scwpath,e.message)
+            else:
+                raise 
 
     def assume_rbp(self,rbp):
         self.scwpath=rbp+"/scw/"+self.revid+"/"+self.scwid #!!!!
@@ -857,6 +870,7 @@ class ibis_isgr_energy_standard(DataAnalysis):
     osa_tools=["ibis_isgr_energy"]
    
     def main(self):
+        self.input_scw.test_scw()
 
         remove_withtemplate("isgri_events_corrected.fits(ISGR-EVTS-COR.tpl)")
     
@@ -995,6 +1009,8 @@ class ibis_gti(DataAnalysis):
     def main(self):
         # horrible horrible full OSA
 
+        self.input_scw.test_scw()
+
         open("scw.list","w").write(self.input_scw.scwpath+"/swg.fits[1]")
 
         if os.path.exists("obs"):
@@ -1051,6 +1067,7 @@ class ibis_dead(DataAnalysis):
     version="v2"
     def main(self):
         # horrible horrible full OSA
+        self.input_scw.test_scw()
 
         #open("scw.list","w").write(self.input_scw.scwid)
         open("scw.list","w").write(self.input_scw.scwpath+"/swg.fits[1]")
