@@ -2084,7 +2084,7 @@ class MosaicImagingConfig(DataAnalysis):
     MinCatSouSnr=4
     MinNewSouSnr=5
     NegModels=0
-    DoPart2=2
+    DoPart2=1
     SouFit=0
 
 class mosaic_ii_skyimage(DataAnalysis):
@@ -2114,7 +2114,7 @@ class mosaic_ii_skyimage(DataAnalysis):
 
     def get_version(self):
         v = self.get_signature() + "." + self.version
-        for k in ['SouFit', 'SearchMode', 'ToSearch', 'CleanMode', 'MinCatSouSnr', 'MinNewSouSnr', 'NegModels']:
+        for k in ['SouFit', 'SearchMode', 'ToSearch', 'CleanMode', 'MinCatSouSnr', 'MinNewSouSnr', 'NegModels', 'DoPart2']:
             if hasattr(self, 'ii_' + k):
                 v += "_" + k + "_" + str(getattr(self, 'ii_' + k))
         return v
