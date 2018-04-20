@@ -2152,8 +2152,7 @@ class mosaic_ii_skyimage(DataAnalysis):
         ht['num_band'] = len(self.input_bins.bins)
         ht['E_band_min'] = " ".join([str(a[0]) for a in self.input_bins.bins])
         ht['E_band_max'] = " ".join([str(a[1]) for a in self.input_bins.bins])
-        ht['DoPart2'] = 2
-        for k in ['SouFit', 'SearchMode', 'ToSearch', 'CleanMode', 'MinCatSouSnr', 'MinNewSouSnr', 'NegModels']:
+        for k in ['SouFit', 'SearchMode', 'ToSearch', 'CleanMode', 'MinCatSouSnr', 'MinNewSouSnr', 'NegModels', 'DoPart2']:
             ht[k] = getattr(self.input_imgconfig, k)
             if hasattr(self, 'ii_' + k): ht[k] = getattr(self, 'ii_' + k)
         ht['corrDol'] = self.input_maps.corr.path
