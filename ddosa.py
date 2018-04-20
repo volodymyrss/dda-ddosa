@@ -2075,13 +2075,24 @@ class lc_pick(DataAnalysis):
 
 
 
+class MosaicImagingConfig(DataAnalysis):
+    input="source50"
+
+    SearchMode=2
+    ToSearch=50
+    CleanMode=1
+    MinCatSouSnr=4
+    MinNewSouSnr=5
+    NegModels=0
+    DoPart2=2
+    SouFit=0
 
 class mosaic_ii_skyimage(DataAnalysis):
     input_maps = BinMapsImage
     input_bins = ImageBins
     #input_cat = CatExtract
     input_ic = IBIS_ICRoot
-    input_imgconfig = ImagingConfig
+    input_imgconfig = MosaicImagingConfig
 
     input_imagegroups=ImageGroups
 
@@ -2141,7 +2152,7 @@ class mosaic_ii_skyimage(DataAnalysis):
         ht['num_band'] = len(self.input_bins.bins)
         ht['E_band_min'] = " ".join([str(a[0]) for a in self.input_bins.bins])
         ht['E_band_max'] = " ".join([str(a[1]) for a in self.input_bins.bins])
-        ht['DoPart2'] = 1
+        ht['DoPart2'] = 2
         for k in ['SouFit', 'SearchMode', 'ToSearch', 'CleanMode', 'MinCatSouSnr', 'MinNewSouSnr', 'NegModels']:
             ht[k] = getattr(self.input_imgconfig, k)
             if hasattr(self, 'ii_' + k): ht[k] = getattr(self, 'ii_' + k)
