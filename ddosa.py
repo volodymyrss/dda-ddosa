@@ -2076,15 +2076,15 @@ class lc_pick(DataAnalysis):
 
 
 class MosaicImagingConfig(DataAnalysis):
-    input="source50p22sm3"
+    input="source200p22sm3"
 
-    SearchMode=3
-    ToSearch=10
+    SearchMode=2
+    ToSearch=200
     CleanMode=1
     MinCatSouSnr=4
     MinNewSouSnr=5
     NegModels=0
-    DoPart2=1
+    DoPart2=2
     SouFit=0
 
 class mosaic_ii_skyimage(DataAnalysis):
