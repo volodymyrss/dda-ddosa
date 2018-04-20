@@ -1784,7 +1784,7 @@ class CatExtract(DataAnalysis):
 
 
 class ImagingConfig(DataAnalysis):
-    input="onesource_negmod"
+    input="onesource_negmod_nop2"
 
     SearchMode=3
     ToSearch=10
@@ -1792,7 +1792,7 @@ class ImagingConfig(DataAnalysis):
     MinCatSouSnr=4
     MinNewSouSnr=5
     NegModels=1
-    DoPart2=1
+    DoPart2=0
     SouFit=0
 
 class ii_skyimage(DataAnalysis):
@@ -1912,7 +1912,8 @@ class ii_skyimage(DataAnalysis):
             self.empty_results=True
             return
 
-        self.srclres=DataFile("isgri_srcl_res.fits")
+        if hk['DoPart2']>0:
+            self.srclres=DataFile("isgri_srcl_res.fits")
 
         if self.save_image:
             self.skyima=DataFile("isgri_sky_ima.fits")
