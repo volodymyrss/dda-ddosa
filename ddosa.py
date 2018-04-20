@@ -1787,7 +1787,7 @@ class ImagingConfig(DataAnalysis):
     input="onesource_negmod"
 
     SearchMode=3
-    ToSearch=5
+    ToSearch=10
     CleanMode=1
     MinCatSouSnr=4
     MinNewSouSnr=5
@@ -2084,7 +2084,7 @@ class MosaicImagingConfig(DataAnalysis):
     MinCatSouSnr=4
     MinNewSouSnr=5
     NegModels=0
-    DoPart2=1
+    DoPart2=2
     SouFit=0
 
 class mosaic_ii_skyimage(DataAnalysis):
