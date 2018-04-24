@@ -1141,11 +1141,11 @@ class ImageBins(DataAnalysis):
                 v+=".std_one_25_80"
             else:
                 if len(self.ebins)==1:
-                    v+=".one_bin_%.5lg_%.5lg"%(self.ebins[0][0],self.ebins[0][1])
+                    v+=".one_bin_%.15lg_%.15lg"%(self.ebins[0][0],self.ebins[0][1])
                 else:
                     v+=".%i_bins"%len(self.ebins)
                     for ebin in self.ebins:
-                        v+=".%.5lg_%.5lg"%(ebin[0],ebin[1])
+                        v+=".%.15lg_%.15lg"%(ebin[0],ebin[1])
 
         return v
 
