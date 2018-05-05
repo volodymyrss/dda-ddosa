@@ -256,6 +256,8 @@ class MemCacheIntegralBase:
                 r=[]
                 if hashe[2].endswith('..'):
                     r.append(hashe[2][:-2])
+                if '...' in hashe[2]:
+                    r+=hashe[2].split('...')[1:]
                 r+=self.get_marked(hashe[1])
                 return r
             if hashe[0]=="list": # more universaly                                                                                                                 
@@ -2701,13 +2703,15 @@ class IDScWList(DataAnalysis):
         if len(self.scwid_list)==1:
             v+="_one_"+self.scwid_list[0]
             return v
+        
+        v=("_n%i"%len(self.scwid_list))+"_"+shhash("_".join(self.scwid_list))[:4]
 
         revs=sorted(set([s[:4] for s in self.scwid_list]))
         if len(revs)==1:
-            v+="_r"+revs[0]+("_n%i"%len(self.scwid_list))+shhash("_".join(self.scwid_list))[:4]
+            v+="_r..."+revs[0]
             return v
 
-        v += "_r" + revs[0] + "_" + revs[-1] + ("_n%i" % len(self.scwid_list)) + shhash("_".join(self.scwid_list))[:4]
+        v += "_r...from_" + revs[0] + "...to_" + revs[-1] 
         return v
 
     def main(self):
