@@ -615,11 +615,16 @@ class Revolution(DataAnalysis):
         self.auxadppath=rbp+"/aux/adp/"+self.get_revid()+"."+self.scwver
 
     def get_ijd(self):
-        r1100=4306.5559396296
-        r100=1315.4808007407
+        r=float(self.get_revid())
 
-        r=int(self.get_revid())
-        return r100+(r1100-r100)/1000*(r-100)
+        if r<1500: #??
+            r1100=4306.5559396296
+            r100=1315.4808007407
+            return r100+(r1100-r100)/1000*(r-100)
+        else:
+            r1900, r1600 = 5768.950951203704, 6566.694793796296
+            return r1600+(r1900-r1600)/300*(r-1600)
+
 
     
     def __repr__(self):
