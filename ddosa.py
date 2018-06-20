@@ -41,7 +41,7 @@ import pilton
 
 import pprint
 import os,shutil,re,time,glob
-from astropy.io import fits as pyfits
+from astropy.io import fits
 from astropy import wcs
 from astropy import wcs as pywcs
 import subprocess,os
@@ -556,7 +556,7 @@ class ScWData(DataAnalysis):
 
     def test_scw(self):
         try:
-            f=pyfits.open(self.scwpath+"/swg.fits")
+            f=fits.open(self.scwpath+"/swg.fits")
             print("valid file:",f)
         except IOError as e:
             if e.message=="Header missing END card.":
@@ -586,14 +586,14 @@ class ScWData(DataAnalysis):
         return self.scwpath+"/isgri_events.fits.gz"
 
     def get_telapse(self):
-        return pyfits.open(self.swgpath)[1].header['TELAPSE']
+        return fits.open(self.swgpath)[1].header['TELAPSE']
     
     def get_t(self):
-        h=pyfits.open(self.swgpath)[1].header
+        h=fits.open(self.swgpath)[1].header
         return (h['TSTOP']+h['TSTART'])/2.,(h['TSTOP']-h['TSTART'])/2.
     
     def get_t1_t2(self):
-        h=pyfits.open(self.swgpath)[1].header
+        h=fits.open(self.swgpath)[1].header
         return h['TSTART'],h['TSTOP']
 
     def __repr__(self):
@@ -734,7 +734,7 @@ class GetEcorrCalDB(DataAnalysis):
 
         for gmfile in sorted(glob.glob(self.input_ibisic.ibisicroot+"/mod/isgr_gain_mod_*.fits")): # by name?..
             ver=re.match(self.input_ibisic.ibisicroot+"/mod/isgr_gain_mod_(.*?).fits",gmfile).group(1)
-            vstart=pyfits.open(gmfile)[1].header['VSTART']
+            vstart=fits.open(gmfile)[1].header['VSTART']
         
             print(vstart,ver)
             if vstart>newest_vstart and t>vstart:
@@ -1055,7 +1055,7 @@ class ibis_gti(DataAnalysis):
         shutil.copy(ht.cwd+"/ibis_gti.fits","./ibis_gti.fits")
         self.output_gti=DataFile("ibis_gti.fits")
 
-        gti=pyfits.open("ibis_gti.fits")[-1].data
+        gti=fits.open("ibis_gti.fits")[-1].data
         print(gti)
         
 
@@ -1178,7 +1178,7 @@ class SpectraBins(DataAnalysis):
 
         #self.binrmf=os.environ['CURRENT_IC']+"/ic/ibis/rsp/rmf_62bands.fits" # noo!!!
         #self.binrmf=os.environ['CURRENT_IC']+"/ic/ibis/rsp/isgr_ebds_mod_0001.fits" # noo!!!
-        e=pyfits.open(self.binrmf)[self.rmfext].data
+        e=fits.open(self.binrmf)[self.rmfext].data
         self.bins=zip(e['E_MIN'],e['E_MAX'])
         self.binrmfext=self.binrmf+'[%i]'%self.rmfext
 
@@ -1662,7 +1662,7 @@ class BinnedBackgroundSpectrumFromGB(DataAnalysis):
     cached=True
 
     def main(self):
-        corshad=pyfits.open(self.input_gb.corshad.get_path())
+        corshad=fits.open(self.input_gb.corshad.get_path())
 
         corr_effi=[_e for _e in corshad[2:] if _e.header['SHD_TYPE']=='EFFICIENCY']
         corr_dete=[_e for _e in corshad[2:] if _e.header['SHD_TYPE']=='DETECTOR']
@@ -1761,10 +1761,10 @@ class CatExtract(DataAnalysis):
 
         fn="isgri_catalog.fits"
         if hasattr(self,'input_extra_sources'):
-            f=pyfits.open("isgri_catalog.fits")
+            f=fits.open("isgri_catalog.fits")
             t_orig=f[1]
 
-            t_new=pyfits.BinTableHDU.from_columns(t_orig.columns,nrows=len(t_orig.data)+len(self.input_extra_sources.sources))
+            t_new=fits.BinTableHDU.from_columns(t_orig.columns,nrows=len(t_orig.data)+len(self.input_extra_sources.sources))
             t_new.data[:len(t_orig.data)]=t_orig.data[:]
 
             i_offset=len(t_orig.data)
@@ -1945,11 +1945,16 @@ class ImageGroups(DataAnalysis):
 
     outtype="BIN_I"
 
+    version="v1"
+
     def construct_og(self,og_fn):
         scw_og_fns = []
 
         if len(self.members)==0:
             raise EmptyImageList()
+
+        total_extracted_cat=None
+        total_skyres=None
 
         for scw,image,gb,gti,cat in self.members:
             fn = "og_%s.fits" % scw.input_scwid.str()
@@ -1962,7 +1967,7 @@ class ImageGroups(DataAnalysis):
                     image.skyres._da_unique_local_path,
                     gti.output_gti._da_unique_local_path,
                     gb.corshad._da_unique_local_path,
-                    cat.cat._da_unique_local_path,
+     #               cat.cat._da_unique_local_path,
                     scw.auxadppath + "/time_correlation.fits[AUXL-TCOR-HIS]",
                 ], fn=fn)
 
@@ -1972,11 +1977,35 @@ class ImageGroups(DataAnalysis):
             set_attr({'INSTRUME': "IBIS"}, fn)
 
             scw_og_fns.append(fn)
+    
+            fe=fits.open(cat.cat._da_unique_local_path)[1]
+            if total_extracted_cat is None:
+                total_extracted_cat=fe
+            else:
+                total_extracted_cat.data=np.concatenate((total_extracted_cat.data,fe.data))
+                print("total extracted cat has",len(total_extracted_cat.data),"sources before filtering")
+
+                u,ui=np.unique(total_extracted_cat.data['NAME'],return_index=True)
+                total_extracted_cat.data=total_extracted_cat.data[ui]
+                print("total extracted cat has",len(total_extracted_cat.data),"sources after unique filtering")
+            
+            sfe=fits.open(image.skyres._da_unique_local_path)[2] # one band
+            if total_skyres is None:
+                total_skyres=sfe
+            else:
+                total_skyres.data=np.concatenate((total_skyres.data,sfe.data))
+
+
+        total_extracted_cat.writeto("total_extracted_cat.fits",overwrite=True)
+        self.total_extracted_cat=da.DataFile("total_extracted_cat.fits")
+
+        total_skyres.writeto("total_skyres.fits",overwrite=True)
+        self.total_skyres=da.DataFile("total_skyres.fits")
 
         construct_gnrl_scwg_grp_idx(scw_og_fns,fn="og_idx.fits")
         set_attr({'ISDCLEVL': self.outtype}, "og_idx.fits")
 
-        construct_og(["og_idx.fits"], fn=og_fn)
+        construct_og(["og_idx.fits","total_extracted_cat.fits"], fn=og_fn)
 
         set_attr({'ISDCLEVL': self.outtype}, og_fn)
 
@@ -2076,6 +2105,18 @@ class lc_pick(DataAnalysis):
 
 
 
+class MosaicImagingConfig(DataAnalysis):
+    input="500s2x88"
+
+    SearchMode=2
+    ToSearch=500
+    CleanMode=1
+    MinCatSouSnr=8
+    MinNewSouSnr=8
+    NegModels=1
+    DoPart2=2
+    SouFit=0
+
 
 
 class mosaic_ii_skyimage(DataAnalysis):
@@ -2083,7 +2124,7 @@ class mosaic_ii_skyimage(DataAnalysis):
     input_bins = ImageBins
     #input_cat = CatExtract
     input_ic = IBIS_ICRoot
-    input_imgconfig = ImagingConfig
+    input_imgconfig = MosaicImagingConfig
 
     input_imagegroups=ImageGroups
 
@@ -2099,7 +2140,7 @@ class mosaic_ii_skyimage(DataAnalysis):
 
     image_tag = None
 
-    version = "v2"
+    version = "v2.1"
 
     outtype = "BIN_I"
 
@@ -2112,6 +2153,9 @@ class mosaic_ii_skyimage(DataAnalysis):
 
     def main(self):
         self.input_imagegroups.construct_og("ogg.fits")
+    
+        self.total_extracted_cat=self.input_imagegroups.total_extracted_cat
+        self.total_skyres=self.input_imagegroups.total_skyres
 
         remove_withtemplate("isgri_srcl_res.fits(ISGR-SRCL-RES.tpl)")
         remove_withtemplate("isgri_mosa_ima.fits(ISGR-MOSA-IMA-IDX.tpl)")
@@ -2139,12 +2183,14 @@ class mosaic_ii_skyimage(DataAnalysis):
         ht['ScwDir'] = './'
         ht['ScwType'] = 'pointing'
         ht['ExtenType'] = 2
+        ht['FastOpen'] = 1
+        ht['MapSize'] = 80
         ht['OutType'] = self.outtype
         ht['num_band'] = len(self.input_bins.bins)
         ht['E_band_min'] = " ".join([str(a[0]) for a in self.input_bins.bins])
         ht['E_band_max'] = " ".join([str(a[1]) for a in self.input_bins.bins])
-        ht['DoPart2'] = 1
-        for k in ['SouFit', 'SearchMode', 'ToSearch', 'CleanMode', 'MinCatSouSnr', 'MinNewSouSnr', 'NegModels']:
+       # ht['DoPart2'] = 1
+        for k in ['SouFit', 'SearchMode', 'ToSearch', 'CleanMode', 'MinCatSouSnr', 'MinNewSouSnr', 'NegModels', 'DoPart2']:
             ht[k] = getattr(self.input_imgconfig, k)
             if hasattr(self, 'ii_' + k): ht[k] = getattr(self, 'ii_' + k)
         ht['corrDol'] = self.input_maps.corr.path
@@ -2193,7 +2239,7 @@ class CatForSpectraFromImaging(DataAnalysis):
 
         catfn="cat4spectra.fits"
 
-        f=pyfits.open(self.input_imaging.srclres.path)
+        f=fits.open(self.input_imaging.srclres.path)
 
         print("image catalog contains",len(f[1].data))
         print("image catalog contains sig from",f[1].data['DETSIG'].min(),"to",f[1].data['DETSIG'].max())
@@ -2215,7 +2261,7 @@ class CatForSpectraFromImaging(DataAnalysis):
 
             print("new extra sources",new_extra_sources)
 
-            t_new = pyfits.BinTableHDU.from_columns(t_orig.columns,
+            t_new = fits.BinTableHDU.from_columns(t_orig.columns,
                                                     nrows=len(t_orig.data) + len(new_extra_sources))
             t_new.data[:len(t_orig.data)] = t_orig.data[:]
 
@@ -2648,7 +2694,7 @@ def construct_empty_shadidx_old(bins,fn="og.fits",levl="BIN_I"):
 
     # attaching does not create necessary fields: use txt2idx instead
     
-    og=pyfits.open(fn) 
+    og=fits.open(fn) 
     for i,(e1,e2) in enumerate(bins):
         og[1].data[i]['E_MIN']=e1
         og[1].data[i]['E_MAX']=e2
@@ -2671,7 +2717,7 @@ def construct_empty_shadidx(bins,fn="og.fits",levl="BIN_I"):
         dc['element']='ISGR-DETE-SHD.tpl'
         dc.run()
 
-    og=pyfits.open(fn) 
+    og=fits.open(fn) 
     for i,(e1,e2) in enumerate(bins):
         og[1].data[i]['E_MIN']=e1
         og[1].data[i]['E_MAX']=e2
@@ -2731,7 +2777,7 @@ class RevScWList(DataAnalysis):
         for event_file in glob.glob(self.input_rev.revroot+"/*/isgri_events.fits*"):
             print(event_file)
             try:
-                evts=pyfits.open(event_file)['ISGR-EVTS-ALL']
+                evts=fits.open(event_file)['ISGR-EVTS-ALL']
                 print(evts)
                 if evts.data.shape[0]<10000:
                     raise Exception("very few events!")
