@@ -330,7 +330,7 @@ class MemCacheIntegralBase:
 
             #str("reduced hashe:",hashe,hash_to_path2(hashe))
             #if dataanalysis.printhook.global_log_enabled: print("reduced hashe:",hashe,hash_to_path2(hashe))
-            open("reduced_hashe.txt","w").write(hash_to_path2(hashe)+"\n\n"+pprint.pformat(hashe)+"\n")
+            #open("reduced_hashe.txt","w").write(hash_to_path2(hashe)+"\n\n"+pprint.pformat(hashe)+"\n")
             print(scw,hashe[2],marked)
 
             r=self.filecacheroot+"/byscw/"+scw[:4]+"/"+scw+"/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/" # choose to avoid overlapp    
@@ -1941,7 +1941,8 @@ class ImageGroups(DataAnalysis):
     allow_alias=True
     run_for_hashe=True
 
-    copy_cached_input=True
+    copy_cached_input=False
+    #copy_cached_input=True
 
     outtype="BIN_I"
 
@@ -1963,10 +1964,10 @@ class ImageGroups(DataAnalysis):
                 continue
             construct_gnrl_scwg_grp(scw, children=
                 [
-                    image.skyima._da_unique_local_path,
-                    image.skyres._da_unique_local_path,
-                    gti.output_gti._da_unique_local_path,
-                    gb.corshad._da_unique_local_path,
+                    image.skyima.get_path(),
+                    image.skyres.get_path(),
+                    gti.output_gti.get_path(),
+                    gb.corshad.get_path(),
      #               cat.cat._da_unique_local_path,
                     scw.auxadppath + "/time_correlation.fits[AUXL-TCOR-HIS]",
                 ], fn=fn)
@@ -1978,7 +1979,8 @@ class ImageGroups(DataAnalysis):
 
             scw_og_fns.append(fn)
     
-            fe=fits.open(cat.cat._da_unique_local_path)[1]
+            fe=fits.open(cat.cat.get_path())[1]
+            #fe=fits.open(cat.cat._da_unique_local_path)[1]
             if total_extracted_cat is None:
                 total_extracted_cat=fe
             else:
@@ -1989,7 +1991,7 @@ class ImageGroups(DataAnalysis):
                 total_extracted_cat.data=total_extracted_cat.data[ui]
                 print("total extracted cat has",len(total_extracted_cat.data),"sources after unique filtering")
             
-            sfe=fits.open(image.skyres._da_unique_local_path)[2] # one band
+            sfe=fits.open(image.skyres.get_path())[2] # one band
             if total_skyres is None:
                 total_skyres=sfe
             else:
@@ -2132,7 +2134,8 @@ class mosaic_ii_skyimage(DataAnalysis):
     #input_gti = ibis_gti
 
     cached = True
-    copy_cached_input=True
+    copy_cached_input=False
+    #copy_cached_input=True
 
     ii_skyimage_binary = None
 
