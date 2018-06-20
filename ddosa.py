@@ -2140,7 +2140,7 @@ class mosaic_ii_skyimage(DataAnalysis):
 
     image_tag = None
 
-    version = "v2.1"
+    version = "v2.2"
 
     outtype = "BIN_I"
 
