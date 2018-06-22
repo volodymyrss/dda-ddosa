@@ -1998,11 +1998,13 @@ class ImageGroups(DataAnalysis):
                 total_skyres.data=np.concatenate((total_skyres.data,sfe.data))
 
 
-        total_extracted_cat.writeto("total_extracted_cat.fits",overwrite=True)
-        self.total_extracted_cat=da.DataFile("total_extracted_cat.fits")
+        if total_extracted_cat is not None:
+            total_extracted_cat.writeto("total_extracted_cat.fits",overwrite=True)
+            self.total_extracted_cat=da.DataFile("total_extracted_cat.fits")
 
-        total_skyres.writeto("total_skyres.fits",overwrite=True)
-        self.total_skyres=da.DataFile("total_skyres.fits")
+        if total_extracted_cat is not None:
+            total_skyres.writeto("total_skyres.fits",overwrite=True)
+            self.total_skyres=da.DataFile("total_skyres.fits")
 
         construct_gnrl_scwg_grp_idx(scw_og_fns,fn="og_idx.fits")
         set_attr({'ISDCLEVL': self.outtype}, "og_idx.fits")
