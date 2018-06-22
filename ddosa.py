@@ -1409,8 +1409,6 @@ class GRcat(DataAnalysis):
 
     refcat_version="41"
 
-    def find_cat
-
     def get_version(self):
         v=self.get_signature()+"."+self.version
 
