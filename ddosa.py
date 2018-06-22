@@ -1398,7 +1398,6 @@ class BinMapsLC(BinMapsVirtual):
     input_bins=LCEnergyBins
 
 class GRcat(DataAnalysis):
-    input="gnrl_ref_cat_40"
     input_ic=ICRoot
     
     suffix=None
@@ -1406,21 +1405,33 @@ class GRcat(DataAnalysis):
     cached=False # again, this is transient-level cache
 
     userefcatvar=False
+    useresources=True
+
+    refcat_version="41"
+
+    def find_cat
 
     def get_version(self):
         v=self.get_signature()+"."+self.version
 
-        if self.userefcatvar:
-            self.cat=os.environ["ISDC_REF_CAT"]
+        if self.useresources:
+            self.cat="/data/resoures/gnrl_refr_cat_00%s.fits[1]"%self.refcat_version
             self.catname=self.cat.split("/")[-1]
-            v+="var_"+self.catname
+            v+=".resources_"+self.catname
         else:
-            if self.suffix is not None:
-                v=v+"."+self.suffix
+            if self.userefcatvar:
+                self.cat=os.environ["ISDC_REF_CAT"]
+                self.catname=self.cat.split("/")[-1]
+                v+="var_"+self.catname
+            else:
+                if self.suffix is not None:
+                    v=v+"."+self.suffix
         return v
 
     def main(self):
-        if self.userefcatvar:
+        if self.useresources:
+            pass
+        elif self.userefcatvar:
             pass
         else:
             if self.suffix is None:
