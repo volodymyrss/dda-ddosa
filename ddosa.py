@@ -1413,7 +1413,7 @@ class GRcat(DataAnalysis):
         v=self.get_signature()+"."+self.version
 
         if self.useresources:
-            self.cat="/data/resoures/gnrl_refr_cat_00%s.fits[1]"%self.refcat_version
+            self.cat="/data/resources/gnrl_refr_cat_00%s.fits[1]"%self.refcat_version
             self.catname=self.cat.split("/")[-1]
             v+=".resources_"+self.catname
         else:
