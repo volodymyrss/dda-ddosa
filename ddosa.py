@@ -1416,7 +1416,7 @@ class GRcat(DataAnalysis):
         v=self.get_signature()+"."+self.version
 
         if self.useresources:
-            self.cat="/data/resources/gnrl_refr_cat_00%s.fits[1]"%self.refcat_version
+            self.cat=os.environ.get("INTEGRAL_RESOURCES","/data/resources")+"/gnrl_refr_cat_00%s.fits[1]"%self.refcat_version
             self.catname=self.cat.split("/")[-1]
             v+=".resources_"+self.catname
         else:
@@ -1450,7 +1450,19 @@ class BrightCat(DataAnalysis):
 
     def main(self):
         #self.cat=self.input.cat+"[ISGRI_FLAG2==5]"
-        self.cat=self.input.cat+"[ISGRI_FLAG2==5&&ISGR_FLUX_1>100]"
+        #self.cat=self.input.cat+"[ISGRI_FLAG2==5]"
+        self.cat_path=self.input.cat+"[ISGRI_FLAG2==5&&ISGR_FLUX_1>100]"
+
+        fn="very_bright_cat.fits"
+
+        ht=heatool("fextract")
+        ht['infile']=self.cat_path
+        ht['outfile']=fn
+        ht['clobber']='yes'
+        ht.run()
+
+        self.cat=da.DataFile(fn)
+
 
 class BrightPIFImage(DataAnalysis):
     input_scw=ScWData
@@ -1467,11 +1479,23 @@ class BrightPIFImage(DataAnalysis):
             catfn=self.input_cat.cat
         else:
             catfn=self.input_cat.cat.get_path()
+        
+        att=self.input_scw.auxadppath+"/attitude_historic.fits"
+        if os.path.exists(att):
+            att=self.input_scw.auxadppath+"/attitude_historic.fits[AUXL-ATTI-HIS,1,BINTABLE]"
+            attp=att
+        else:
+            att=self.input_scw.auxadppath+"/attitude_snapshot.fits[AUXL-ATTI-SNA,1,BINTABLE]"
+            attp_g=glob.glob(self.input_scw.auxadppath+"/attitude_predicted_*.fits*")
+            attp=attp_g[0]+"[AUXL-ATTI-PRE,1,BINTABLE]"
+
 
         construct_gnrl_scwg_grp(self.input_scw,[\
                     catfn,
                     self.input_scw.auxadppath+"/time_correlation.fits[AUXL-TCOR-HIS]",
-                    self.input_gti.output_gti.path
+                    self.input_gti.output_gti.path,
+#                    att,
+#                    attp,
                 ])
 
         import_attr(self.input_scw.scwpath+"/swg.fits",["OBTSTART","OBTEND","TSTART","TSTOP","SW_TYPE","TELAPSE"])
