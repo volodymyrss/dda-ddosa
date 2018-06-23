@@ -1172,6 +1172,9 @@ class SpectraBins(DataAnalysis):
             self.binrmf=self.rmfpath
         else:
             self.binrmf=os.environ['INTEGRAL_DATA']+"/resources/rmf_62bands.fits"
+        
+        if not os.path.exists(self.binrmf):
+            self.binrmf=os.environ.get("INTEGRAL_RESOURCES","/data/resources")+"/rmf_62bands.fits"
 
         if not os.path.exists(self.binrmf):
             self.binrmf="/unsaved_data/savchenk/rmf_62bands.fits"
