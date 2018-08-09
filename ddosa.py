@@ -2330,7 +2330,7 @@ class CatForSpectraFromImaging(DataAnalysis):
 class ISGRIResponse(DataAnalysis):
     input_ecorrdata=GetEcorrCalDB
 
-    path=os.environ.get('INTEGRAL_DATA','')+"/resources/rmf_62bands.fits"
+    path=os.environ.get('ISGRI_RESPONSE',os.environ.get('INTEGRAL_DATA','')+"/resources/rmf_62bands.fits")
 
     
     def rmf_path(self):
