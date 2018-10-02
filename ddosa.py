@@ -1666,6 +1666,7 @@ class ghost_bustersVirtual(DataAnalysis):
     gb_binary=None
 
     def main(self):
+        self.input_scw.test_isgri_events()
 
         att=self.input_scw.auxadppath+"/attitude_historic.fits"
         if os.path.exists(att):
