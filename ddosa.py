@@ -893,6 +893,7 @@ class ibis_isgr_energy_standard(DataAnalysis):
    
     def main(self):
         self.input_scw.test_scw()
+        self.input_scw.test_isgri_events()
 
         remove_withtemplate("isgri_events_corrected.fits(ISGR-EVTS-COR.tpl)")
     
@@ -928,6 +929,7 @@ class ibis_isgr_energy(DataAnalysis):
     binary=None
 
     def main(self):
+        self.input_scw.test_isgri_events()
 
         remove_withtemplate("isgri_events_corrected.fits(ISGR-EVTS-COR.tpl)")
 
