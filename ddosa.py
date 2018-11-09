@@ -41,6 +41,8 @@ import pilton
 
 import pprint
 import os,shutil,re,time,glob
+from os import access, R_OK
+from os.path import isfile
 from astropy.io import fits
 from astropy import wcs
 from astropy import wcs as pywcs
@@ -528,6 +530,9 @@ class ScWDataCorrupted(da.AnalysisException):
 class FractionalEnergyBinsNotAllowed(da.AnalysisException):
     pass
 
+def good_file(fn):
+    return os.path.exists(fn) and isfile(fn) and access(fn, R_OK)
+
 class ScWData(DataAnalysis):
     input_scwid=None
 
@@ -567,13 +572,27 @@ class ScWData(DataAnalysis):
             else:
                 raise 
 
+    def test_isgri_events(self):
+        print("checking for readable events...")
+
+        options=[self.scwpath+"/isgri_events.fits"]
+        options.append(options[-1]+".gz")
+
+        for option in options:
+            if good_file(option):
+                print("ok:",option)
+                return
+
+        raise NoISGRIEvents("no usable event data for: "+repr(self.scwid))
+
     def assume_rbp(self,rbp):
         self.scwpath=rbp+"/scw/"+self.revid+"/"+self.scwid #!!!!
         self.revdirpath=rbp+"/scw/"+self.revid+"/rev."+self.scwver # ver?
         self.auxadppath=rbp+"/aux/adp/"+self.revid+"."+self.scwver
 
-        if not os.path.exists(self.scwpath+"/swg.fits"):
-            if not os.path.exists(self.scwpath+"/swg.fits.gz"):
+
+        if not good_file(self.scwpath+"/swg.fits"):
+            if not good_file(self.scwpath+"/swg.fits.gz"):
                 print("failed searching for",self.scwpath+"/swg.fits")
                 raise NoScWData("no scw data for: "+repr(self.scwid))
                 #raise Exception("no scw data!")
@@ -582,6 +601,7 @@ class ScWData(DataAnalysis):
         else:
             self.swgpath=self.scwpath+"/swg.fits"
         print("swgpath:",self.swgpath)
+
 
     def get_isgri_events(self):
         if hasattr(self,'isgrievents'):
@@ -876,6 +896,7 @@ class ibis_isgr_energy_standard(DataAnalysis):
    
     def main(self):
         self.input_scw.test_scw()
+        self.input_scw.test_isgri_events()
 
         remove_withtemplate("isgri_events_corrected.fits(ISGR-EVTS-COR.tpl)")
     
@@ -911,6 +932,7 @@ class ibis_isgr_energy(DataAnalysis):
     binary=None
 
     def main(self):
+        self.input_scw.test_isgri_events()
 
         remove_withtemplate("isgri_events_corrected.fits(ISGR-EVTS-COR.tpl)")
 
@@ -1015,6 +1037,7 @@ class ibis_gti(DataAnalysis):
         # horrible horrible full OSA
 
         self.input_scw.test_scw()
+        self.input_scw.test_isgri_events()
 
         open("scw.list","w").write(self.input_scw.scwpath+"/swg.fits[1]")
 
@@ -1073,6 +1096,7 @@ class ibis_dead(DataAnalysis):
     def main(self):
         # horrible horrible full OSA
         self.input_scw.test_scw()
+        self.input_scw.test_isgri_events()
 
         #open("scw.list","w").write(self.input_scw.scwid)
         open("scw.list","w").write(self.input_scw.scwpath+"/swg.fits[1]")
@@ -1650,6 +1674,7 @@ class ghost_bustersVirtual(DataAnalysis):
     gb_binary=None
 
     def main(self):
+        self.input_scw.test_isgri_events()
 
         att=self.input_scw.auxadppath+"/attitude_historic.fits"
         if os.path.exists(att):
