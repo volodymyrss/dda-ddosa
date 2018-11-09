@@ -525,6 +525,9 @@ class EmptyImageList(da.AnalysisException):
 class ScWDataCorrupted(da.AnalysisException):
     pass
 
+class FractionalEnergyBinsNotAllowed(da.AnalysisException):
+    pass
+
 class ScWData(DataAnalysis):
     input_scwid=None
 
@@ -1158,6 +1161,10 @@ class ImageBins(DataAnalysis):
         else:
             self.bins=self.ebins
 
+        for e1,e2 in self.bins:
+            if abs(round(e1*2)/2. - e1)>1e-5 or abs(round(e2*2)/2. - e2)>1e-5:
+                raise FractionalEnergyBinsNotAllowed()
+
 class SpectraBins(DataAnalysis):
     input_binsname="spectral_bins_62"
 
@@ -1568,6 +1575,7 @@ class ShadowUBCVirtual(DataAnalysis):
 
     def main(self):
         print(self.input_shadows)
+
 
         construct_gnrl_scwg_grp(self.input_scw,[\
                 self.input_shadows.shadow_detector.get_path(),
