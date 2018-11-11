@@ -2015,7 +2015,7 @@ class ImageGroups(DataAnalysis):
 
     outtype="BIN_I"
 
-    version="v1"
+    version="v1.1"
 
     def construct_og(self,og_fn):
         scw_og_fns = []
@@ -2050,6 +2050,7 @@ class ImageGroups(DataAnalysis):
     
             fe=fits.open(cat.cat.get_path())[1]
             #fe=fits.open(cat.cat._da_unique_local_path)[1]
+            print(scw,"scw extracted cat has",len(fe.data),"sources",fe.data[:10],"...")
             if total_extracted_cat is None:
                 total_extracted_cat=fe
             else:
