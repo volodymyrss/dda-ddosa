@@ -2050,7 +2050,7 @@ class ImageGroups(DataAnalysis):
     
             fe=fits.open(cat.cat.get_path())[1]
             #fe=fits.open(cat.cat._da_unique_local_path)[1]
-            print(scw,"scw extracted cat has",len(fe.data),"sources",fe.data[:10],"...")
+            print(scw,"scw extracted cat has",len(fe.data),"sources",fe.data['NAME'][:10],"...")
             if total_extracted_cat is None:
                 total_extracted_cat=fe
             else:
