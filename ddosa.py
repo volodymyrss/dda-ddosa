@@ -2188,7 +2188,7 @@ class mosaic_ii_skyimage(DataAnalysis):
 
     image_tag = None
 
-    version = "v2.2.1"
+    version = "v2.2.2"
 
     outtype = "BIN_I"
 
@@ -2203,7 +2203,7 @@ class mosaic_ii_skyimage(DataAnalysis):
         f_cat = fits.open(self.input_imagegroups.total_extracted_cat.get_path())
         f_sr = fits.open(self.input_imagegroups.total_skyres.get_path())
 
-        m = f_sr[1].data['NEW_SOURCE'] == 1
+        m = f_sr[1].data['NEW_SOURCE'] != 0
         new_sources = f_sr[1].data[m]
         new_sources_srcl_cat = np.zeros(len(new_sources), f_cat[1].data.dtype)
 
