@@ -1996,6 +1996,7 @@ class ImageGroups(DataAnalysis):
 
         total_extracted_cat=None
         total_skyres=None
+        total_srclres=None
 
         for scw,image,gb,gti,cat in self.members:
             fn = "og_%s.fits" % scw.input_scwid.str()
@@ -2037,6 +2038,13 @@ class ImageGroups(DataAnalysis):
                 total_skyres=sfe
             else:
                 total_skyres.data=np.concatenate((total_skyres.data,sfe.data))
+            
+            srfe=fits.open(image.srclres.get_path())[1] # one band
+            if total_srclres is None:
+                total_srclres=srfe
+            else:
+                total_srclres.data=np.concatenate((total_srclres.data,srfe.data))
+
 
 
         if total_extracted_cat is not None:
@@ -2046,6 +2054,10 @@ class ImageGroups(DataAnalysis):
         if total_skyres is not None:
             total_skyres.writeto("total_skyres.fits",overwrite=True)
             self.total_skyres=da.DataFile("total_skyres.fits")
+        
+        if total_srclres is not None:
+            total_srclres.writeto("total_srclres.fits",overwrite=True)
+            self.total_srclres=da.DataFile("total_srclres.fits")
         
         construct_gnrl_scwg_grp_idx(scw_og_fns,fn="og_idx.fits")
         set_attr({'ISDCLEVL': self.outtype}, "og_idx.fits")
@@ -2188,7 +2200,7 @@ class mosaic_ii_skyimage(DataAnalysis):
 
     image_tag = None
 
-    version = "v2.2.3"
+    version = "v2.2.4"
 
     outtype = "BIN_I"
 
@@ -2278,14 +2290,14 @@ class mosaic_ii_skyimage(DataAnalysis):
             self.empty_results = True
             return
 
-        self.srclres = DataFile("isgri_srcl_res.fits")
+        self.raw_srclres = DataFile("isgri_srcl_res.fits")
 
         if self.save_image:
             self.skyima = DataFile("isgri_mosa_ima.fits")
 
-        self.mosares = DataFile("isgri_mosa_res.fits")
+        self.skyres = DataFile("isgri_mosa_res.fits")
 
-        self.skyres = self.merge_res()
+        self.srclres = self.merge_res()
 
         self.mosaic=self.skyima
 
@@ -2293,9 +2305,8 @@ class mosaic_ii_skyimage(DataAnalysis):
 
 
     def merge_res(self):
-        f_cat = fits.open(self.mosares.get_path())
-        f_sr = fits.open(self.input_imagegroups.total_skyres.get_path())
-
+        f_cat = fits.open(self.raw_srclres.get_path())
+        f_sr = fits.open(self.input_imagegroups.total_srclres.get_path())
 
         new_sources_indices=[]
 
@@ -2307,7 +2318,7 @@ class mosaic_ii_skyimage(DataAnalysis):
             dec = f_sr[1].data[i]['DEC_FIN']
 
 
-            if len(f_cat[2].data)>0 and min(abs(ra - f_cat[2].data['RA_OBJ']) + abs(f_cat[2].data['DEC_OBJ'])) < 15./60.:
+            if len(f_cat[1].data)>0 and min(abs(ra - f_cat[1].data['RA_OBJ']) + abs(f_cat[1].data['DEC_OBJ'])) < 15./60.:
                 print(i,ra,dec,"already in the cat")
                 continue
 
@@ -2319,16 +2330,16 @@ class mosaic_ii_skyimage(DataAnalysis):
             new_sources_indices.append(i)
 
 
-        new_sources_srcl_cat = np.zeros(len(new_sources_indices), f_cat[2].data.dtype)
+        new_sources_srcl_cat = np.zeros(len(new_sources_indices), f_cat[1].data.dtype)
 
         for j, i in enumerate(new_sources_indices):
-            for k in f_cat[2].data.columns:
+            for k in f_cat[1].data.columns:
                 new_sources_srcl_cat[j][k.name] = f_sr[1].data[i][k.name]
 
         print("new_sources_srcl_cat:",new_sources_srcl_cat)
 
 
-        f_cat[2].data = np.concatenate((f_cat[2].data, new_sources_srcl_cat))
+        f_cat[1].data = np.concatenate((f_cat[1].data, new_sources_srcl_cat))
 
         merged_res_fn = "merged_res.fits"
         f_cat.writeto(merged_res_fn,clobber=True)
