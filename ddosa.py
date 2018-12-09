@@ -2046,7 +2046,7 @@ class ImageGroups(DataAnalysis):
         if total_skyres is not None:
             total_skyres.writeto("total_skyres.fits",overwrite=True)
             self.total_skyres=da.DataFile("total_skyres.fits")
-
+        
         construct_gnrl_scwg_grp_idx(scw_og_fns,fn="og_idx.fits")
         set_attr({'ISDCLEVL': self.outtype}, "og_idx.fits")
 
@@ -2188,7 +2188,7 @@ class mosaic_ii_skyimage(DataAnalysis):
 
     image_tag = None
 
-    version = "v2.2.2"
+    version = "v2.2.3"
 
     outtype = "BIN_I"
 
@@ -2223,8 +2223,8 @@ class mosaic_ii_skyimage(DataAnalysis):
         self.total_extracted_cat=self.input_imagegroups.total_extracted_cat
         self.total_skyres=self.input_imagegroups.total_skyres
 
-        merged_cat_fn = self.merge_cat()
-        self.merged_cat=DataFile(merged_cat_fn)
+        #merged_cat_fn = self.merge_cat()
+        #self.merged_cat=DataFile(merged_cat_fn)
         
 
         remove_withtemplate("isgri_srcl_res.fits(ISGR-SRCL-RES.tpl)")
@@ -2254,7 +2254,7 @@ class mosaic_ii_skyimage(DataAnalysis):
         ht['ScwType'] = 'pointing'
         ht['ExtenType'] = 2
         ht['FastOpen'] = 1
-        ht['inCat'] = merged_cat_fn
+        #ht['inCat'] = merged_cat_fn
         ht['MapSize'] = 80
         ht['OutType'] = self.outtype
         ht['num_band'] = len(self.input_bins.bins)
@@ -2282,11 +2282,58 @@ class mosaic_ii_skyimage(DataAnalysis):
 
         if self.save_image:
             self.skyima = DataFile("isgri_mosa_ima.fits")
-        self.skyres = DataFile("isgri_mosa_res.fits")
+
+        self.mosares = DataFile("isgri_mosa_res.fits")
+
+        self.skyres = self.merge_res()
 
         self.mosaic=self.skyima
 
         self.post_process()
+
+
+    def merge_res(self):
+        f_cat = fits.open(self.mosares.get_path())
+        f_sr = fits.open(self.input_imagegroups.total_skyres.get_path())
+
+
+        new_sources_indices=[]
+
+        for i in range(len(f_sr[1].data)):
+            if f_sr[1].data[i]['NEW_SOURCE'] == 0:
+                continue
+
+            ra = f_sr[1].data[i]['RA_FIN']
+            dec = f_sr[1].data[i]['DEC_FIN']
+
+
+            if len(f_cat[2].data)>0 and min(abs(ra - f_cat[2].data['RA_OBJ']) + abs(f_cat[2].data['DEC_OBJ'])) < 15./60.:
+                print(i,ra,dec,"already in the cat")
+                continue
+
+            if len(new_sources_indices)>0 and min([ (abs(ra - f_sr[1].data[o_i]['RA_FIN']) + abs(dec - f_sr[1].data[o_i]['DEC_FIN'])) for o_i in new_sources_indices]) < 15./60.:
+                print(i,ra,dec,"already in the new")
+                continue
+                    
+
+            new_sources_indices.append(i)
+
+
+        new_sources_srcl_cat = np.zeros(len(new_sources_indices), f_cat[2].data.dtype)
+
+        for j, i in enumerate(new_sources_indices):
+            for k in f_cat[2].data.columns:
+                new_sources_srcl_cat[j][k.name] = f_sr[1].data[i][k.name]
+
+        print("new_sources_srcl_cat:",new_sources_srcl_cat)
+
+
+        f_cat[2].data = np.concatenate((f_cat[2].data, new_sources_srcl_cat))
+
+        merged_res_fn = "merged_res.fits"
+        f_cat.writeto(merged_res_fn,clobber=True)
+
+        return DataFile(merged_res_fn)
 
     def post_process(self):
         pass
