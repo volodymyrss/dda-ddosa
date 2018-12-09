@@ -2280,8 +2280,8 @@ class mosaic_ii_skyimage(DataAnalysis):
 
         env = copy.deepcopy(os.environ)
             
-        common_log_file = os.getcwd()+"/common-log-file.txt"
-        env['COMMONLOGFILE'] = "+"+common_log_file
+        common_log_file = "common-log-file.txt"
+        env['COMMONLOGFILE'] = "+"+os.getcwd()+"/"+common_log_file
         ht.run(env=env)
         self.commonlog = DataFile(common_log_file)
 
