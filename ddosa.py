@@ -36,7 +36,7 @@ from dataanalysis.hashtools import shhash
 import dataanalysis.printhook
 import dataanalysis.core as da
 
-from pilton import heatool
+from pilton import heatool 
 import pilton
 
 import pprint
@@ -48,6 +48,7 @@ from astropy import wcs
 from astropy import wcs as pywcs
 import subprocess,os
 import ast
+import copy
 
 try:
     import pandas as pd
@@ -352,44 +353,14 @@ class MemCacheIntegralBase:
 #    pass
 
 
-def store_renga(filepath,obj):
-    import renga
-    client = renga.from_env()
-
-    print("renga searching for buckets",client.api.endpoint)
-    bucket=client.buckets.list()[-1]
-    with bucket.files.open(filepath, 'w') as fp:
-        print("renga storing as",filepath)
-        yaml.dump(obj.jsonify(), fp, default_flow_style=False)
-
-
-def read_renga(filepath,obj):
-    import renga
-    client = renga.from_env()
-
-    print("renga searching for buckets",client.api.endpoint)
-    bucket=client.buckets.list()[-1]
-    with bucket.files.open(filepath) as fp:
-        print("renga reading as",filepath,"for",len(fp.read()))
-
 class MemCacheIntegralFallback(MemCacheIntegralBase,dataanalysis.caches.cache_core.CacheNoIndex):
     def store(self, hashe, obj):
         filepath=self.construct_cached_file_path(hashe,obj)
-
-        try:
-            store_renga(filepath,obj)
-        except Exception as e:
-            print("renga failed:",e)
 
         return dataanalysis.caches.cache_core.CacheNoIndex.store(self,hashe,obj)
 
     def restore(self, hashe, obj, restore_config=None):
         filepath = self.construct_cached_file_path(hashe, obj)
-
-        try:
-            read_renga(filepath, obj)
-        except Exception as e:
-            print("renga failed:", e)
 
         return dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
 
@@ -2072,14 +2043,16 @@ class ImageGroups(DataAnalysis):
             total_extracted_cat.writeto("total_extracted_cat.fits",overwrite=True)
             self.total_extracted_cat=da.DataFile("total_extracted_cat.fits")
 
-        if total_extracted_cat is not None:
+        if total_skyres is not None:
             total_skyres.writeto("total_skyres.fits",overwrite=True)
             self.total_skyres=da.DataFile("total_skyres.fits")
 
         construct_gnrl_scwg_grp_idx(scw_og_fns,fn="og_idx.fits")
         set_attr({'ISDCLEVL': self.outtype}, "og_idx.fits")
 
-        construct_og(["og_idx.fits","total_extracted_cat.fits"], fn=og_fn)
+
+        construct_og(["og_idx.fits","total_skyres.fits","total_extracted_cat.fits"], fn=og_fn)
+        #construct_og(["og_idx.fits","total_extracted_cat.fits"], fn=og_fn)
 
         set_attr({'ISDCLEVL': self.outtype}, og_fn)
 
@@ -2185,9 +2158,9 @@ class MosaicImagingConfig(DataAnalysis):
     SearchMode=2
     ToSearch=500
     CleanMode=1
-    MinCatSouSnr=8
-    MinNewSouSnr=8
-    NegModels=1
+    MinCatSouSnr=6
+    MinNewSouSnr=6
+    NegModels=0
     DoPart2=2
     SouFit=0
 
@@ -2215,7 +2188,7 @@ class mosaic_ii_skyimage(DataAnalysis):
 
     image_tag = None
 
-    version = "v2.2"
+    version = "v2.2.1"
 
     outtype = "BIN_I"
 
@@ -2226,11 +2199,33 @@ class mosaic_ii_skyimage(DataAnalysis):
                 v += "_" + k + "_" + str(getattr(self, 'ii_' + k))
         return v
 
+    def merge_cat(self):
+        f_cat = fits.open(self.input_imagegroups.total_extracted_cat.get_path())
+        f_sr = fits.open(self.input_imagegroups.total_skyres.get_path())
+
+        m = f_sr[1].data['NEW_SOURCE'] == 1
+        new_sources = f_sr[1].data[m]
+        new_sources_srcl_cat = np.zeros(len(new_sources), f_cat[1].data.dtype)
+
+        for k,v in [('RA_OBJ','RA_FIN'),('DEC_OBJ','DEC_FIN')]:
+            new_sources_srcl_cat[k] = new_sources[v or k]
+
+        f_cat[1].data = np.concatenate((f_cat[1].data, new_sources_srcl_cat))
+
+        merged_cat_fn = "merged_srcl_cat.fits"
+        f_cat.writeto(merged_cat_fn,clobber=True)
+
+        return merged_cat_fn
+
     def main(self):
         self.input_imagegroups.construct_og("ogg.fits")
     
         self.total_extracted_cat=self.input_imagegroups.total_extracted_cat
         self.total_skyres=self.input_imagegroups.total_skyres
+
+        merged_cat_fn = self.merge_cat()
+        self.merged_cat=DataFile(merged_cat_fn)
+        
 
         remove_withtemplate("isgri_srcl_res.fits(ISGR-SRCL-RES.tpl)")
         remove_withtemplate("isgri_mosa_ima.fits(ISGR-MOSA-IMA-IDX.tpl)")
@@ -2259,6 +2254,7 @@ class mosaic_ii_skyimage(DataAnalysis):
         ht['ScwType'] = 'pointing'
         ht['ExtenType'] = 2
         ht['FastOpen'] = 1
+        ht['inCat'] = merged_cat_fn
         ht['MapSize'] = 80
         ht['OutType'] = self.outtype
         ht['num_band'] = len(self.input_bins.bins)
@@ -2269,7 +2265,13 @@ class mosaic_ii_skyimage(DataAnalysis):
             ht[k] = getattr(self.input_imgconfig, k)
             if hasattr(self, 'ii_' + k): ht[k] = getattr(self, 'ii_' + k)
         ht['corrDol'] = self.input_maps.corr.path
-        ht.run()
+
+        env = copy.deepcopy(os.environ)
+            
+        common_log_file = os.getcwd()+"/common-log-file.txt"
+        env['COMMONLOGFILE'] = "+"+common_log_file
+        ht.run(env=env)
+        self.commonlog = DataFile(common_log_file)
 
         if not os.path.exists("isgri_mosa_ima.fits"):
             print("no image produced: since there was no exception in the binary, assuming empty results")
