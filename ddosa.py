@@ -1412,7 +1412,7 @@ class GRcat(DataAnalysis):
     userefcatvar=False
     useresources=True
 
-    refcat_version="41"
+    refcat_version="42"
 
     def get_version(self):
         v=self.get_signature()+"."+self.version
