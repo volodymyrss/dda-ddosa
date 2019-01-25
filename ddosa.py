@@ -2681,7 +2681,14 @@ def construct_gnrl_scwg_grp(scw,children=[],fn="og.fits"):
     dc=heatool("dal_create")
     dc['obj_name']="!"+fn
     dc['template']="GNRL-SCWG-GRP.tpl"
-    dc.run()
+
+    try:
+        dc.run()
+    except Exception as e:
+        print("unknown exception",e)
+        os.system("ls -l $CFITSIO_INCLUDE_FILES/GNRL-SCWG-GRP.tpl")
+        os.system("pwd")
+        os.system("ls -lort")
     
     da=heatool("dal_attr")
     da['indol']=fn
