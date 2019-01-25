@@ -49,6 +49,7 @@ from astropy import wcs as pywcs
 import subprocess,os
 import ast
 import copy
+import re
 
 try:
     import pandas as pd
@@ -2677,6 +2678,8 @@ def construct_gnrl_scwg_grp(scw,children=[],fn="og.fits"):
         os.remove(fn)
     except OSError:
         pass
+
+    os.environ['CFITSIO_INCLUDE_FILES'] = re.sub("\:+",":", os.environ['CFITSIO_INCLUDE_FILES'])
 
     dc=heatool("dal_create")
     dc['obj_name']="!"+fn
