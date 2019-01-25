@@ -2689,6 +2689,7 @@ def construct_gnrl_scwg_grp(scw,children=[],fn="og.fits"):
         os.system("ls -l $CFITSIO_INCLUDE_FILES/GNRL-SCWG-GRP.tpl")
         os.system("pwd")
         os.system("ls -lort")
+        raise
     
     da=heatool("dal_attr")
     da['indol']=fn
