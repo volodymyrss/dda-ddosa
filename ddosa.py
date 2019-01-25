@@ -2679,7 +2679,11 @@ def construct_gnrl_scwg_grp(scw,children=[],fn="og.fits"):
     except OSError:
         pass
 
-    os.environ['CFITSIO_INCLUDE_FILES'] = re.sub("\:+",":", os.environ['CFITSIO_INCLUDE_FILES'])
+    CFITSIO_INCLUDE_FILES_shortened = re.sub("\:+",":", os.environ['CFITSIO_INCLUDE_FILES'])
+    if os.environ['CFITSIO_INCLUDE_FILES'] != CFITSIO_INCLUDE_FILES_shortened:
+        print("shortened CFITSIO_INCLUDE_FILES:", os.environ['CFITSIO_INCLUDE_FILES'] ,"to",CFITSIO_INCLUDE_FILES_shortened)
+
+    os.environ['CFITSIO_INCLUDE_FILES'] = CFITSIO_INCLUDE_FILES_shortened
 
     dc=heatool("dal_create")
     dc['obj_name']="!"+fn
