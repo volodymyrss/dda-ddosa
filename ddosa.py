@@ -2686,6 +2686,8 @@ def construct_gnrl_scwg_grp(scw,children=[],fn="og.fits"):
         dc.run()
     except Exception as e:
         print("unknown exception",e)
+        print(subprocess.check_output("export",shell=True))
+        print(subprocess.check_output("echo $CFITSIO_INCLUDE_FILES/GNRL-SCWG-GRP.tpl",shell=True))
         print(subprocess.check_output("ls -l $CFITSIO_INCLUDE_FILES/GNRL-SCWG-GRP.tpl",shell=True))
         print(subprocess.check_output("pwd",shell=True))
         print(subprocess.check_output("ls -lort",shell=True))
