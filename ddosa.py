@@ -624,7 +624,10 @@ class Revolution(DataAnalysis):
         else:
             r1900, r1600 = 5768.950951203704, 6566.694793796296
             return r1600+(r1900-r1600)/300*(r-1600)
-
+    
+    def get_ijd_exact(self):
+        i1,i2=map(float,converttime("REVNUM",self.get_revid())['IJD'])
+        return (i1+i2)*0.5,i2-i1
 
     
     def __repr__(self):
@@ -2793,6 +2796,25 @@ class ScWList(DataAnalysis):
     def main(self):
         self.scwlistdata=self.input_list.scwlistdata
 
+def converttime(from_,time_):
+    cmd=["converttime",from_,time_,""]
+
+    print("command"," ".join(cmd))
+
+    r=subprocess.check_output(cmd)
+    d={}
+    for l in r.split("\n"):
+        t=re.search("Output Time\((.*?)\): (.*?)$",l,re.S)
+        #print(l,t                                                                                                                                                                                             )
+        if t:
+            g=t.groups()
+
+            if 'Boundary' in g[1]:
+                d[g[0]]=g[1].split()[1:]
+            else:
+                d[g[0]]=g[1]
+            #print(g                                                                                                                                                                                           )
+    return d
 
 def fromUTC(utc):                                                                                                                                                                                              
     r=subprocess.check_output(["converttime","UTC",utc,""])                                                                                                                                                    
