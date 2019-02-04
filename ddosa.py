@@ -3033,11 +3033,28 @@ class ScWList(DataAnalysis):
     def main(self):
         self.scwlistdata=self.input_list.scwlistdata
 
+def converttime(informat,intime,outformat=""):
+    r=subprocess.check_output(["converttime",informat,intime,outformat])
+    d={}
+    for l in r.split("\n"):
+        t=re.search("Output Time\((.*?)\): (.*?)$",l,re.S)
+        #print(l,t                                                                                                                                                                                             )
+        if t:
+            g=t.groups()
+            if 'Boundary' in g[1]:
+                d[g[0]]=g[1].split()[1:]
+            else:
+                d[g[0]]=g[1]
 
-def fromUTC(utc):                                                                                                                                                                                              
-    r=subprocess.check_output(["converttime","UTC",utc,""])                                                                                                                                                    
-    d={}                                                                                                                                                                                                       
-    for l in r.split("\n"):                                                                                                                                                                                    
+    if outformat == "":
+        return d
+    else:
+        return d[outformat]
+
+def fromUTC(utc):
+    r=subprocess.check_output(["converttime","UTC",utc,""])
+    d={}
+    for l in r.split("\n"):
         t=re.search("Output Time\((.*?)\): (.*?)$",l,re.S)                                                                                                                                                     
         #print(l,t                                                                                                                                                                                             )
         if t:                                                                                                                                                                                                  
