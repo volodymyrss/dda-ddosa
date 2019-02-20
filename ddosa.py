@@ -54,7 +54,7 @@ import re
 try:
     import pandas as pd
 except ImportError:
-    print "no pandas!"
+    print("no pandas!")
 
 try:
     import yaml
