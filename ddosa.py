@@ -36,8 +36,8 @@ from dataanalysis.hashtools import shhash
 import dataanalysis.printhook
 import dataanalysis.core as da
 
-from pilton import heatool 
 import pilton
+from pilton import heatool 
 
 import pprint
 import os,shutil,re,time,glob
@@ -1059,8 +1059,8 @@ class ibis_gti(DataAnalysis):
 
 # maybe split indeed,but try to show another way
 class ibis_dead(DataAnalysis):
-    input_scw=ScWData()
-    input_ic=ICRoot()
+    input_scw=ScWData
+    input_ic=ICRoot
 
     cached=True
     
