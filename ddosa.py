@@ -65,7 +65,7 @@ except ImportError:
 import numpy as np
 
 if hasattr(da,'DataAnalysisPrototype'):
-    DataAnalysisPrototype=da.DataAnalysisPrototype
+    DataAnalysisPrototype = da.DataAnalysisPrototype
 else:
     DataAnalysisPrototype = da.DataAnalysis
 
@@ -515,6 +515,7 @@ class ScWData(DataAnalysis):
     version="v1"
 
     scwver="001"
+    auxadpver="001"
 
     def main(self):
         try:
@@ -560,7 +561,7 @@ class ScWData(DataAnalysis):
     def assume_rbp(self,rbp):
         self.scwpath=rbp+"/scw/"+self.revid+"/"+self.scwid #!!!!
         self.revdirpath=rbp+"/scw/"+self.revid+"/rev."+self.scwver # ver?
-        self.auxadppath=rbp+"/aux/adp/"+self.revid+"."+self.scwver
+        self.auxadppath=rbp+"/aux/adp/"+self.revid+"."+self.auxadpver
 
 
         if not good_file(self.scwpath+"/swg.fits"):
@@ -617,6 +618,7 @@ class Revolution(DataAnalysis):
     input_scwver=da.NoAnalysis
 
     scwver="001"
+    auxadpver="001"
 
     def get_revid(self):
         return self.input_revid.handle
@@ -629,7 +631,7 @@ class Revolution(DataAnalysis):
 
         self.revroot=rbp+"/scw/%s/"%self.get_revid()
         self.revdir=self.revroot+"/rev.%s/"%self.scwver
-        self.auxadppath=rbp+"/aux/adp/"+self.get_revid()+"."+self.scwver
+        self.auxadppath=rbp+"/aux/adp/"+self.get_revid()+"."+self.auxadpver
 
     def get_ijd(self):
         r1100=4306.5559396296
