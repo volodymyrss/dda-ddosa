@@ -535,6 +535,7 @@ class ScWData(DataAnalysis):
             else:
                 raise
 
+
     def test_scw(self):
         try:
             f=fits.open(self.scwpath+"/swg.fits")
@@ -561,7 +562,15 @@ class ScWData(DataAnalysis):
     def assume_rbp(self,rbp):
         self.scwpath=rbp+"/scw/"+self.revid+"/"+self.scwid #!!!!
         self.revdirpath=rbp+"/scw/"+self.revid+"/rev."+self.scwver # ver?
-        self.auxadppath=rbp+"/aux/adp/"+self.revid+"."+self.auxadpver
+        #self.auxadppath=rbp+"/aux/adp/"+self.revid+"."+self.auxadpver
+
+        print("searching for auxadpver")
+        for ver in "000", "001":
+            self.auxadppath=rbp+"/aux/adp/"+self.revid+"."+ver
+            self.auxadpver=ver
+            if os.path.exists(self.auxadppath):
+                print("auxadpver picked", self.auxadpver, self.auxadppath)
+                break
 
 
         if not good_file(self.scwpath+"/swg.fits"):
@@ -1492,6 +1501,10 @@ class BrightPIFImage(DataAnalysis):
         else:
             att=self.input_scw.auxadppath+"/attitude_snapshot.fits[AUXL-ATTI-SNA,1,BINTABLE]"
             attp_g=glob.glob(self.input_scw.auxadppath+"/attitude_predicted_*.fits*")
+
+            print("possible predicted attitude", attp_g)
+            print("possible predicted attitude", self.input_scw.auxadppath+"/attitude_predicted_*.fits*")
+
             attp=attp_g[0]+"[AUXL-ATTI-PRE,1,BINTABLE]"
 
 
