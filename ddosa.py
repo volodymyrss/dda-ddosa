@@ -502,6 +502,9 @@ class ScWDataCorrupted(da.AnalysisException):
 class FractionalEnergyBinsNotAllowed(da.AnalysisException):
     pass
 
+class EfficiencyNotComputed(da.AnalysisException):
+    pass
+
 def good_file(fn):
     return os.path.exists(fn) and isfile(fn) and access(fn, R_OK)
 
@@ -1610,7 +1613,17 @@ class ShadowUBCVirtual(DataAnalysis):
             ht['brPif']=self.input_brpif.pifs.get_path()
             ht['brPifThreshold']=self.brPifThreshold
         ht['method_cor']=1 # keep separately background correction routines
-        ht.run()
+
+        try:
+            ht.run()
+        except Exception as e:
+            print("problem:", repr(e))
+            print("tool", ht.output)
+
+            if 'Verif8Bins           Status :          0 Bands error 2 in TIME bins' in ht.output:
+                raise EfficiencyNotComputed(ht.output)
+
+            raise
 
         self.corshad=DataFile(fn)
 
