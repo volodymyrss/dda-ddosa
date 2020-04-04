@@ -2343,8 +2343,8 @@ class mosaic_ii_skyimage(DataAnalysis):
                 new_catthr = int(float(ht['MinCatSouSnr'].value)*1.5)
                 new_newthr = int(float(ht['MinNewSouSnr'].value)*1.5)
                 warnings.append("""detected likely many-source segfault,
-                                   increasing significance threshold from %.5lg to %.5lg
-                                   increasing significance threshold from %.5lg to %.5lg"""%(
+                                   increasing catalogue source significance threshold from %.5lg to %.5lg,
+                                   increasing new source significance threshold from %.5lg to %.5lg"""%(
                                                 ht['MinCatSouSnr'].value,
                                                 new_catthr,
                                                 ht['MinNewSouSnr'].value,
@@ -2382,8 +2382,7 @@ class mosaic_ii_skyimage(DataAnalysis):
         self.post_process()
 
         if len(warnings)>0:
-            self.comment = "Caution, warnings found!"
-            self.warning = "; ".join(warnings)
+            self.comment = "WARNING:" + ("; ".join(warnings))
 
 
     def merge_res(self):
