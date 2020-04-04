@@ -2192,6 +2192,22 @@ class lc_pick(DataAnalysis):
             setattr(self,'lightcurve',da.DataFile(fn))
 
 
+    ## do this only isgri
+#            d = fits.open(fn)[1]
+#            t_lc = d.data['TIME']
+
+#            timedel = data.header['TIMEDEL']
+#            dt_lc = (timedel / 2) * np.ones(t_lc.shape)
+
+#            for i in range(len(t_lc) - 1):
+#                dt_lc[i + 1] = min(timedel / 2, t_lc[i + 1] - t_lc[i] - dt_lc[i])
+
+#            d.data['XAX_E'] = dt_lc
+#            d.writeto(fn, overwrite=True)
+    ## do jemx dt_lc negative
+
+
+
 
 class MosaicImagingConfig(DataAnalysis):
     input="500s2x88"
@@ -2259,26 +2275,33 @@ class mosaic_ii_skyimage(DataAnalysis):
         return merged_cat_fn
 
     def main(self):
-        self.input_imagegroups.construct_og("ogg.fits")
-    
-        self.total_extracted_cat=self.input_imagegroups.total_extracted_cat
-        self.total_skyres=self.input_imagegroups.total_skyres
 
         #merged_cat_fn = self.merge_cat()
         #self.merged_cat=DataFile(merged_cat_fn)
         
-
-        remove_withtemplate("isgri_srcl_res.fits(ISGR-SRCL-RES.tpl)")
-        remove_withtemplate("isgri_mosa_ima.fits(ISGR-MOSA-IMA-IDX.tpl)")
-        remove_withtemplate("isgri_mosa_res.fits(ISGR-MOSA-RES-IDX.tpl)")
-        remove_withtemplate("isgri_sky_ima.fits(ISGR-SKY-IMA-IDX.tpl)")
-        remove_withtemplate("isgri_sky_res.fits(ISGR-SKY-RES-IDX.tpl)")
-
         if self.ii_skyimage_binary is None:
             ii_skyimage_binary = "ii_skyimage"
         else:
             ii_skyimage_binary = self.ii_skyimage_binary
 
+
+        def reset():
+            self.input_imagegroups.construct_og("ogg.fits")
+        
+            self.total_extracted_cat=self.input_imagegroups.total_extracted_cat
+            self.total_skyres=self.input_imagegroups.total_skyres
+
+            remove_withtemplate("isgri_srcl_res.fits(ISGR-SRCL-RES.tpl)")
+            remove_withtemplate("isgri_mosa_ima.fits(ISGR-MOSA-IMA-IDX.tpl)")
+            remove_withtemplate("isgri_mosa_res.fits(ISGR-MOSA-RES-IDX.tpl)")
+            remove_withtemplate("isgri_sky_ima.fits(ISGR-SKY-IMA-IDX.tpl)")
+            remove_withtemplate("isgri_sky_res.fits(ISGR-SKY-RES-IDX.tpl)")
+
+
+        warnings=[]
+
+
+        reset()
 
         ht = heatool(ii_skyimage_binary)
         ht['outOG'] = "ogg.fits[1]"
@@ -2311,11 +2334,37 @@ class mosaic_ii_skyimage(DataAnalysis):
             
         common_log_file = "common-log-file.txt"
         env['COMMONLOGFILE'] = "+"+os.getcwd()+"/"+common_log_file
-        ht.run(env=env)
+
+
+        try:
+            ht.run(env=env)
+        except pilton.HEAToolException as e:
+            if 'in MAIN__ at ii_skyimage_main.f90:94' in ht.output:
+                new_catthr = int(float(ht['MinCatSouSnr'].value)*1.5)
+                new_newthr = int(float(ht['MinNewSouSnr'].value)*1.5)
+                warnings.append("""detected likely many-source segfault,
+                                   increasing significance threshold from %.5lg to %.5lg
+                                   increasing significance threshold from %.5lg to %.5lg"""%(
+                                                ht['MinCatSouSnr'].value,
+                                                new_catthr,
+                                                ht['MinNewSouSnr'].value,
+                                                new_newthr,
+                                                ))
+                print("WARNING:",warnings[-1])
+                ht['MinCatSouSnr']=new_catthr
+                ht['MinNewSouSnr']=new_newthr
+
+                reset()
+
+                ht.run(env=env)
+            
+
         self.commonlog = DataFile(common_log_file)
 
+
         if not os.path.exists("isgri_mosa_ima.fits"):
-            print("no image produced: since there was no exception in the binary, assuming empty results")
+            warnings.apped("no image produced: since there was no exception in the binary, assuming empty results")
+            print("warnings", warnings[-1])
             self.empty_results = True
             return
 
@@ -2331,6 +2380,10 @@ class mosaic_ii_skyimage(DataAnalysis):
         self.mosaic=self.skyima
 
         self.post_process()
+
+        if len(warnings)>0:
+            self.comment = "Caution, warnings found!"
+            self.warning = "; ".join(warnings)
 
 
     def merge_res(self):
