@@ -587,6 +587,12 @@ class ScWData(DataAnalysis):
             self.swgpath=self.scwpath+"/swg.fits"
         print("swgpath:",self.swgpath)
 
+    def slew_or_pointing(self):
+        if "0010.00" in self.scwid:
+            return "pointing"
+        else:
+            return "slew"
+
 
     def get_isgri_events(self):
         if hasattr(self,'isgrievents'):
@@ -1965,7 +1971,11 @@ class ii_skyimage(DataAnalysis):
         ht['outMosIma']="isgri_mosa_ima.fits(ISGR-MOSA-IMA-IDX.tpl)"
         ht['outMosRes']="isgri_mosa_res.fits(ISGR-MOSA-RES-IDX.tpl)"
         ht['ScwDir'] = './'
-        ht['ScwType'] = 'pointing'
+        try:
+            ht['ScwType'] = self.input_scw.slew_or_pointing()
+        except:
+            ht['ScwType'] = "pointing"
+
         ht['ExtenType'] = 2
         ht['OutType']=self.outtype
         ht['num_band'] = len(self.input_bins.bins)
