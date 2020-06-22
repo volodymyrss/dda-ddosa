@@ -562,9 +562,23 @@ class ScWData(DataAnalysis):
 
         raise NoISGRIEvents("no usable event data for: "+repr(self.scwid))
 
+
     def assume_rbp(self,rbp):
-        self.scwpath=rbp+"/scw/"+self.revid+"/"+self.scwid #!!!!
-        self.revdirpath=rbp+"/scw/"+self.revid+"/rev."+self.scwver # ver?
+        self.revdirver = None
+        tried = []
+        for v in self.scwver, "002", "001", "000":
+            p = rbp+"/scw/"+self.revid+"/rev."+v
+            if os.path.exists(p):
+                self.revdirver = v
+                print("found revdir ver", v)
+                break
+            tried.append(p)
+
+        if self.revdirver is None:
+            raise Exception("no revdir available! tried: {}".format(tried))
+
+        self.scwpath=rbp+"/scw/"+self.revid+"/"+self.scwid
+        self.revdirpath=rbp+"/scw/"+self.revid+"/rev."+self.revdirver
         #self.auxadppath=rbp+"/aux/adp/"+self.revid+"."+self.auxadpver
 
         print("searching for auxadpver")
