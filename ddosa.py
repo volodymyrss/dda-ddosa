@@ -1438,8 +1438,8 @@ class GRcat(DataAnalysis):
 
     cached=False # again, this is transient-level cache
 
-    userefcatvar=False
-    useresources=True
+    userefcatvar=True
+    useresources=False
 
     refcat_version="42"
 
