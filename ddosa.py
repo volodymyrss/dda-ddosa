@@ -1467,9 +1467,9 @@ class GRcat(DataAnalysis):
             pass
         else:
             if self.suffix is None:
-                self.cat=detect_rbp()+"/cat/hec/gnrl_refr_cat_0040.fits[1]"
+                self.cat=detect_rbp()+"/cat/hec/gnrl_refr_cat_0043.fits[1]"
             else:
-                self.cat=detect_rbp()+"/cat/hec/gnrl_refr_cat_0040_%s.fits[1]"%self.suffix
+                self.cat=detect_rbp()+"/cat/hec/gnrl_refr_cat_0043_%s.fits[1]"%self.suffix
 
 
 class BrightCat(DataAnalysis):
@@ -1781,8 +1781,6 @@ class ISGRIRefCat(DataAnalysis):
 
     def main(self):
         self.cat=self.input.cat+"[ISGRI_FLAG==1 || ISGRI_FLAG==2]"
-        import time
-        time.sleep(3) # expensive to search for cat: test
 
 class CatExtractEmpty(DataAnalysis):
     input_cat=GRcat
