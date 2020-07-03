@@ -2814,7 +2814,7 @@ def construct_gnrl_scwg_grp(scw,children=[],fn="og.fits"):
                     raise Exception("can not attach more than 4 children to the group!")
             dac.run()
         else:
-            for children_group_id in range(len(children)/4+1):
+            for children_group_id in range(int(len(children)/4+1)):
                 children_group=children[children_group_id*4:children_group_id*4+4]
                 dac=heatool("dal_attach")
                 dac['Parent']=fn
