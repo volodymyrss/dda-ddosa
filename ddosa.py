@@ -1213,6 +1213,9 @@ class SpectraBins(DataAnalysis):
         if not os.path.exists(self.binrmf):
             self.binrmf="/unsaved_data/savchenk/rmf_62bands.fits"
 
+        if not os.path.exists(self.binrmf):
+            self.binrmf="/data/resources/rmf_62bands.fits"
+
         #self.binrmf=os.environ['CURRENT_IC']+"/ic/ibis/rsp/rmf_62bands.fits" # noo!!!
         #self.binrmf=os.environ['CURRENT_IC']+"/ic/ibis/rsp/isgr_ebds_mod_0001.fits" # noo!!!
         e=fits.open(self.binrmf)[self.rmfext].data
