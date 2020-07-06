@@ -505,6 +505,9 @@ class FractionalEnergyBinsNotAllowed(da.AnalysisException):
 class EfficiencyNotComputed(da.AnalysisException):
     pass
 
+class BinnedMapsNotComputed(Exception):
+    pass
+
 def good_file(fn):
     return os.path.exists(fn) and isfile(fn) and access(fn, R_OK)
 
@@ -1416,6 +1419,9 @@ class BinMapsVirtual(DataAnalysis):
             ht['inp'+k2+'Dol']=m 
             ht['reb'+k2+'Dol']=fn
             ht.run()
+
+            if 'ScwOpen ATTENTION !  No shd found of type' in ht.output:
+                raise BinnedMapsNotComputed(ht.output)
 
             setattr(self,k,DataFile(fn))
 
