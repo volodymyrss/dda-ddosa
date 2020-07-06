@@ -1380,7 +1380,7 @@ class BinMapsVirtual(DataAnalysis):
         if self.target_level is None or self.input_bins is None:
             raise Exception("VirtualAnalysis: please inherit!")
 
-        construct_empty_shadidx(self.input_bins.bins,levl=self.target_level)
+        construct_empty_shadidx(list(self.input_bins.bins),levl=self.target_level)
 
 
         maps={
