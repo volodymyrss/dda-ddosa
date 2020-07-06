@@ -1420,7 +1420,7 @@ class BinMapsVirtual(DataAnalysis):
             ht['reb'+k2+'Dol']=fn
             ht.run()
 
-            if 'ScwOpen ATTENTION !  No shd found of type' in ht.output:
+            if 'No shd found of type' in ht.output:
                 raise BinnedMapsNotComputed(ht.output)
 
             setattr(self,k,DataFile(fn))
