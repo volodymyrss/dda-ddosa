@@ -2896,60 +2896,6 @@ def set_attr(attrs,fn="og.fits"):
         da['value_'+pt2k[type(v)]]=v
         da.run()
         
-def construct_empty_shadidx_old(bins,fn="og.fits",levl="BIN_I"):
-    remove_withtemplate(fn+"(ISGR-DETE-SHD-IDX.tpl)")
-
-    ht=heatool("dal_create")
-    ht['obj_name']=fn
-    ht['template']="ISGR-DETE-SHD-IDX.tpl"
-    ht.run()
-
-    for e1,e2 in bins:
-        tshad="shad_%.5lg_%.5lg.fits"%(e1,e2)
-        remove_withtemplate(tshad)
-
-        ht=heatool("dal_create")
-        ht['obj_name']=tshad
-        ht['template']="ISGR-DETE-SHD.tpl"
-        ht.run()
-
-        da=heatool("dal_attr")
-        da['indol']=ht['obj_name'].value
-        da['keynam']="E_MIN"
-        da['action']="WRITE"
-        da['type']="DAL_DOUBLE"
-        da['value_r']=e1
-        da.run()
-
-        da=heatool("dal_attr")
-        da['indol']=ht['obj_name'].value
-        da['keynam']="E_MAX"
-        da['action']="WRITE"
-        da['type']="DAL_DOUBLE"
-        da['value_r']=e2
-        da.run()
-        
-        da=heatool("dal_attr")
-        da['indol']=ht['obj_name'].value
-        da['keynam']="ISDCLEVL"
-        da['action']="WRITE"
-        da['type']="DAL_CHAR"
-        da['value_s']="BIN_I"
-        da.run()
-
-        da=heatool("dal_attach")
-        da['Parent']=fn
-        da['Child1']=ht['obj_name'].value
-        da.run()
-
-    # attaching does not create necessary fields: use txt2idx instead
-    
-    og=fits.open(fn) 
-    for i,(e1,e2) in enumerate(bins):
-        og[1].data[i]['E_MIN']=e1
-        og[1].data[i]['E_MAX']=e2
-        og[1].data[i]['ISDCLEVL']=levl
-    og.writeto(fn,clobber=True)
 
 def construct_empty_shadidx(bins,fn="og.fits",levl="BIN_I"):
     remove_withtemplate(fn+"(ISGR-DETE-SHD-IDX.tpl)")
@@ -2967,8 +2913,10 @@ def construct_empty_shadidx(bins,fn="og.fits",levl="BIN_I"):
         dc['element']='ISGR-DETE-SHD.tpl'
         dc.run()
 
+    print(f"construct_empty_shadidx to {fn}")
     og=fits.open(fn) 
     for i,(e1,e2) in enumerate(bins):
+        print(f"writing extension and row {i} erange {e1} {e2}")
         og[1].data[i]['E_MIN']=e1
         og[1].data[i]['E_MAX']=e2
         og[1].data[i]['ISDCLEVL']=levl
