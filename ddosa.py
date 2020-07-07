@@ -2531,10 +2531,10 @@ class ISGRIResponse(DataAnalysis):
         return self.path
 
     def main(self):
-        for n, get_path in [ 
-                    ("ISGRI_RESPONSE environment variable", lambda: os.environ.get('ISGRI_RESPONSE'),
+        for n, get_path in [
+                    ("ISGRI_RESPONSE environment variable", lambda: os.environ.get('ISGRI_RESPONSE')),
                     ("resources", "/data/resources/rmf_62bands.fits"),
-                    ("INTEGRAL_DATA", lambda:os.environ.get('INTEGRAL_DATA','')+"/resources/rmf_62bands.fits")
+                    ("INTEGRAL_DATA", lambda:os.environ.get('INTEGRAL_DATA','')+"/resources/rmf_62bands.fits"),
                     ]:
             print("trying to use response from", n)
             try:
