@@ -2526,12 +2526,26 @@ class CatForSpectraFromImaging(DataAnalysis):
 class ISGRIResponse(DataAnalysis):
     input_ecorrdata=GetEcorrCalDB
 
-    path=os.environ.get('ISGRI_RESPONSE',os.environ.get('INTEGRAL_DATA','')+"/resources/rmf_62bands.fits")
-
     
     def rmf_path(self):
         return self.path
-        
+
+    def main(self):
+        for n, get_path in [ 
+                    ("ISGRI_RESPONSE environment variable", lambda: os.environ.get('ISGRI_RESPONSE'),
+                    ("resources", "/data/resources/rmf_62bands.fits"),
+                    ("INTEGRAL_DATA", lambda:os.environ.get('INTEGRAL_DATA','')+"/resources/rmf_62bands.fits")
+                    ]:
+            print("trying to use response from", n)
+            try:
+                path = get_path()
+                if os.path.exists(path):
+                    print("found:", path)
+                    break
+            except Exception as e:
+                print("does not work:", e)
+
+        self.path = path
 
 class ii_spectra_extract(DataAnalysis):
     input_gb=ghost_bustersSpectra
