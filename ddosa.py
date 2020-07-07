@@ -2531,9 +2531,12 @@ class ISGRIResponse(DataAnalysis):
         return self.path
 
     def main(self):
+        self.path = None
+        tried = []
+
         for n, get_path in [
                     ("ISGRI_RESPONSE environment variable", lambda: os.environ.get('ISGRI_RESPONSE')),
-                    ("resources", "/data/resources/rmf_62bands.fits"),
+                    ("resources", lambda:"/data/resources/rmf_62bands.fits"),
                     ("INTEGRAL_DATA", lambda:os.environ.get('INTEGRAL_DATA','')+"/resources/rmf_62bands.fits"),
                     ]:
             print("trying to use response from", n)
@@ -2541,11 +2544,14 @@ class ISGRIResponse(DataAnalysis):
                 path = get_path()
                 if os.path.exists(path):
                     print("found:", path)
+                    self.path = path
                     break
             except Exception as e:
                 print("does not work:", e)
+                tried.append(n)
 
-        self.path = path
+        if self.path is None:
+            raise Exception(f"No ISGRI Response found! tried: {tried}")
 
 class ii_spectra_extract(DataAnalysis):
     input_gb=ghost_bustersSpectra
