@@ -666,6 +666,9 @@ class Revolution(DataAnalysis):
         r=int(self.get_revid())
         return r100+(r1100-r100)/1000*(r-100)
 
+    def get_ijd_exact(self):
+        ijd_b = map(float, converttime("REVNUM",self.get_revid(),"IJD"))
+        return (ijd_b[1] + ijd_b[0]) / 2., (ijd_b[1] - ijd_b[0])
     
     def __repr__(self):
         return "[Revolution:%s:%s]"%(self.input_revid,self.scwver)
