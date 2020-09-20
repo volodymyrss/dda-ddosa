@@ -353,6 +353,9 @@ import base64
 class ODACache(dataanalysis.caches.cache_core.CacheBlob):
     _leader = None
 
+    def __repr__(self):
+        return f"[{self.__class__.__name__}: leader {self.leader}]"
+
     @property
     def leader(self):
         if self._leader is None:
@@ -361,7 +364,7 @@ class ODACache(dataanalysis.caches.cache_core.CacheBlob):
         return self._leader
 
     def approved_hashe(self, hashe):
-        if hashe[-1].split(".")[0] in ['ii_skyimage', 'mosaic_ii_skyimage', 'ii_spectra_extract']:
+        if hashe[-1].split(".")[0] in ['CatExtract', 'ii_skyimage', 'mosaic_ii_skyimage', 'ii_spectra_extract']:
             return True
 
     def deposit_blob(self, hashe, blob):
