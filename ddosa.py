@@ -3186,7 +3186,10 @@ class CallbackRareDDOSAFilter(dataanalysis.callback.Callback):
     def extract_data(self,obj):
         data={'scwid':'inapplicable',}
 
-        scw=obj.cache.get_scw(obj._da_locally_complete)
+        try:
+            scw=obj.cache.get_scw(obj._da_locally_complete)
+        except:
+            scw=obj.parent.cache.get_scw(obj._da_locally_complete)
 
         expected_hashe=getattr(obj,'_da_expected_full_hashe',None)
 
