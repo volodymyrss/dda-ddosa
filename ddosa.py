@@ -35,6 +35,7 @@ from dataanalysis import hashtools
 from dataanalysis.hashtools import shhash
 import dataanalysis.printhook
 import dataanalysis.core as da
+import io
 
 import pilton
 from pilton import heatool
@@ -49,6 +50,7 @@ from astropy import wcs as pywcs
 import subprocess,os
 import ast
 import copy
+import json
 import re
 
 try:
@@ -345,14 +347,48 @@ class MemCacheIntegralBase:
 
         return r # choose to avoid overlapp
 
+import dqueue
+import base64
 
+class ODACache(dataanalysis.caches.cache_core.CacheBlob):
+    _leader = None
 
-#class MemCacheIntegral(MemCacheIntegralBase,dataanalysis.MemCacheMySQL):
-#    pass
+    @property
+    def leader(self):
+        if self._leader is None:
+            self._leader = dqueue.from_uri(os.environ.get("ODAHUB"))
 
-#class MemCacheIntegralLegacy(MemCacheIntegralBase,dataanalysis.MemCacheSqlite):
-#    pass
+        return self._leader
 
+    def approved_hashe(self, hashe):
+        if hashe[-1].split(".")[0] in ['ii_skyimage', 'mosaic_ii_skyimage', 'ii_spectra_extract']:
+            return True
+
+    def deposit_blob(self, hashe, blob):
+        blob_b64 = base64.b64encode(blob.read()).decode()
+
+        r = self.leader.assert_fact(
+                dag=hashe,
+                data={ "blob": blob_b64 }
+            )
+
+        print("stored in ODA:",r)
+
+    def retrieve_blob(self, hashe):
+        print("\033[33mtrying to restore from ODA\033[0m")
+
+        try:
+            r = self.leader.consult_fact(
+                    dag=hashe,
+                )
+        except dqueue.data.NotFound as e:
+            print("\033[32mnot found in ODA\033[0m", e)
+            return None
+
+        blob = base64.b64decode(json.loads(r['data_json'])['blob'])
+        print("\033[33mrestored from ODA\033[0m: blob of", len(blob)/1024/1024, "kb")
+
+        return io.BytesIO(blob)
 
 class MemCacheIntegralFallback(MemCacheIntegralBase,dataanalysis.caches.cache_core.CacheNoIndex):
     def store(self, hashe, obj):
@@ -380,9 +416,11 @@ class MemCacheIntegralFallback(MemCacheIntegralBase,dataanalysis.caches.cache_co
 #mcgl=MemCacheIntegralLegacy('/Integral/data/reduced/ddcache/')
 #mcg.parent=mcgl
 
-IntegralCacheRoots=os.environ.get('INTEGRAL_DDCACHE_ROOT','/sps/integral/data/reduced/ddcache/')
+IntegralCacheRoots=os.environ.get('INTEGRAL_DDCACHE_ROOT','/data/reduced/ddcache/')
 
 CacheStack=[]
+
+CacheStack.append(ODACache())
 
 for IntegralCacheRoot in IntegralCacheRoots.split(":"):
     ro_flag=False
@@ -1450,8 +1488,8 @@ class GRcat(DataAnalysis):
 
     cached=False # again, this is transient-level cache
 
-    userefcatvar=False
-    useresources=True
+    userefcatvar=True
+    useresources=False
 
     refcat_version="42"
 
