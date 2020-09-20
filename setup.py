@@ -7,4 +7,7 @@ setup(name='dda-ddosa',
       description='ddosa',
       author='V.S.',
       py_modules=['ddosa'],
+      install_requires=[
+         "pilton>=1.0.1",
+      ]
      )
