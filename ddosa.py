@@ -367,7 +367,8 @@ class ODACache(dataanalysis.caches.cache_core.CacheBlob):
         if hashe[-1].split(".")[0] in [
                 'ibis_gti', 'ibis_dead', 'CatExtract', 
                 'BinEventsImage', 'BinMapsImage', 'ii_skyimage', 
-                'mosaic_ii_skyimage', 'ii_spectra_extract']:
+                'ii_spectra_extract']:
+                #'mosaic_ii_skyimage', 
             return True
 
     def deposit_blob(self, hashe, blob):
