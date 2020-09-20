@@ -3199,7 +3199,10 @@ class CallbackRareDDOSAFilter(dataanalysis.callback.Callback):
             data['node_id']="undefined_expected_hashe_please_complain" # add sentry
 
         if scw is None:
-            scw=obj.cache.get_scw(expected_hashe)
+            try:
+                scw=obj.cache.get_scw(expected_hashe)
+            except:
+                scw=obj.cache.parent.get_scw(expected_hashe)
 
         if scw is not None:
             data.update({"scwid":scw})
