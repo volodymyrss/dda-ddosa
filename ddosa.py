@@ -505,6 +505,9 @@ class FractionalEnergyBinsNotAllowed(da.AnalysisException):
 class EfficiencyNotComputed(da.AnalysisException):
     pass
 
+class BinnedMapsNotComputed(Exception):
+    pass
+
 def good_file(fn):
     return os.path.exists(fn) and isfile(fn) and access(fn, R_OK)
 
@@ -1213,10 +1216,13 @@ class SpectraBins(DataAnalysis):
         if not os.path.exists(self.binrmf):
             self.binrmf="/unsaved_data/savchenk/rmf_62bands.fits"
 
+        if not os.path.exists(self.binrmf):
+            self.binrmf="/data/resources/rmf_62bands.fits"
+
         #self.binrmf=os.environ['CURRENT_IC']+"/ic/ibis/rsp/rmf_62bands.fits" # noo!!!
         #self.binrmf=os.environ['CURRENT_IC']+"/ic/ibis/rsp/isgr_ebds_mod_0001.fits" # noo!!!
         e=fits.open(self.binrmf)[self.rmfext].data
-        self.bins=zip(e['E_MIN'],e['E_MAX'])
+        self.bins=list(zip(e['E_MIN'],e['E_MAX']))
         self.binrmfext=self.binrmf+'[%i]'%self.rmfext
 
     def get_binrmfext(self):
@@ -1380,7 +1386,7 @@ class BinMapsVirtual(DataAnalysis):
         if self.target_level is None or self.input_bins is None:
             raise Exception("VirtualAnalysis: please inherit!")
 
-        construct_empty_shadidx(self.input_bins.bins,levl=self.target_level)
+        construct_empty_shadidx(list(self.input_bins.bins),levl=self.target_level)
 
 
         maps={
@@ -1419,6 +1425,9 @@ class BinMapsVirtual(DataAnalysis):
             ht['inp'+k2+'Dol']=m
             ht['reb'+k2+'Dol']=fn
             ht.run()
+
+            if 'No shd found of type' in ht.output:
+                raise BinnedMapsNotComputed(ht.output)
 
             setattr(self,k,DataFile(fn))
 
@@ -2520,12 +2529,31 @@ class CatForSpectraFromImaging(DataAnalysis):
 class ISGRIResponse(DataAnalysis):
     input_ecorrdata=GetEcorrCalDB
 
-    path=os.environ.get('ISGRI_RESPONSE',os.environ.get('INTEGRAL_DATA','')+"/resources/rmf_62bands.fits")
-
-
     def rmf_path(self):
         return self.path
 
+    def main(self):
+        self.path = None
+        tried = []
+
+        for n, get_path in [
+                    ("ISGRI_RESPONSE environment variable", lambda: os.environ.get('ISGRI_RESPONSE')),
+                    ("resources", lambda:"/data/resources/rmf_62bands.fits"),
+                    ("INTEGRAL_DATA", lambda:os.environ.get('INTEGRAL_DATA','')+"/resources/rmf_62bands.fits"),
+                    ]:
+            print("trying to use response from", n)
+            try:
+                path = get_path()
+                if os.path.exists(path):
+                    print("found:", path)
+                    self.path = path
+                    break
+            except Exception as e:
+                print("does not work:", e)
+                tried.append(n)
+
+        if self.path is None:
+            raise Exception(f"No ISGRI Response found! tried: {tried}")
 
 class ii_spectra_extract(DataAnalysis):
     input_gb=ghost_bustersSpectra
@@ -2893,61 +2921,6 @@ def set_attr(attrs,fn="og.fits"):
         da['value_'+pt2k[type(v)]]=v
         da.run()
 
-def construct_empty_shadidx_old(bins,fn="og.fits",levl="BIN_I"):
-    remove_withtemplate(fn+"(ISGR-DETE-SHD-IDX.tpl)")
-
-    ht=heatool("dal_create")
-    ht['obj_name']=fn
-    ht['template']="ISGR-DETE-SHD-IDX.tpl"
-    ht.run()
-
-    for e1,e2 in bins:
-        tshad="shad_%.5lg_%.5lg.fits"%(e1,e2)
-        remove_withtemplate(tshad)
-
-        ht=heatool("dal_create")
-        ht['obj_name']=tshad
-        ht['template']="ISGR-DETE-SHD.tpl"
-        ht.run()
-
-        da=heatool("dal_attr")
-        da['indol']=ht['obj_name'].value
-        da['keynam']="E_MIN"
-        da['action']="WRITE"
-        da['type']="DAL_DOUBLE"
-        da['value_r']=e1
-        da.run()
-
-        da=heatool("dal_attr")
-        da['indol']=ht['obj_name'].value
-        da['keynam']="E_MAX"
-        da['action']="WRITE"
-        da['type']="DAL_DOUBLE"
-        da['value_r']=e2
-        da.run()
-
-        da=heatool("dal_attr")
-        da['indol']=ht['obj_name'].value
-        da['keynam']="ISDCLEVL"
-        da['action']="WRITE"
-        da['type']="DAL_CHAR"
-        da['value_s']="BIN_I"
-        da.run()
-
-        da=heatool("dal_attach")
-        da['Parent']=fn
-        da['Child1']=ht['obj_name'].value
-        da.run()
-
-    # attaching does not create necessary fields: use txt2idx instead
-
-    og=fits.open(fn)
-    for i,(e1,e2) in enumerate(bins):
-        og[1].data[i]['E_MIN']=e1
-        og[1].data[i]['E_MAX']=e2
-        og[1].data[i]['ISDCLEVL']=levl
-    og.writeto(fn,clobber=True)
-
 def construct_empty_shadidx(bins,fn="og.fits",levl="BIN_I"):
     remove_withtemplate(fn+"(ISGR-DETE-SHD-IDX.tpl)")
 
@@ -2964,8 +2937,10 @@ def construct_empty_shadidx(bins,fn="og.fits",levl="BIN_I"):
         dc['element']='ISGR-DETE-SHD.tpl'
         dc.run()
 
-    og=fits.open(fn)
+    print(f"construct_empty_shadidx to {fn}")
+    og=fits.open(fn) 
     for i,(e1,e2) in enumerate(bins):
+        print(f"writing extension and row {i} erange {e1} {e2}")
         og[1].data[i]['E_MIN']=e1
         og[1].data[i]['E_MAX']=e2
         og[1].data[i]['ISDCLEVL']=levl
