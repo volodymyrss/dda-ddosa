@@ -427,7 +427,7 @@ IntegralCacheRoots=os.environ.get('INTEGRAL_DDCACHE_ROOT','/data/reduced/ddcache
 
 CacheStack=[]
 
-CacheStack.append(ODACache())
+#CacheStack.append(ODACache())
 
 for IntegralCacheRoot in IntegralCacheRoots.split(":"):
     ro_flag=False
@@ -2305,8 +2305,9 @@ class mosaic_ii_skyimage(DataAnalysis):
     #input_gti = ibis_gti
 
     cached = True
-    #copy_cached_input=False # this is for performance! TODO
-    copy_cached_input=True
+    copy_cached_input=False 
+    # this is for performance! TODO for blob
+    #copy_cached_input=True
 
     ii_skyimage_binary = None
 
