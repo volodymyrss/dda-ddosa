@@ -2305,8 +2305,8 @@ class mosaic_ii_skyimage(DataAnalysis):
     #input_gti = ibis_gti
 
     cached = True
-    copy_cached_input=False
-    #copy_cached_input=True
+    #copy_cached_input=False # this is for performance! TODO
+    copy_cached_input=True
 
     ii_skyimage_binary = None
 
