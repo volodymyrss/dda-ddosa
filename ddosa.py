@@ -432,8 +432,17 @@ class IntegralODAFallback(MemCacheIntegralFallback):
         result = None
 
         result = self._odacache.restore(hashe, obj, restore_config)
+
         if result:
             print("restored from ODACache, now storing to local cache")
+
+            # we should rather learn to upload to new cache from non-copied cache files, but it's dda change
+
+            result = self._odacache.restore(hashe, obj, 
+                                            {**restore_config, 
+                                             'copy_cached_input': True, 
+                                             'datafile_restore_mode': 'copy'})
+
             self.store_local(hashe, obj)
             already_in_oda = True
         else:
@@ -2334,8 +2343,6 @@ class mosaic_ii_skyimage(DataAnalysis):
 
     cached = True
     copy_cached_input=False 
-    # this is for performance! TODO for blob
-    #copy_cached_input=True
 
     ii_skyimage_binary = None
 
