@@ -367,8 +367,8 @@ class ODACache(dataanalysis.caches.cache_core.CacheBlob):
         if hashe[-1].split(".")[0] in [
                 'ibis_gti', 'ibis_dead', 'CatExtract', 
                 'BinEventsImage', 'BinMapsImage', 'ii_skyimage', 
+                'mosaic_ii_skyimage',
                 'ii_spectra_extract']:
-                #'mosaic_ii_skyimage', 
             return True
 
     def deposit_blob(self, hashe, blob):
@@ -1256,7 +1256,7 @@ class ImageBins(DataAnalysis):
     input_binsname="g25-80"
     ebins=None
 
-    autoversion=False
+    autoversion=True
 
     rmfbins=False
 
@@ -2440,7 +2440,6 @@ class mosaic_ii_skyimage(DataAnalysis):
         common_log_file = "common-log-file.txt"
         env['COMMONLOGFILE'] = "+"+os.getcwd()+"/"+common_log_file
 
-
         try:
             ht.run(env=env)
         except pilton.HEAToolException as e:
@@ -2464,15 +2463,16 @@ class mosaic_ii_skyimage(DataAnalysis):
                 ht.run(env=env)
 
     
-        
-        g = re.search(r'Task ii_skyimage terminating with status ([0-9\-])', open(common_log_file).read())
+        g = re.search(r'Task ii_skyimage terminating with status ([0-9\-]*)', ht.output)
         if not g:
             raise RuntimeError("ii_skyimage terminated with unknown status!")
 
-        if g:
-            status = g.groups()[0]
-            if status != 0:
-                raise RuntimeError(f"ii_skyimage terminated with non-zero status: {status}!")
+        status = int(g.groups()[0])
+
+        print("detected ii_skyimage output:", status)
+
+        if status != 0:
+            raise RuntimeError(f"ii_skyimage terminated with non-zero status: {status}!")
         
 
         self.commonlog = DataFile(common_log_file)
