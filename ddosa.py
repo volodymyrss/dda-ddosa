@@ -409,6 +409,43 @@ class MemCacheIntegralFallback(MemCacheIntegralBase,dataanalysis.caches.cache_co
         return dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
 
 
+class IntegralODAFallback(MemCacheIntegralFallback):
+    def __init__(self, *a, **aa):
+        self._odacache = ODACache()
+
+        return MemCacheIntegralFallback.__init__(self, *a, **aa)
+
+    def store_local(self, hashe, obj):
+        filepath=self.construct_cached_file_path(hashe,obj)
+
+        return dataanalysis.caches.cache_core.CacheNoIndex.store(self,hashe,obj)
+
+    def store(self, hashe, obj):
+        print("storin to ODACache")
+        self._odacache.store(hashe, obj)
+
+        return self.store_local(hashe, obj)
+
+
+    def restore(self, hashe, obj, restore_config=None):
+        already_in_oda = False
+        result = None
+
+        result = self._odacache.restore(hashe, obj, restore_config)
+        if result:
+            print("restored from ODACache, now storing to local cache")
+            self.store_local(hashe, obj)
+            already_in_oda = True
+        else:
+            result = dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
+
+        #filepath = self.construct_cached_file_path(hashe, obj)
+
+        if result and not already_in_oda:
+            print("not yet in ODA - will upload")
+            self._odacache.store(hashe, obj)
+
+        return result
 
         #class MemCacheIntegralFallbackOldPath(MemCacheIntegralBaseOldPath,dataanalysis.caches.core.CacheNoIndex):
     #readonly_cache=True
@@ -435,7 +472,8 @@ for IntegralCacheRoot in IntegralCacheRoots.split(":"):
         ro_flag=True
         IntegralCacheRoot=IntegralCacheRoot.replace("ro=","")
 
-    mcgfb=MemCacheIntegralFallback(IntegralCacheRoot)
+    mcgfb = IntegralODAFallback(IntegralCacheRoot)
+    #mcgfb=MemCacheIntegralFallback(IntegralCacheRoot)
     mcgfb.readonly_cache=ro_flag
     if CacheStack==[]:
         CacheStack=[mcgfb]
