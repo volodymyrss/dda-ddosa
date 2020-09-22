@@ -2463,6 +2463,17 @@ class mosaic_ii_skyimage(DataAnalysis):
 
                 ht.run(env=env)
 
+    
+        
+        g = re.search(r'Task ii_skyimage terminating with status ([0-9\-])', open(common_log_file).read())
+        if not g:
+            raise RuntimeError("ii_skyimage terminated with unknown status!")
+
+        if g:
+            status = g.groups()[0]
+            if status != 0:
+                raise RuntimeError(f"ii_skyimage terminated with non-zero status: {status}!")
+        
 
         self.commonlog = DataFile(common_log_file)
 
