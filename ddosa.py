@@ -1253,7 +1253,6 @@ class ISGRIEvents(DataAnalysis):
         self.events=self.input_evttag.output_events
 
 class ImageBins(DataAnalysis):
-    input_binsname="g25-80"
     ebins=None
 
     autoversion=True
