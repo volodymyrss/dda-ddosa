@@ -1531,41 +1531,31 @@ class GRcat(DataAnalysis):
 
     suffix=None
 
-    cached=False # again, this is transient-level cache
+    cached=False
 
-    userefcatvar=False
-    useresources=True
-
-    refcat_version="42"
+    refcat_version=43
 
     def get_version(self):
-        v=self.get_signature()+"."+self.version
+        v=self.get_signature()+"."+self.version + f".{self.refcat_version:04d}"
 
-        if self.useresources:
-            self.cat=os.environ.get("INTEGRAL_RESOURCES","/data/resources")+"/gnrl_refr_cat_00%s.fits[1]"%self.refcat_version
-            self.catname=self.cat.split("/")[-1]
-            v+=".resources_"+self.catname
-        else:
-            if self.userefcatvar:
-                self.cat=os.environ["ISDC_REF_CAT"]
-                self.catname=self.cat.split("/")[-1]
-                v+="var_"+self.catname
-            else:
-                if self.suffix is not None:
-                    v=v+"."+self.suffix
+
         return v
 
     def main(self):
-        if self.useresources:
-            pass
-        elif self.userefcatvar:
-            pass
-        else:
-            if self.suffix is None:
-                self.cat=detect_rbp()+"/cat/hec/gnrl_refr_cat_0043.fits[1]"
-            else:
-                self.cat=detect_rbp()+"/cat/hec/gnrl_refr_cat_0043_%s.fits[1]"%self.suffix
+        refcatvar = os.environ["ISDC_REF_CAT"]
 
+        if refcatvar:
+            print(f"\033[31mWARNING: ISDC_REF_CAT env variable is set to {refcatvar}, but it will be ignored \033[0m")
+            print(f"\033[31mWARNING: we refuse to rely on volatile environment to define analysis.  \033[0m")
+            print(f"\033[31mWARNING: trying to do so in the past caused immesurable suffering  \033[0m")
+
+        self.cat = os.path.join(detect_rbp(), 
+                                f"cat/hec/gnrl_refr_cat_{self.refcat_version:04d}{'_'+self.suffix if self.suffix else ''}.fits")
+
+        print("using refcat:", self.cat)
+
+        if not os.path.exists(self.cat):
+            raise RuntimeError(f"isdc ref cat not found: {self.cat}")
 
 class BrightCat(DataAnalysis):
     input=GRcat
