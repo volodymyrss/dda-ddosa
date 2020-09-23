@@ -298,12 +298,13 @@ class IntegralODAFallback(MemCacheIntegralFallback):
 
 
     def restore(self, hashe, obj, restore_config=None):
-        local_result = dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
-
         oda_result = self._odacache.restore(hashe, obj, 
                                         {**restore_config, 
                                          'copy_cached_input': True, 
                                          'datafile_restore_mode': 'copy'})
+
+        local_result = dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
+
 
         if oda_result:
             if local_result:
@@ -315,6 +316,7 @@ class IntegralODAFallback(MemCacheIntegralFallback):
                 self.store_local(hashe, obj)
 
                 obj._da_locally_complete = None
+                obj._da_restored = None
                 local_result = dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
         else: # no oda result
             if local_result:
