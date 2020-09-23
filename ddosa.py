@@ -83,135 +83,6 @@ def remove_repeating(inlist):
             outlist.append(l)
     return outlist
 
-class MemCacheIntegralBaseOldPath:
-#class MemCacheIntegral(dataanalysis.MemCacheSqlite):
-    def get_scw(self,hashe):
-        raise Exception("deprecated cache!")
-
-    def get_scw(self,hashe):
-        #if dataanalysis.printhook.global_log_enabled: print("search for scw in",hashe)
-        if isinstance(hashe,tuple):
-            if hashe[0]=="analysis": # more universaly
-                if hashe[2].startswith('ScWData'):
-                    return hashe[1]
-                return self.get_scw(hashe[1])
-            if hashe[0]=="list": # more universaly
-                for k in hashe[1:]:
-                    r=self.get_scw(k)
-                    if r is not None:
-                        return r
-                return None
-            raise Exception("unknown tuple in the hash:"+str(hashe))
-        if hashe is None:
-            return None # 'Any'
-        if isinstance(hashe,str):
-            return None
-        raise Exception("unknown class in the hash:"+str(hashe))
-
-    def get_rev(self,hashe):
-        #if dataanalysis.printhook.global_log_enabled: print("search for rev in",hashe)
-        if isinstance(hashe,tuple):
-            if hashe[0]=="analysis": # more universaly
-                if hashe[2].startswith('Revolution'):
-                    return hashe[1]
-                return self.get_rev(hashe[1])
-            if hashe[0]=="list": # more universaly
-                for k in hashe[1:]:
-                    r=self.get_rev(k)
-                    if r is not None:
-                        return r
-                return None
-            raise Exception("unknown tuple in the hash:"+str(hashe))
-        if hashe is None:
-            return None
-        if isinstance(hashe,str):
-            return None
-        raise Exception("unknown class in the hash:"+str(hashe))
-
-    def get_marked(self,hashe):
-        #if dataanalysis.printhook.global_log_enabled: print("search for marked in",hashe)
-        if isinstance(hashe,tuple):
-            if hashe[0]=="analysis": # more universaly
-                r=[]
-                if hashe[2].endswith('..'):
-                    r.append(hashe[2][:-2])
-                r+=self.get_marked(hashe[1])
-                return r
-            if hashe[0]=="list": # more universaly
-                r=[]
-                for k in hashe[1:]:
-                    r+=self.get_marked(k)
-                return r
-            raise Exception("unknown tuple in the hash:"+str(hashe))
-        if hashe is None:
-            return []
-        if isinstance(hashe,str):
-            return []
-        raise Exception("unknown class in the hash:"+str(hashe))
-
-    def hashe2signature(self,hashe):
-        scw=self.get_scw(hashe)
-        if scw is not None:
-            if isinstance(hashe,tuple):
-                if hashe[0]=="analysis":
-                    return hashe[2]+":"+scw+":"+shhash(hashe)[:8]
-            return shhash(hashe)[:8]
-
-        rev=self.get_rev(hashe)
-        if rev is not None:
-            if isinstance(hashe,tuple):
-                if hashe[0]=="analysis":
-                    return hashe[2]+":"+rev+":"+shhash(hashe)[:8]
-            return shhash(hashe)[:8]
-
-        return hashe[2]+":"+shhash(hashe)[:16]
-
-
-
-    def construct_cached_file_path(self,hashe,obj=None):
-        #print("will construct INTEGRAL cached file path for",hashe)
-
-        scw=self.get_scw(hashe)
-        rev=self.get_rev(hashe)
-
-        def hash_to_path2(hashe):
-            return shhash(hashe[1])[:8]
-
-        marked=self.get_marked(hashe[1])
-        marked=remove_repeating(marked)
-        if dataanalysis.printhook.global_log_enabled: print("marked",marked)
-
-        if not isinstance(scw,str):
-            print("emergent scw:",scw)
-            scw=None
-
-        if scw=="Any":
-            print("any scw:",scw,hashe)
-            scw=None
-
-        print("scw:",scw)
-        print("rev:",rev)
-
-
-        if scw is None:
-            if dataanalysis.printhook.global_log_enabled: print("not scw-grouped cache")
-            if rev is None:
-                if dataanalysis.printhook.global_log_enabled: print("not rev-grouped cache")
-                r=self.filecacheroot+"/global/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/"
-            else:
-                if dataanalysis.printhook.global_log_enabled: print("cached rev:",rev)
-                r=self.filecacheroot+"/byrev/"+rev+"/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/" # choose to avoid overlapp
-        else:
-            if dataanalysis.printhook.global_log_enabled: print("cached scw:",scw)
-            print(scw,hashe[2],marked)
-            r=self.filecacheroot+"/byscw/"+scw[:4]+"/"+scw+"/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/" # choose to avoid overlapp
-
-        #if dataanalysis.printhook.global_log_enabled: print("cached path:",r)
-
-        print(self,"cached path:",r)
-
-        return r # choose to avoid overlapp
-
 class MemCacheIntegralBase:
     def get_scw(self,hashe):
         if isinstance(hashe,tuple):
@@ -341,7 +212,6 @@ class MemCacheIntegralBase:
 
             r=self.filecacheroot+"/byscw/"+scw[:4]+"/"+scw+"/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/" # choose to avoid overlapp
 
-        #if dataanalysis.printhook.global_log_enabled: print("cached path:",r)
 
         print(self,"cached path:",r)
 
@@ -379,7 +249,7 @@ class ODACache(dataanalysis.caches.cache_core.CacheBlob):
                 data={ "blob": blob_b64 }
             )
 
-        print("stored in ODA:",r)
+        print("deposited blob in ODA:",r)
 
     def retrieve_blob(self, hashe):
         print("\033[33mtrying to restore from ODA\033[0m")
@@ -399,12 +269,10 @@ class ODACache(dataanalysis.caches.cache_core.CacheBlob):
 
 class MemCacheIntegralFallback(MemCacheIntegralBase,dataanalysis.caches.cache_core.CacheNoIndex):
     def store(self, hashe, obj):
-        filepath=self.construct_cached_file_path(hashe,obj)
 
         return dataanalysis.caches.cache_core.CacheNoIndex.store(self,hashe,obj)
 
     def restore(self, hashe, obj, restore_config=None):
-        filepath = self.construct_cached_file_path(hashe, obj)
 
         return dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
 
@@ -419,10 +287,14 @@ class IntegralODAFallback(MemCacheIntegralFallback):
         return dataanalysis.caches.cache_core.CacheNoIndex.store(self, hashe, obj)
 
     def store(self, hashe, obj):
+
+        r = self.store_local(hashe, obj)
+        
         print("storing to ODACache")
         self._odacache.store(hashe, obj)
+        print("after odacache store:", obj.factory.factory_assumptions_stacked)
 
-        return self.store_local(hashe, obj)
+        return r
 
 
     def restore(self, hashe, obj, restore_config=None):
@@ -449,6 +321,7 @@ class IntegralODAFallback(MemCacheIntegralFallback):
                 print("\033[031mrestored from local cache, now storing to ODACache\033[0m")
                 self._odacache.store(hashe, obj)
             else:
+                print("\033[036m", hashe, "\033[0m")
                 print("\033[031mno result in either cache, will compute\033[0m")
                 return
 
@@ -1264,6 +1137,7 @@ class ImageBins(DataAnalysis):
 
         if self.ebins is None:
             v += "uninitialized"
+            #raise RuntimeError(f"uninitialized {self.__class__}")
         else:
             if len(self.ebins)==1:
                 v+=".one_bin_%.15lg_%.15lg"%(self.ebins[0][0],self.ebins[0][1])
