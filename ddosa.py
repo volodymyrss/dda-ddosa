@@ -416,45 +416,41 @@ class IntegralODAFallback(MemCacheIntegralFallback):
         return MemCacheIntegralFallback.__init__(self, *a, **aa)
 
     def store_local(self, hashe, obj):
-        filepath=self.construct_cached_file_path(hashe,obj)
-
-        return dataanalysis.caches.cache_core.CacheNoIndex.store(self,hashe,obj)
+        return dataanalysis.caches.cache_core.CacheNoIndex.store(self, hashe, obj)
 
     def store(self, hashe, obj):
-        print("storin to ODACache")
+        print("storing to ODACache")
         self._odacache.store(hashe, obj)
 
         return self.store_local(hashe, obj)
 
 
     def restore(self, hashe, obj, restore_config=None):
-        already_in_oda = False
-        result = None
+        local_result = dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
 
-        result = self._odacache.restore(hashe, obj, restore_config)
+        oda_result = self._odacache.restore(hashe, obj, 
+                                        {**restore_config, 
+                                         'copy_cached_input': True, 
+                                         'datafile_restore_mode': 'copy'})
 
-        if result:
-            print("restored from ODACache, now storing to local cache")
+        if oda_result:
+            if local_result:
+                print("\033[031mboth caches have the result, nothing to do!\033[0m")
+            else:
+                print("\033[031mrestored from ODACache, now storing to local cache\033[0m")
 
-            # we should rather learn to upload to new cache from non-copied cache files, but it's dda change
+                # we should rather learn to upload to new cache from non-copied cache files, but it's dda change
+                self.store_local(hashe, obj)
+                local_result = dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
+        else: # no oda result
+            if local_result:
+                print("\033[031mrestored from local cache, now storing to ODACache\033[0m")
+                self._odacache.store(hashe, obj)
+            else:
+                print("\033[031mno result in either cache, will compute\033[0m")
+                return
 
-            result = self._odacache.restore(hashe, obj, 
-                                            {**restore_config, 
-                                             'copy_cached_input': True, 
-                                             'datafile_restore_mode': 'copy'})
-
-            self.store_local(hashe, obj)
-            already_in_oda = True
-        else:
-            result = dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
-
-        #filepath = self.construct_cached_file_path(hashe, obj)
-
-        if result and not already_in_oda:
-            print("not yet in ODA - will upload")
-            self._odacache.store(hashe, obj)
-
-        return result
+        return local_result
 
         #class MemCacheIntegralFallbackOldPath(MemCacheIntegralBaseOldPath,dataanalysis.caches.core.CacheNoIndex):
     #readonly_cache=True
@@ -546,8 +542,10 @@ def get_OSA_tools(names=None):
 class DataAnalysis(DataAnalysisPrototype):
     cache=mc
 
-    write_caches=[cache_core.TransientCache,MemCacheIntegralFallback]
-    read_caches=[cache_core.TransientCache,MemCacheIntegralFallback] #,MemCacheIntegralFallbackOldPath]
+    write_caches=[cache_core.TransientCache, MemCacheIntegralFallback, IntegralODAFallback, ODACache]
+    read_caches=[cache_core.TransientCache, MemCacheIntegralFallback, IntegralODAFallback, ODACache]
+    #write_caches=[cache_core.TransientCache,MemCacheIntegralFallback]
+    #read_caches=[cache_core.TransientCache,MemCacheIntegralFallback]
 
     input_osatools=get_OSA_tools()
 
@@ -1253,36 +1251,35 @@ class ISGRIEvents(DataAnalysis):
         self.events=self.input_evttag.output_events
 
 class ImageBins(DataAnalysis):
-    ebins=None
+    cached = False
 
-    autoversion=True
+    ebins=None
 
     rmfbins=False
 
     def get_version(self):
         v=self.get_signature()+"."+self.version
 
-        if self.autoversion:
-            if self.ebins is None:
-                v+=".std_one_25_80"
+        if self.ebins is None:
+            v += "uninitialized"
+        else:
+            if len(self.ebins)==1:
+                v+=".one_bin_%.15lg_%.15lg"%(self.ebins[0][0],self.ebins[0][1])
             else:
-                if len(self.ebins)==1:
-                    v+=".one_bin_%.15lg_%.15lg"%(self.ebins[0][0],self.ebins[0][1])
-                else:
-                    v+=".%i_bins"%len(self.ebins)
-                    for ebin in self.ebins:
-                        v+=".%.15lg_%.15lg"%(ebin[0],ebin[1])
+                v+=".%i_bins"%len(self.ebins)
+                for ebin in self.ebins:
+                    v+=".%.15lg_%.15lg"%(ebin[0],ebin[1])
 
         return v
 
+    @property
+    def bins(self):
+        # compatibility
+        print("\033[31mWARNING\033[0m: bins is obsolete, should use ebins")
+        return self.ebins
 
     def main(self):
-        if self.ebins is None:
-            self.bins=[(25,80)]
-        else:
-            self.bins=self.ebins
-
-        for e1,e2 in self.bins:
+        for e1,e2 in self.ebins:
             if abs(round(e1*2)/2. - e1)>1e-5 or abs(round(e2*2)/2. - e2)>1e-5:
                 raise FractionalEnergyBinsNotAllowed()
 
@@ -2432,7 +2429,7 @@ class mosaic_ii_skyimage(DataAnalysis):
         for k in ['SouFit', 'SearchMode', 'ToSearch', 'CleanMode', 'MinCatSouSnr', 'MinNewSouSnr', 'NegModels', 'DoPart2']:
             ht[k] = getattr(self.input_imgconfig, k)
             if hasattr(self, 'ii_' + k): ht[k] = getattr(self, 'ii_' + k)
-        ht['corrDol'] = self.input_maps.corr.path
+        ht['corrDol'] = self.input_maps.corr.get_path()
 
         env = copy.deepcopy(os.environ)
 
