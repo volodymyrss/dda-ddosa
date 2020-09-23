@@ -441,6 +441,8 @@ class IntegralODAFallback(MemCacheIntegralFallback):
 
                 # we should rather learn to upload to new cache from non-copied cache files, but it's dda change
                 self.store_local(hashe, obj)
+
+                obj._da_locally_complete = None
                 local_result = dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
         else: # no oda result
             if local_result:
