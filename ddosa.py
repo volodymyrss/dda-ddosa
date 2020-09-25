@@ -236,7 +236,7 @@ class ODACache(dataanalysis.caches.cache_core.CacheBlob):
     def approved_hashe(self, hashe):
         if hashe[-1].split(".")[0] in [
                 'ibis_gti', 'ibis_dead', 'CatExtract', 
-                'BinEventsImage', 'BinMapsImage', 'ii_skyimage', 
+                'BinEventsImage', 'BinMapsImage', 'ghost_bustersImage', 'ii_skyimage', 
                 'mosaic_ii_skyimage',
                 'ii_spectra_extract']:
             return True
