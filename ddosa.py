@@ -301,8 +301,7 @@ class IntegralODAFallback(MemCacheIntegralFallback):
 
         return r
 
-
-    def restore(self, hashe, obj, restore_config=None):
+    def restore_ensureoda(self, hashe, obj, restore_config=None):
         oda_result = self._odacache.restore(hashe, obj, 
                                         {**restore_config, 
                                          'copy_cached_input': True, 
@@ -327,6 +326,35 @@ class IntegralODAFallback(MemCacheIntegralFallback):
             if local_result:
                 print("\033[031mrestored from local cache, now storing to ODACache\033[0m")
                 self._odacache.store(hashe, obj)
+            else:
+                print("\033[036m", hashe, "\033[0m")
+                print("\033[031mno result in either cache, will compute\033[0m")
+                return
+
+        return local_result
+
+    def restore(self, hashe, obj, restore_config=None):
+        local_result = dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
+
+        if local_result:
+            print("\033[032mrestored from local cache, NOT storing to ODACache\033[0m")
+        else:
+            print("\033[031mtrying to restore from ODA cache\033[0m")
+            oda_result = self._odacache.restore(hashe, obj,
+                                            {**restore_config,
+                                             'copy_cached_input': True,
+                                             'datafile_restore_mode': 'copy'})
+            if oda_result:
+                print("\033[031mrestored from ODACache, now storing to local cache\033[0m")
+
+                # we should rather learn to upload to new cache from non-copied cache files, but it's dda change
+                self.store_local(hashe, obj)
+
+                obj._da_locally_complete = None
+                obj._da_restored = None
+
+                print("\033[031mreconstructing object with local cache references\033[0m")
+                local_result = dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
             else:
                 print("\033[036m", hashe, "\033[0m")
                 print("\033[031mno result in either cache, will compute\033[0m")
