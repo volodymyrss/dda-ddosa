@@ -239,7 +239,7 @@ class ODACache(dataanalysis.caches.cache_core.CacheBlob):
                 'BinEventsImage', 'BinMapsImage', 'ghost_bustersImage', 'ii_skyimage', 
                 'mosaic_ii_skyimage',
                 'ii_spectra_extract',
-                'BinEventsSpectra', 'ii_spectra_extract', 'ISGRISpectraSum',
+                'BinEventsSpectra', 'ghost_bustersSpectra', 'ii_spectra_extract', 'ISGRISpectraSum',
                 'ii_lc_extract',
                 'ii_light',
                 'jemx_image', 'jemx_spe', 'jemx_lcr'
