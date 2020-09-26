@@ -246,6 +246,22 @@ class ODACache(dataanalysis.caches.cache_core.CacheBlob):
                 ]:
             return True
 
+    def exists(self, hashe):
+        print("\033[33mchecking if exists in ODA\033[0m")
+
+        try:
+            r = self.leader.consult_fact(
+                    dag=hashe,
+                    return_data=False
+                )
+        except dqueue.data.NotFound as e:
+            print("\033[32mnot found in ODA\033[0m", e)
+            return None
+
+        print("\033[33mfound in ODA\033[0m", r)
+        return r
+
+
     def deposit_blob(self, hashe, blob):
         blob_b64 = base64.b64encode(blob.read()).decode()
 
@@ -336,6 +352,8 @@ class IntegralODAFallback(MemCacheIntegralFallback):
     def restore(self, hashe, obj, restore_config=None):
         local_result = dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
 
+        oda_exists = self._odacache.exists(hashe)
+
         if local_result:
             print("\033[032mrestored from local cache, ensuring it is stored to ODACache\033[0m")
 
@@ -348,14 +366,21 @@ class IntegralODAFallback(MemCacheIntegralFallback):
                                              'copy_cached_input': True,
                                              'datafile_restore_mode': 'copy'})
 
-            self._odacache.store(hashe, obj) # may be optional upload if exists TODO
+            if oda_exists:
+                print("\033[032malready exists in ODA, nothing to do\033[0m")
+            else:
+                print("\033[031does not exist in ODA, uploading!\033[0m")
+                self._odacache.store(hashe, obj) 
         else:
             print("\033[031mtrying to restore from ODA cache\033[0m")
-            oda_result = self._odacache.restore(hashe, obj,
-                                            {**restore_config,
-                                             'copy_cached_input': True,
-                                             'datafile_restore_mode': 'copy'})
-            if oda_result:
+            if oda_exists:
+                oda_result = self._odacache.restore(hashe, obj,
+                                                {**restore_config,
+                                                 'copy_cached_input': True,
+                                                 'datafile_restore_mode': 'copy'})
+                if not oda_result:
+                    raise RuntimeError("can not restore from ODA, but was supposed to exist!")
+
                 print("\033[031mrestored from ODACache, now storing to local cache\033[0m")
 
                 # we should rather learn to upload to new cache from non-copied cache files, but it's dda change
