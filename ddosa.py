@@ -236,11 +236,11 @@ class ODACache(dataanalysis.caches.cache_core.CacheBlob):
     def approved_hashe(self, hashe):
         if hashe[-1].split(".")[0] in [
                 'ibis_gti', 'ibis_dead', 'CatExtract', 
-                'BinEventsImage', 'BinMapsImage', 'ghost_bustersImage', 'ii_skyimage', 
+                'BinMapsImage', 'BinEventsImage', 'ghost_bustersImage', 'ii_skyimage', 
                 'mosaic_ii_skyimage',
                 'ii_spectra_extract',
-                'BinEventsSpectra', 'ghost_bustersSpectra', 'ii_spectra_extract', 'ISGRISpectraSum',
-                'ii_lc_extract',
+                'BinMapsSpectra', 'BinEventsSpectra', 'ghost_bustersSpectra', 'ii_spectra_extract', 'ISGRISpectraSum',
+                'BinMapsLC', 'ii_lc_extract', 'ISGRILCSum',
                 'ii_light',
                 'jemx_image', 'jemx_spe', 'jemx_lcr'
                 ]:
