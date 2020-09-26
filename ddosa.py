@@ -337,7 +337,9 @@ class IntegralODAFallback(MemCacheIntegralFallback):
         local_result = dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
 
         if local_result:
-            print("\033[032mrestored from local cache, NOT storing to ODACache\033[0m")
+            print("\033[032mrestored from local cache, ensuring it is stored to ODACache\033[0m")
+
+            self._odacache.store(hashe, obj) # may be optional upload if exists TODO
         else:
             print("\033[031mtrying to restore from ODA cache\033[0m")
             oda_result = self._odacache.restore(hashe, obj,
