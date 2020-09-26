@@ -339,6 +339,15 @@ class IntegralODAFallback(MemCacheIntegralFallback):
         if local_result:
             print("\033[032mrestored from local cache, ensuring it is stored to ODACache\033[0m")
 
+            obj._da_locally_complete = None
+            obj._da_restored = None
+
+            print("\033[031mreconstructing object with local cache references\033[0m")
+            local_result = dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj,
+                                            {**restore_config,
+                                             'copy_cached_input': True,
+                                             'datafile_restore_mode': 'copy'})
+
             self._odacache.store(hashe, obj) # may be optional upload if exists TODO
         else:
             print("\033[031mtrying to restore from ODA cache\033[0m")
