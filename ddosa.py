@@ -246,7 +246,8 @@ class ODACache(dataanalysis.caches.cache_core.CacheBlob):
                 ]:
             return True
 
-    def exists(self, hashe):
+
+    def find(self, hashe):
         print("\033[33mchecking if exists in ODA\033[0m")
 
         try:
@@ -307,6 +308,14 @@ class IntegralODAFallback(MemCacheIntegralFallback):
 
     def store_local(self, hashe, obj):
         return dataanalysis.caches.cache_core.CacheNoIndex.store(self, hashe, obj)
+    
+    def find(self, hashe):
+        print("\033[33mchecking if exists in ODA\033[0m")
+        if self._odacache.find(hashe):
+            return True
+
+        print("\033[33mchecking if exists in ", self, "\033[0m")
+        return MemCacheIntegralFallback.find(self, hashe)
 
     def store(self, hashe, obj):
 
@@ -321,7 +330,7 @@ class IntegralODAFallback(MemCacheIntegralFallback):
     def restore(self, hashe, obj, restore_config=None):
         local_result = dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
 
-        oda_exists = self._odacache.exists(hashe)
+        oda_exists = self._odacache.find(hashe)
 
         if local_result:
             print(obj, "\033[032mrestored from local cache, ensuring it is stored to ODACache\033[0m")
