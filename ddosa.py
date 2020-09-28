@@ -295,9 +295,9 @@ class MemCacheIntegralFallback(MemCacheIntegralBase,dataanalysis.caches.cache_co
 
         return dataanalysis.caches.cache_core.CacheNoIndex.store(self,hashe,obj)
 
-    def restore(self, hashe, obj, restore_config=None, follow_with_parent=True):
+    def restore(self, hashe, obj, restore_config=None):
 
-        return dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config, follow_with_parent=follow_with_parent)
+        return dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
 
 
 class IntegralODAFallback(MemCacheIntegralFallback):
@@ -327,14 +327,15 @@ class IntegralODAFallback(MemCacheIntegralFallback):
 
         return r
 
-    def restore(self, hashe, obj, restore_config=None, follow_with_parent=True):
+    def restore(self, hashe, obj, restore_config=None):
+        self._da_disable_parent = True
         local_result = dataanalysis.caches.cache_core.CacheNoIndex.restore(
                                         self,
                                         hashe,
                                         obj,
                                         restore_config,
-                                        follow_with_parent=False,
                                     )
+        self._da_disable_parent = False
 
         oda_exists = self._odacache.find(hashe)
 
@@ -352,7 +353,6 @@ class IntegralODAFallback(MemCacheIntegralFallback):
                                                 {**restore_config,
                                                  'copy_cached_input': True,
                                                  'datafile_restore_mode': 'copy'},
-                                                 follow_with_parent=False,
                                                 )
 
                 print(obj, "\033[031does not exist in ODA, uploading!\033[0m")
@@ -376,7 +376,10 @@ class IntegralODAFallback(MemCacheIntegralFallback):
                 obj._da_restored = None
 
                 print(obj, "\033[031mreconstructing object with local cache references\033[0m")
+                
+                self._da_disable_parent = True
                 local_result = dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
+                self._da_disable_parent = False
             else:
                 print(obj, "\033[036m", hashe, "\033[0m")
                 print(obj, f"\033[031mno result in either cache, will follow with parent", self.parent, "compute\033[0m")
