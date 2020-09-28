@@ -299,6 +299,8 @@ class MemCacheIntegralFallback(MemCacheIntegralBase,dataanalysis.caches.cache_co
 
         return dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
 
+class LocalCacheNoParent(dataanalysis.caches.cache_core.CacheNoIndex):
+    parent=None
 
 class IntegralODAFallback(MemCacheIntegralFallback):
     def __init__(self, *a, **aa):
@@ -328,14 +330,12 @@ class IntegralODAFallback(MemCacheIntegralFallback):
         return r
 
     def restore(self, hashe, obj, restore_config=None):
-        self._da_disable_parent = True
-        local_result = dataanalysis.caches.cache_core.CacheNoIndex.restore(
+        local_result = LocalCacheNoParent.restore(
                                         self,
                                         hashe,
                                         obj,
                                         restore_config,
                                     )
-        self._da_disable_parent = False
 
         oda_exists = self._odacache.find(hashe)
 
@@ -377,9 +377,7 @@ class IntegralODAFallback(MemCacheIntegralFallback):
 
                 print(obj, "\033[031mreconstructing object with local cache references\033[0m")
                 
-                self._da_disable_parent = True
-                local_result = dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
-                self._da_disable_parent = False
+                local_result = LocalCacheNoParent.restore(self, hashe, obj, restore_config)
             else:
                 print(obj, "\033[036m", hashe, "\033[0m")
                 print(obj, f"\033[031mno result in either cache, will follow with parent", self.parent, "compute\033[0m")
