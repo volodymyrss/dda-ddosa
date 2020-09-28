@@ -318,62 +318,30 @@ class IntegralODAFallback(MemCacheIntegralFallback):
 
         return r
 
-    def restore_ensureoda(self, hashe, obj, restore_config=None):
-        oda_result = self._odacache.restore(hashe, obj, 
-                                        {**restore_config, 
-                                         'copy_cached_input': True, 
-                                         'datafile_restore_mode': 'copy'})
-
-        local_result = dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
-
-
-        if oda_result:
-            if local_result:
-                print("\033[031mboth caches have the result, nothing to do!\033[0m")
-            else:
-                print("\033[031mrestored from ODACache, now storing to local cache\033[0m")
-
-                # we should rather learn to upload to new cache from non-copied cache files, but it's dda change
-                self.store_local(hashe, obj)
-
-                obj._da_locally_complete = None
-                obj._da_restored = None
-                local_result = dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
-        else: # no oda result
-            if local_result:
-                print("\033[031mrestored from local cache, now storing to ODACache\033[0m")
-                self._odacache.store(hashe, obj)
-            else:
-                print("\033[036m", hashe, "\033[0m")
-                print("\033[031mno result in either cache, will compute\033[0m")
-                return
-
-        return local_result
-
     def restore(self, hashe, obj, restore_config=None):
         local_result = dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
 
         oda_exists = self._odacache.exists(hashe)
 
         if local_result:
-            print("\033[032mrestored from local cache, ensuring it is stored to ODACache\033[0m")
+            print(obj, "\033[032mrestored from local cache, ensuring it is stored to ODACache\033[0m")
 
             obj._da_locally_complete = None
             obj._da_restored = None
 
             if oda_exists:
-                print("\033[032malready exists in ODA as well as in local cache, nothing to do\033[0m")
+                print(obj, "\033[032malready exists in ODA as well as in local cache, nothing to do\033[0m")
             else:
-                print("\033[031mreconstructing object with local cache references\033[0m")
+                print(obj, "\033[031mreconstructing object with local cache references\033[0m")
                 local_result = dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj,
                                                 {**restore_config,
                                                  'copy_cached_input': True,
                                                  'datafile_restore_mode': 'copy'})
 
-                print("\033[031does not exist in ODA, uploading!\033[0m")
+                print(obj, "\033[031does not exist in ODA, uploading!\033[0m")
                 self._odacache.store(hashe, obj) 
         else:
-            print("\033[031mtrying to restore from ODA cache\033[0m")
+            print(obj, "\033[031mtrying to restore from ODA cache\033[0m")
             if oda_exists:
                 oda_result = self._odacache.restore(hashe, obj,
                                                 {**restore_config,
@@ -382,7 +350,7 @@ class IntegralODAFallback(MemCacheIntegralFallback):
                 if not oda_result:
                     raise RuntimeError("can not restore from ODA, but was supposed to exist!")
 
-                print("\033[031mrestored from ODACache, now storing to local cache\033[0m")
+                print(obj, "\033[031mrestored from ODACache, now storing to local cache\033[0m")
 
                 # we should rather learn to upload to new cache from non-copied cache files, but it's dda change
                 self.store_local(hashe, obj)
@@ -390,11 +358,11 @@ class IntegralODAFallback(MemCacheIntegralFallback):
                 obj._da_locally_complete = None
                 obj._da_restored = None
 
-                print("\033[031mreconstructing object with local cache references\033[0m")
+                print(obj, "\033[031mreconstructing object with local cache references\033[0m")
                 local_result = dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
             else:
-                print("\033[036m", hashe, "\033[0m")
-                print("\033[031mno result in either cache, will compute\033[0m")
+                print(obj, "\033[036m", hashe, "\033[0m")
+                print(obj, "\033[031mno result in either cache, will compute\033[0m")
                 return
 
         return local_result
