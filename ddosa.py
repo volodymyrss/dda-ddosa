@@ -328,7 +328,13 @@ class IntegralODAFallback(MemCacheIntegralFallback):
         return r
 
     def restore(self, hashe, obj, restore_config=None):
-        local_result = dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
+        local_result = dataanalysis.caches.cache_core.CacheNoIndex.restore(
+                                        self,
+                                        hashe,
+                                        obj,
+                                        restore_config,
+                                        follow_with_parent=False,
+                                    )
 
         oda_exists = self._odacache.find(hashe)
 
@@ -345,7 +351,9 @@ class IntegralODAFallback(MemCacheIntegralFallback):
                 local_result = dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj,
                                                 {**restore_config,
                                                  'copy_cached_input': True,
-                                                 'datafile_restore_mode': 'copy'})
+                                                 'datafile_restore_mode': 'copy'},
+                                                 follow_with_parent=False,
+                                                )
 
                 print(obj, "\033[031does not exist in ODA, uploading!\033[0m")
                 self._odacache.store(hashe, obj) 
@@ -371,8 +379,8 @@ class IntegralODAFallback(MemCacheIntegralFallback):
                 local_result = dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
             else:
                 print(obj, "\033[036m", hashe, "\033[0m")
-                print(obj, "\033[031mno result in either cache, will compute\033[0m")
-                return
+                print(obj, f"\033[031mno result in either cache, will follow with parent", self.parent, "compute\033[0m")
+                return self.restore_from_parent(hashe, obj, restore_config=restore_config)
 
         return local_result
 
