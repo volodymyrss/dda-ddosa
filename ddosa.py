@@ -295,9 +295,9 @@ class MemCacheIntegralFallback(MemCacheIntegralBase,dataanalysis.caches.cache_co
 
         return dataanalysis.caches.cache_core.CacheNoIndex.store(self,hashe,obj)
 
-    def restore(self, hashe, obj, restore_config=None):
+    def restore(self, hashe, obj, restore_config=None, follow_with_parent=True):
 
-        return dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
+        return dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config, follow_with_parent=follow_with_parent)
 
 
 class IntegralODAFallback(MemCacheIntegralFallback):
@@ -327,7 +327,7 @@ class IntegralODAFallback(MemCacheIntegralFallback):
 
         return r
 
-    def restore(self, hashe, obj, restore_config=None):
+    def restore(self, hashe, obj, restore_config=None, follow_with_parent=True):
         local_result = dataanalysis.caches.cache_core.CacheNoIndex.restore(
                                         self,
                                         hashe,
