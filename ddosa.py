@@ -383,7 +383,7 @@ class IntegralODAFallback(MemCacheIntegralFallback):
             else:
                 print(obj, "\033[036m", hashe, "\033[0m")
                 print(obj, f"\033[031mno result in either cache, will follow with parent", self.parent, "compute\033[0m")
-                return self.restore_from_parent(hashe, obj, restore_config=restore_config)
+                return self.restore_from_parent(hashe, obj, restore_config)
 
         return local_result
 
