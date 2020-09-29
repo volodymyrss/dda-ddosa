@@ -354,7 +354,7 @@ class IntegralODAFallback(MemCacheIntegralFallback):
                 print(obj, "\033[032malready exists in ODA as well as in local cache, nothing to do\033[0m")
             else:
                 print(obj, "\033[031mreconstructing object with local cache references\033[0m")
-                local_result = LocalCacheNoParent(self, hashe, obj,
+                local_result = LocalCacheNoParent.restore(self, hashe, obj,
                                                 {**restore_config,
                                                  'copy_cached_input': True,
                                                  'datafile_restore_mode': 'copy'},
