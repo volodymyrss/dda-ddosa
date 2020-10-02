@@ -9,5 +9,6 @@ setup(name='dda-ddosa',
       py_modules=['ddosa'],
       install_requires=[
          "pilton>=1.0.1",
+         "integral-data-mirror>=1.1.0",
       ]
      )

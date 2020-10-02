@@ -567,11 +567,12 @@ class ScWData(DataAnalysis):
                     print("\033[31mScWData NOT found after download!\033[0m")
                     raise da.AnalysisException("scw data download failed somehow")
             else:
-                print("\033[31mScWData download forbidden!\033[0m")
+                print("\033[31mScWData download forbidden! set DDOSA_SCWDATA_DOWNLOAD=yes to allow\033[0m")
                 raise da.AnalysisException("scw data not found and not allowed to download")
 
     def download(self):
         print("\033[31mScW not found\033[0m")
+        subprocess.check_call(["download_data.sh", self.revid, self.scwid[:12]])
 
     def find(self):
         try:
