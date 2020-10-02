@@ -300,7 +300,9 @@ class MemCacheIntegralFallback(MemCacheIntegralBase,dataanalysis.caches.cache_co
         return dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj, restore_config)
 
 class LocalCacheNoParent(dataanalysis.caches.cache_core.CacheNoIndex):
-    parent=None
+    def restore_from_parent(self, *x, **xx):
+        print("\033[31m", self, "disabled parent entirely\033[0m")
+        return None
 
 class IntegralODAFallback(MemCacheIntegralFallback):
     def __init__(self, *a, **aa):
@@ -309,7 +311,7 @@ class IntegralODAFallback(MemCacheIntegralFallback):
         return MemCacheIntegralFallback.__init__(self, *a, **aa)
 
     def store_local(self, hashe, obj):
-        return dataanalysis.caches.cache_core.CacheNoIndex.store(self, hashe, obj)
+        return LocalCacheNoParent.store(self, hashe, obj)
     
     def find(self, hashe):
         print("\033[33mchecking if exists in ODA\033[0m")
@@ -330,12 +332,15 @@ class IntegralODAFallback(MemCacheIntegralFallback):
         return r
 
     def restore(self, hashe, obj, restore_config=None):
+        parent = self.parent
+        self.parent = None
         local_result = LocalCacheNoParent.restore(
                                         self,
                                         hashe,
                                         obj,
                                         restore_config,
                                     )
+        self.parent = parent
 
         oda_exists = self._odacache.find(hashe)
 
@@ -349,7 +354,7 @@ class IntegralODAFallback(MemCacheIntegralFallback):
                 print(obj, "\033[032malready exists in ODA as well as in local cache, nothing to do\033[0m")
             else:
                 print(obj, "\033[031mreconstructing object with local cache references\033[0m")
-                local_result = dataanalysis.caches.cache_core.CacheNoIndex.restore(self, hashe, obj,
+                local_result = LocalCacheNoParent.restore(self, hashe, obj,
                                                 {**restore_config,
                                                  'copy_cached_input': True,
                                                  'datafile_restore_mode': 'copy'},
