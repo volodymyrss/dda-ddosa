@@ -554,15 +554,40 @@ class ScWData(DataAnalysis):
         self.scwver=self.scwid[-3:]
         self.revid=self.scwid[:4]
 
+        if not self.find():
+            print("ScW not found")
+            print("\033[31mScWData not found\033[0m")
+            if os.environ.get("DDOSA_SCWDATA_DOWNLOAD", "no") == "yes":
+                print("\033[31mScWData download allowed\033[0m")
+                self.download()
+                if self.find():
+                    print("\033[32mScWData found after download!\033[0m")
+                    return
+                else:
+                    print("\033[31mScWData NOT found after download!\033[0m")
+                    raise da.AnalysisException("scw data download failed somehow")
+            else:
+                print("\033[31mScWData download forbidden!\033[0m")
+                raise da.AnalysisException("scw data not found and not allowed to download")
+
+    def download(self):
+        print("\033[31mScW not found\033[0m")
+
+    def find(self):
         try:
             print("searching in "+detect_rbp(self.scwver))
             self.assume_rbp(detect_rbp(self.scwver))
+            return True
         except da.AnalysisException:
             if self.scwver=="000":
                 print("searching in "+detect_rbp(self.scwver)+"/nrt")
                 self.assume_rbp(detect_rbp(self.scwver)+"/nrt")
+                return True
             else:
-                raise
+                return False
+        except Exception as e:
+            print("\033[31mScWData find failed\033[0m", e)
+            return False
 
 
     def test_scw(self):
