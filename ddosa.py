@@ -364,6 +364,8 @@ class IntegralODAFallback(MemCacheIntegralFallback):
                 self._odacache.store(hashe, obj) 
         else:
             print(obj, "\033[031mtrying to restore from ODA cache\033[0m")
+
+            oda_result = None
             if oda_exists:
                 oda_result = self._odacache.restore(hashe, obj,
                                                 {**restore_config,
