@@ -266,6 +266,10 @@ class ODACache(dataanalysis.caches.cache_core.CacheBlob):
                 print("\033[31mproblem with gateway!\033[0m", e)
                 time.sleep(1)
                 continue
+            except Exception as e:
+                print("\033[31munknown problem, maybe with gateway!\033[0m", e)
+                time.sleep(1)
+                continue
 
         print("\033[33mfound in ODA\033[0m", r)
         return r
