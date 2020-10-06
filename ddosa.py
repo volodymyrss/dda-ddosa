@@ -219,6 +219,7 @@ class MemCacheIntegralBase:
 
 import dqueue
 import base64
+import bravado
 
 class ODACache(dataanalysis.caches.cache_core.CacheBlob):
     _leader = None
@@ -277,13 +278,18 @@ class ODACache(dataanalysis.caches.cache_core.CacheBlob):
     def retrieve_blob(self, hashe):
         print("\033[33mtrying to restore from ODA\033[0m")
 
-        try:
-            r = self.leader.consult_fact(
-                    dag=hashe,
-                )
-        except dqueue.data.NotFound as e:
-            print("\033[32mnot found in ODA\033[0m", e)
-            return None
+        while True:
+            try:
+                r = self.leader.consult_fact(
+                        dag=hashe,
+                    )
+            except dqueue.data.NotFound as e:
+                print("\033[32mnot found in ODA\033[0m", e)
+                return None
+            except bravado.exception.HTTPBadGateway as e:
+                print("\033[31mproblem with gateway!\033[0m", e)
+                time.sleep(1)
+                continue
 
         blob = base64.b64decode(json.loads(r['data_json'])['blob'])
         print("\033[33mrestored from ODA\033[0m: blob of", len(blob)/1024/1024, "kb")
