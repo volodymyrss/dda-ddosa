@@ -251,15 +251,20 @@ class ODACache(dataanalysis.caches.cache_core.CacheBlob):
     def find(self, hashe):
         print("\033[33mchecking if exists in ODA\033[0m")
 
-        try:
-            r = self.leader.consult_fact(
-                    dag=hashe,
-                    return_data=False
-                )
-            print("\033[34mYES exists in ODA\033[0m")
-        except dqueue.data.NotFound as e:
-            print("\033[32mnot found in ODA\033[0m", e)
-            return None
+        while True:
+            try:
+                r = self.leader.consult_fact(
+                        dag=hashe,
+                        return_data=False
+                    )
+                print("\033[34mYES exists in ODA\033[0m")
+            except dqueue.data.NotFound as e:
+                print("\033[32mnot found in ODA\033[0m", e)
+                return None
+            except bravado.exception.HTTPBadGateway as e:
+                print("\033[31mproblem with gateway!\033[0m", e)
+                time.sleep(1)
+                continue
 
         print("\033[33mfound in ODA\033[0m", r)
         return r
