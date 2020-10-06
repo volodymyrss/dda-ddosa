@@ -370,8 +370,11 @@ class IntegralODAFallback(MemCacheIntegralFallback):
                                                  'copy_cached_input': True,
                                                  'datafile_restore_mode': 'copy'})
                 if not oda_result:
-                    raise RuntimeError("can not restore from ODA, but was supposed to exist!")
+                    print("\033[31mcan not restore from ODA, but was supposed to exist!\033[0m")
+                    oda_result = None
 
+
+            if oda_result is not None:
                 print(obj, "\033[031mrestored from ODACache, now storing to local cache\033[0m")
 
                 # we should rather learn to upload to new cache from non-copied cache files, but it's dda change
@@ -381,7 +384,7 @@ class IntegralODAFallback(MemCacheIntegralFallback):
                 obj._da_restored = None
 
                 print(obj, "\033[031mreconstructing object with local cache references\033[0m")
-                
+
                 local_result = LocalCacheNoParent.restore(self, hashe, obj, restore_config)
             else:
                 print(obj, "\033[036m", hashe, "\033[0m")
