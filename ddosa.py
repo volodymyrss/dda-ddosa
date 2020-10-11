@@ -2167,8 +2167,12 @@ class ImageGroups(DataAnalysis):
             if total_srclres is None:
                 total_srclres=srfe
             else:
-                print("concat srclres")
-                total_srclres.data=np.concatenate((total_srclres.data,srfe.data))
+                print("concat srclres", len(total_srclres.data), len(srfe.data))
+                if False:
+                    total_srclres.data=np.concatenate((total_srclres.data,srfe.data))
+                else:
+                    print("SKIPING concat srclres", len(total_srclres.data), len(srfe.data))
+
                 print("concat srclres done")
 
 
