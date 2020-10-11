@@ -2151,30 +2151,41 @@ class ImageGroups(DataAnalysis):
                 total_extracted_cat.data=total_extracted_cat.data[ui]
                 print("total extracted cat has",len(total_extracted_cat.data),"sources after unique filtering")
 
+            print("opening skyres band")
             sfe=fits.open(image.skyres.get_path())[2] # one band
+            print("opened skyres")
             if total_skyres is None:
                 total_skyres=sfe
             else:
+                print("concat skyres")
                 total_skyres.data=np.concatenate((total_skyres.data,sfe.data))
+                print("concat skyres done")
 
+            print("open srclres")
             srfe=fits.open(image.srclres.get_path())[1] # one band
+            print("open srclres done")
             if total_srclres is None:
                 total_srclres=srfe
             else:
+                print("concat srclres")
                 total_srclres.data=np.concatenate((total_srclres.data,srfe.data))
+                print("concat srclres done")
 
 
 
         if total_extracted_cat is not None:
             total_extracted_cat.writeto("total_extracted_cat.fits",overwrite=True)
+            print("adopting datafile cat")
             self.total_extracted_cat=da.DataFile("total_extracted_cat.fits")
 
         if total_skyres is not None:
             total_skyres.writeto("total_skyres.fits",overwrite=True)
+            print("adopting datafile skyres")
             self.total_skyres=da.DataFile("total_skyres.fits")
 
         if total_srclres is not None:
             total_srclres.writeto("total_srclres.fits",overwrite=True)
+            print("adopting datafile srclres")
             self.total_srclres=da.DataFile("total_srclres.fits")
 
         construct_gnrl_scwg_grp_idx(scw_og_fns,fn="og_idx.fits")
