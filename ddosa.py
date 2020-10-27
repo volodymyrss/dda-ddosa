@@ -805,6 +805,8 @@ class ICRoot(DataAnalysis):
             self.icroot = icpath
             if os.path.exists(icpath):
                 print("found IC as requested:", icpath)
+                # TODO ensure versions is good
+                # TODO understand how this reflects on versions of individual files
             else:
                 raise RuntimeError(f"IC {self.ic_root_version} not found in IC_COLLECTION as {icpath}")
         else:
