@@ -580,6 +580,8 @@ class ScWData(DataAnalysis):
             self.scwid=self.input_scwid
         self.scwver=self.scwid[-3:]
         self.revid=self.scwid[:4]
+            
+        print(f"extracted scwver {self.scwver} revid {self.revid}")
 
         if not self.find():
             print("ScW not found")
@@ -603,12 +605,12 @@ class ScWData(DataAnalysis):
 
     def find(self):
         try:
-            print("searching in "+detect_rbp(self.scwver))
+            print(f"searching in {detect_rbp(self.scwver)} for scwver {self.scwver}")
             self.assume_rbp(detect_rbp(self.scwver))
             return True
         except da.AnalysisException:
-            if self.scwver=="000":
-                print("searching in "+detect_rbp(self.scwver)+"/nrt")
+            if self.scwver == "000":
+                print("searching for nrt in "+detect_rbp(self.scwver)+"/nrt")
                 self.assume_rbp(detect_rbp(self.scwver)+"/nrt")
                 return True
             else:
@@ -701,15 +703,17 @@ class ScWData(DataAnalysis):
         return "[%s:%s]"%(self.__class__.__name__,self.input_scwid)
 
 def detect_rbp(scwver="001"):
+    rbp = os.environ["REP_BASE_PROD"]
+
     if scwver=="001":
         if "REP_BASE_PROD_CONS" in os.environ:
-            return os.environ["REP_BASE_PROD_CONS"]
+            rbp = os.environ["REP_BASE_PROD_CONS"]
 
     if scwver=="000":
         if "REP_BASE_PROD_NRT" in os.environ:
-            return os.environ["REP_BASE_PROD_NRT"]
+            rbp = os.environ["REP_BASE_PROD_NRT"]
 
-    return os.environ["REP_BASE_PROD"]
+    return rbp
 
 class ScWVersion(DataAnalysis):
     scwver="000"
@@ -780,16 +784,41 @@ class Rev4ScW(Revolution):
         return revid
 
 class ICRoot(DataAnalysis):
-    input="standard_IC"
-
-    cached=False # level!
+    cached=False
 
     schema_hidden=True
     version="v1"
 
+    ic_root_version="default-isdc"
+
+        
+
+    def get_version(self):
+        return self.get_signature() + "." + self.version + "." + self.ic_root_version
+
     def main(self):
-        self.icroot=os.environ['CURRENT_IC']
-        self.icindex=self.icroot+"/idx/ic/ic_master_file.fits[1]"
+        # find ic tree for given version
+
+        ic_collection = os.environ.get('IC_COLLECTION', None)
+        if ic_collection:
+            icpath = os.path.join(ic_collection, self.ic_root_version)
+            self.icroot = icpath
+            if os.path.exists(icpath):
+                print("found IC as requested:", icpath)
+            else:
+                raise RuntimeError(f"IC {self.ic_root_version} not found in IC_COLLECTION as {icpath}")
+        else:
+            if self.ic_root_version == "default-isdc":
+                default_ic = os.environ.get('CURRENT_IC', None)
+
+                if default_ic:
+                    self.icroot = default_ic
+                else:
+                    raise RuntimeError("no CURRENT_IC, or IC_COLLECTION")
+            else:
+                raise RuntimeError("no IC_COLLECTION")
+
+        self.icindex = self.icroot+"/idx/ic/ic_master_file.fits[1]"
 
         print('current IC:',self.icroot)
 
@@ -800,13 +829,14 @@ class FailingMedia(DataAnalysis):
 
 
 class IBIS_ICRoot(DataAnalysis):
+    input_icroot=ICRoot
+
     schema_hidden=True
-    input="standard_IC"
 
     cached=False # level!
 
     def main(self):
-        self.ibisicroot=os.environ['CURRENT_IC']+"/ic/ibis"
+        self.ibisicroot = os.path.join(self.input_icroot.icroot, "ic/ibis")
         print("current IBIS ic root is:"),self.ibisicroot
 
 class GetLUT2(DataAnalysis):
@@ -1263,10 +1293,10 @@ class ImageBins(DataAnalysis):
     def bins(self):
         # compatibility
         print("\033[31mWARNING\033[0m: bins is obsolete, should use ebins")
-        return self.ebins
+        return self.ebins or [(25, 80)]
 
     def main(self):
-        for e1,e2 in self.ebins:
+        for e1,e2 in self.ebins or [(25, 80)]:
             if abs(round(e1*2)/2. - e1)>1e-5 or abs(round(e2*2)/2. - e2)>1e-5:
                 raise FractionalEnergyBinsNotAllowed()
 
