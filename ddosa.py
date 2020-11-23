@@ -357,9 +357,11 @@ class IntegralODAFallback(MemCacheIntegralFallback):
                                         obj,
                                         restore_config,
                                     )
+        print(obj, "\033[032mLocalCacheNoParent returns", local_result, "\033[0m")
         self.parent = parent
 
         oda_exists = self._odacache.find(hashe)
+        print(obj, "\033[032m_odacache.find returns", oda_exists, "\033[0m")
 
         if local_result:
             print(obj, "\033[032mrestored from local cache, ensuring it is stored to ODACache\033[0m")
