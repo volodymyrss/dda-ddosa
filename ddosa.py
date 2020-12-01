@@ -78,7 +78,7 @@ def remove_repeating(inlist):
     outlist=[inlist[0]]
     for l in inlist[1:]:
         if l in outlist:
-            print("repearing item:",l)
+            print(("repearing item:",l))
         else:
             outlist.append(l)
     return outlist
@@ -180,7 +180,7 @@ class MemCacheIntegralBase:
 
         marked=self.get_marked(hashe[1])
         marked=remove_repeating(marked)
-        if dataanalysis.printhook.global_log_enabled: print("marked",marked)
+        if dataanalysis.printhook.global_log_enabled: print(("marked",marked))
 
         for mark in marked:
             hashe=hashtools.hashe_replace_object(hashe,mark+"..","any")
@@ -199,7 +199,7 @@ class MemCacheIntegralBase:
             else:
                 hashe=hashtools.hashe_replace_object(hashe,rev,"any")
                 #print("reduced hashe",hashe)
-                if dataanalysis.printhook.global_log_enabled: print("cached rev:",rev)
+                if dataanalysis.printhook.global_log_enabled: print(("cached rev:",rev))
                 r=self.filecacheroot+"/byrev/"+rev+"/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/" # choose to avoid overlapp
         else:
             hashe=hashtools.hashe_replace_object(hashe,scw,"any")
@@ -208,12 +208,12 @@ class MemCacheIntegralBase:
             #str("reduced hashe:",hashe,hash_to_path2(hashe))
             #if dataanalysis.printhook.global_log_enabled: print("reduced hashe:",hashe,hash_to_path2(hashe))
             #open("reduced_hashe.txt","w").write(hash_to_path2(hashe)+"\n\n"+pprint.pformat(hashe)+"\n")
-            print(scw,hashe[2],marked)
+            print((scw,hashe[2],marked))
 
             r=self.filecacheroot+"/byscw/"+scw[:4]+"/"+scw+"/"+hashe[2]+"/"+"/".join(marked)+"/"+hash_to_path2(hashe)+"/" # choose to avoid overlapp
 
 
-        print(self,"cached path:",r)
+        print((self,"cached path:",r))
 
         return r # choose to avoid overlapp
 
@@ -260,18 +260,18 @@ class ODACache(dataanalysis.caches.cache_core.CacheBlob):
                 print("\033[34mYES exists in ODA\033[0m")
                 break
             except dqueue.data.NotFound as e:
-                print("\033[32mnot found in ODA\033[0m", e)
+                print(("\033[32mnot found in ODA\033[0m", e))
                 return None
             except bravado.exception.HTTPBadGateway as e:
-                print("\033[31mproblem with gateway!\033[0m", e)
+                print(("\033[31mproblem with gateway!\033[0m", e))
                 time.sleep(1)
                 continue
             except Exception as e:
-                print("\033[31munknown problem, maybe with gateway!\033[0m", e)
+                print(("\033[31munknown problem, maybe with gateway!\033[0m", e))
                 time.sleep(1)
                 continue
 
-        print("\033[33mfound in ODA\033[0m", r)
+        print(("\033[33mfound in ODA\033[0m", r))
         return r
 
 
@@ -283,7 +283,7 @@ class ODACache(dataanalysis.caches.cache_core.CacheBlob):
                 data={ "blob": blob_b64 }
             )
 
-        print("deposited blob in ODA:",r)
+        print(("deposited blob in ODA:",r))
 
     def retrieve_blob(self, hashe):
         print("\033[33mtrying to restore from ODA\033[0m")
@@ -295,15 +295,15 @@ class ODACache(dataanalysis.caches.cache_core.CacheBlob):
                     )
                 break
             except dqueue.data.NotFound as e:
-                print("\033[32mnot found in ODA\033[0m", e)
+                print(("\033[32mnot found in ODA\033[0m", e))
                 return None
             except bravado.exception.HTTPBadGateway as e:
-                print("\033[31mproblem with gateway!\033[0m", e)
+                print(("\033[31mproblem with gateway!\033[0m", e))
                 time.sleep(1)
                 continue
 
         blob = base64.b64decode(json.loads(r['data_json'])['blob'])
-        print("\033[33mrestored from ODA\033[0m: blob of", len(blob)/1024/1024, "kb")
+        print(("\033[33mrestored from ODA\033[0m: blob of", len(blob)/1024/1024, "kb"))
 
         return io.BytesIO(blob)
 
@@ -318,7 +318,7 @@ class MemCacheIntegralFallback(MemCacheIntegralBase,dataanalysis.caches.cache_co
 
 class LocalCacheNoParent(dataanalysis.caches.cache_core.CacheNoIndex):
     def restore_from_parent(self, *x, **xx):
-        print("\033[31m", self, "disabled parent entirely\033[0m")
+        print(("\033[31m", self, "disabled parent entirely\033[0m"))
         return None
 
 class IntegralODAFallback(MemCacheIntegralFallback):
@@ -335,7 +335,7 @@ class IntegralODAFallback(MemCacheIntegralFallback):
         if self._odacache.find(hashe):
             return True
 
-        print("\033[33mchecking if exists in ", self, "\033[0m")
+        print(("\033[33mchecking if exists in ", self, "\033[0m"))
         return MemCacheIntegralFallback.find(self, hashe)
 
     def store(self, hashe, obj):
@@ -344,7 +344,7 @@ class IntegralODAFallback(MemCacheIntegralFallback):
         
         print("storing to ODACache")
         self._odacache.store(hashe, obj)
-        print("after odacache store:", obj.factory.factory_assumptions_stacked)
+        print(("after odacache store:", obj.factory.factory_assumptions_stacked))
 
         return r
 
@@ -357,32 +357,32 @@ class IntegralODAFallback(MemCacheIntegralFallback):
                                         obj,
                                         restore_config,
                                     )
-        print(obj, "\033[032mLocalCacheNoParent returns", local_result, "\033[0m")
+        print((obj, "\033[032mLocalCacheNoParent returns", local_result, "\033[0m"))
         self.parent = parent
 
         oda_exists = self._odacache.find(hashe)
-        print(obj, "\033[032m_odacache.find returns", oda_exists, "\033[0m")
+        print((obj, "\033[032m_odacache.find returns", oda_exists, "\033[0m"))
 
         if local_result:
-            print(obj, "\033[032mrestored from local cache, ensuring it is stored to ODACache\033[0m")
+            print((obj, "\033[032mrestored from local cache, ensuring it is stored to ODACache\033[0m"))
 
             obj._da_locally_complete = None
             obj._da_restored = None
 
             if oda_exists:
-                print(obj, "\033[032malready exists in ODA as well as in local cache, nothing to do\033[0m")
+                print((obj, "\033[032malready exists in ODA as well as in local cache, nothing to do\033[0m"))
             else:
-                print(obj, "\033[031mreconstructing object with local cache references\033[0m")
+                print((obj, "\033[031mreconstructing object with local cache references\033[0m"))
                 local_result = LocalCacheNoParent.restore(self, hashe, obj,
                                                 {**restore_config,
                                                  'copy_cached_input': True,
                                                  'datafile_restore_mode': 'copy'},
                                                 )
 
-                print(obj, "\033[031does not exist in ODA, uploading!\033[0m")
+                print((obj, "\033[031does not exist in ODA, uploading!\033[0m"))
                 self._odacache.store(hashe, obj) 
         else:
-            print(obj, "\033[031mtrying to restore from ODA cache\033[0m")
+            print((obj, "\033[031mtrying to restore from ODA cache\033[0m"))
 
             oda_result = None
             if oda_exists:
@@ -396,7 +396,7 @@ class IntegralODAFallback(MemCacheIntegralFallback):
 
 
             if oda_result is not None:
-                print(obj, "\033[031mrestored from ODACache, now storing to local cache\033[0m")
+                print((obj, "\033[031mrestored from ODACache, now storing to local cache\033[0m"))
 
                 # we should rather learn to upload to new cache from non-copied cache files, but it's dda change
                 self.store_local(hashe, obj)
@@ -404,12 +404,12 @@ class IntegralODAFallback(MemCacheIntegralFallback):
                 obj._da_locally_complete = None
                 obj._da_restored = None
 
-                print(obj, "\033[031mreconstructing object with local cache references\033[0m")
+                print((obj, "\033[031mreconstructing object with local cache references\033[0m"))
 
                 local_result = LocalCacheNoParent.restore(self, hashe, obj, restore_config)
             else:
-                print(obj, "\033[036m", hashe, "\033[0m")
-                print(obj, f"\033[031mno result in either cache, will follow with parent", self.parent, "compute\033[0m")
+                print((obj, "\033[036m", hashe, "\033[0m"))
+                print((obj, f"\033[031mno result in either cache, will follow with parent", self.parent, "compute\033[0m"))
                 return self.restore_from_parent(hashe, obj, restore_config)
 
         return local_result
@@ -459,7 +459,7 @@ for IntegralCacheRoot in IntegralCacheRoots.split(":"):
 
 mc=CacheStack[0]
 
-print("cache stack:",CacheStack)
+print(("cache stack:",CacheStack))
 
 class OSA_tool_kit_class(object):
     tool_versions=None
@@ -612,20 +612,20 @@ class ScWData(DataAnalysis):
             return True
         except da.AnalysisException:
             if self.scwver == "000":
-                print("searching for nrt in "+detect_rbp(self.scwver)+"/nrt")
+                print(("searching for nrt in "+detect_rbp(self.scwver)+"/nrt"))
                 self.assume_rbp(detect_rbp(self.scwver)+"/nrt")
                 return True
             else:
                 return False
         except Exception as e:
-            print("\033[31mScWData find failed\033[0m", e)
+            print(("\033[31mScWData find failed\033[0m", e))
             return False
 
 
     def test_scw(self):
         try:
             f=fits.open(self.scwpath+"/swg.fits")
-            print("valid file:",f)
+            print(("valid file:",f))
         except IOError as e:
             if e.message=="Header missing END card.":
                 raise ScWDataCorrupted(self.scwpath,e.message)
@@ -640,7 +640,7 @@ class ScWData(DataAnalysis):
 
         for option in options:
             if good_file(option):
-                print("ok:",option)
+                print(("ok:",option))
                 return
 
         raise NoISGRIEvents("no usable event data for: "+repr(self.scwid))
@@ -653,7 +653,7 @@ class ScWData(DataAnalysis):
             p = rbp+"/scw/"+self.revid+"/rev."+v
             if os.path.exists(p):
                 self.revdirver = v
-                print("found revdir ver", v)
+                print(("found revdir ver", v))
                 break
             tried.append(p)
 
@@ -669,20 +669,20 @@ class ScWData(DataAnalysis):
             self.auxadppath=rbp+"/aux/adp/"+self.revid+"."+ver
             self.auxadpver=ver
             if os.path.exists(self.auxadppath):
-                print("auxadpver picked", self.auxadpver, self.auxadppath)
+                print(("auxadpver picked", self.auxadpver, self.auxadppath))
                 break
 
 
         if not good_file(self.scwpath+"/swg.fits"):
             if not good_file(self.scwpath+"/swg.fits.gz"):
-                print("failed searching for",self.scwpath+"/swg.fits")
+                print(("failed searching for",self.scwpath+"/swg.fits"))
                 raise NoScWData("no scw data for: "+repr(self.scwid))
                 #raise Exception("no scw data!")
             else:
                 self.swgpath=self.scwpath+"/swg.fits.gz"
         else:
             self.swgpath=self.scwpath+"/swg.fits"
-        print("swgpath:",self.swgpath)
+        print(("swgpath:",self.swgpath))
 
 
     def get_isgri_events(self):
@@ -752,7 +752,7 @@ class Revolution(DataAnalysis):
         return r100+(r1100-r100)/1000*(r-100)
 
     def get_ijd_exact(self):
-        ijd_b = map(float, converttime("REVNUM",self.get_revid(),"IJD"))
+        ijd_b = list(map(float, converttime("REVNUM",self.get_revid(),"IJD")))
         return (ijd_b[1] + ijd_b[0]) / 2., (ijd_b[1] - ijd_b[0])
 
     def __repr__(self):
@@ -769,7 +769,7 @@ class RevForScW(DataAnalysis):
     def main(self):
         revid=self.input_scw.input_scwid.handle[:4]
         scwver=self.input_scw.input_scwid.handle[-3:]
-        print("revolution id for scw:",revid)
+        print(("revolution id for scw:",revid))
         return Revolution(input_revid=revid,use_scwver=scwver)
         #return Revolution(input_revid=revid,use_scwver=scwver)
 
@@ -782,7 +782,7 @@ class Rev4ScW(Revolution):
 
     def get_revid(self):
         revid=self.input_scw.input_scwid.handle[:4]
-        print("revolution id for scw:",revid)
+        print(("revolution id for scw:",revid))
         return revid
 
 class ICRoot(DataAnalysis):
@@ -806,7 +806,7 @@ class ICRoot(DataAnalysis):
             icpath = os.path.join(ic_collection, self.ic_root_version)
             self.icroot = icpath
             if os.path.exists(icpath):
-                print("found IC as requested:", icpath)
+                print(("found IC as requested:", icpath))
                 # TODO ensure versions is good
                 # TODO understand how this reflects on versions of individual files
             else:
@@ -824,7 +824,7 @@ class ICRoot(DataAnalysis):
 
         self.icindex = self.icroot+"/idx/ic/ic_master_file.fits[1]"
 
-        print('current IC:',self.icroot)
+        print(('current IC:',self.icroot))
 
 class FailingMedia(DataAnalysis):
     def main(self):
@@ -841,7 +841,7 @@ class IBIS_ICRoot(DataAnalysis):
 
     def main(self):
         self.ibisicroot = os.path.join(self.input_icroot.icroot, "ic/ibis")
-        print("current IBIS ic root is:"),self.ibisicroot
+        print(("current IBIS ic root is:"),self.ibisicroot)
 
 class GetLUT2(DataAnalysis):
     input="LUT2_standard"
@@ -875,7 +875,7 @@ class GetEcorrCalDB(DataAnalysis):
             ver=re.match(self.input_ibisic.ibisicroot+"/mod/isgr_gain_mod_(.*?).fits",gmfile).group(1)
             vstart=fits.open(gmfile)[1].header['VSTART']
 
-            print(vstart,ver)
+            print((vstart,ver))
             if vstart>newest_vstart and t>vstart:
                 newest_vstart=vstart
                 newest_ver=ver
@@ -893,9 +893,9 @@ class BinnedDataProcessingSummary(DataAnalysis):
         ahash=mf.process(output_required=False,run_if_haveto=False)[0]
        # print("one scw hash:",ahash)
         #ahash=hashtools.hashe_replace_object(ahash,'AnyScW','None')
-        print("generalized hash:",ahash)
+        print(("generalized hash:",ahash))
         rh=shhash(ahash)
-        print("reduced hash",rh)
+        print(("reduced hash",rh))
         return [dataanalysis.DataHandle('processing_definition:'+rh[:8])]
 
 class BasicEventProcessingSummary(DataAnalysis):
@@ -906,9 +906,9 @@ class BasicEventProcessingSummary(DataAnalysis):
         ahash=mf.process(output_required=False,run_if_haveto=False)[0]
        # print("one scw hash:",ahash)
         #ahash=hashtools.hashe_replace_object(ahash,'AnyScW','None')
-        print("generalized hash:",ahash)
+        print(("generalized hash:",ahash))
         rh=shhash(ahash)
-        print("reduced hash",rh)
+        print(("reduced hash",rh))
 
         handle=dataanalysis.DataHandle('processing_definition:' + rh[:8])
 
@@ -928,11 +928,11 @@ class ImageProcessingSummary(DataAnalysis):
     def main(self):
         mf=ii_skyimage(assume=ScWData(input_scwid="any",use_abstract=True)) # arbitrary choice of scw, should be the same: assumption of course
         ahash=mf.process(output_required=False,run_if_haveto=False)[0]
-        print("one scw hash:",ahash)
+        print(("one scw hash:",ahash))
         ahash=hashtools.hashe_replace_object(ahash,'AnyScW','None')
-        print("generalized hash:",ahash)
+        print(("generalized hash:",ahash))
         rh=shhash(ahash)
-        print("reduced hash",rh)
+        print(("reduced hash",rh))
         d=dataanalysis.DataHandle('processing_definition:'+rh[:8])
         dataanalysis.AnalysisFactory.register_definition(d.handle,ahash)
 
@@ -953,11 +953,11 @@ class LCProcessingSummary(DataAnalysis):
     def main(self):
         mf=ii_lc_extract(assume=ScWData(input_scwid="any",use_abstract=True)) # arbitrary choice of scw, should be the same: assumption of course
         ahash=mf.process(output_required=False,run_if_haveto=False)[0]
-        print("one scw hash:",ahash)
+        print(("one scw hash:",ahash))
         ahash=hashtools.hashe_replace_object(ahash,'AnyScW','None')
-        print("generalized hash:",ahash)
+        print(("generalized hash:",ahash))
         rh=shhash(ahash)
-        print("reduced hash",rh)
+        print(("reduced hash",rh))
 
         handle = dataanalysis.DataHandle('processing_definition:' + rh[:8])
         self.factory.note_factorization(dict(
@@ -983,9 +983,9 @@ class SpectraProcessingSummary(DataAnalysis):
         #print("one scw hash:",ahash)
         #ahash=dataanalysis.hashe_replacI#e_object(ahash,'AnyScW','None')
         #ahash=hashtools.hashe_replace_object(ahash,'AnyRevID','None')
-        print("generalized hash:",ahash)
+        print(("generalized hash:",ahash))
         rh=shhash(ahash)
-        print("reduced hash",rh)
+        print(("reduced hash",rh))
         handle=dataanalysis.DataHandle('processing_definition:'+rh[:8])
         self.factory.note_factorization(dict(
             origin_object=self.__class__.__name__,
@@ -1185,9 +1185,9 @@ class ibis_gti(DataAnalysis):
         if hasattr(self,'input_usergti'):
             path=self.input_usergti.gti.get_path()
             if os.path.abspath(path)==os.path.normpath(path):
-                print("full path",path)
+                print(("full path",path))
             else:
-                print("not a full path",path)
+                print(("not a full path",path))
                 path="../../"+path
             ht['GTI_gtiUserI']=path
             ht['GTI_TimeFormat']='UTC'
@@ -1217,7 +1217,7 @@ class ibis_dead(DataAnalysis):
         #open("scw.list","w").write(self.input_scw.scwid)
         open("scw.list","w").write(self.input_scw.scwpath+"/swg.fits[1]")
 
-        print("scw path:",self.input_scw.scwpath+"/swg.fits[1]")
+        print(("scw path:",self.input_scw.scwpath+"/swg.fits[1]"))
         if not os.path.exists(self.input_scw.scwpath+"/swg.fits"):
             raise Exception("no scw? broken!")
 
@@ -1406,10 +1406,10 @@ class BinEventsVirtual(DataAnalysis):
         ht['gti_name'] = 'MERGED_ISGRI'
         ht['outputLevel'] = self.target_level
 
-        print("target_level",self.target_level)
+        print(("target_level",self.target_level))
 
-        print("has rmfbins "+str(self.input_bins.rmfbins) if hasattr(self.input_bins,'rmfbins') else "no rmfbins")
-        print("has binrmfext" if hasattr(self.input_bins,'binrmfext') else "no binrmfext")
+        print(("has rmfbins "+str(self.input_bins.rmfbins) if hasattr(self.input_bins,'rmfbins') else "no rmfbins"))
+        print(("has binrmfext" if hasattr(self.input_bins,'binrmfext') else "no binrmfext"))
 
         if ( self.target_level=="BIN_I" or not hasattr(self.input_bins,'rmfbins') or not self.input_bins.rmfbins or not hasattr(self.input_bins,'binrmfext') ) and not ( hasattr(self.input_bins,'rmfbins') and self.input_bins.rmfbins ): # fix!!
             ht['isgri_e_num'] = len(self.input_bins.bins)
@@ -1506,11 +1506,11 @@ class BinMapsVirtual(DataAnalysis):
 
         if hasattr(self,'input_unif'):
             maps['unif']=('Uni',self.input_unif.unif.get_path()+"[1]")
-            print("will use uniformity:",maps['unif'])
+            print(("will use uniformity:",maps['unif']))
 
         if hasattr(self,'input_bkg'):
             maps['back']=('Bkg',self.input_bkg.bkg.get_path()+"[1]")
-            print("will use background:",maps['back'])
+            print(("will use background:",maps['back']))
 
         level2key={
                 'BIN_I':'ima',
@@ -1520,7 +1520,7 @@ class BinMapsVirtual(DataAnalysis):
 
         lk=level2key[self.target_level]
 
-        for k,(k2,m) in maps.items():
+        for k,(k2,m) in list(maps.items()):
             fn="rebinned_"+k+"_"+lk+".fits"
 
             remove_withtemplate(fn) # again
@@ -1578,7 +1578,7 @@ class GRcat(DataAnalysis):
         self.cat = os.path.join(detect_rbp(), 
                                 f"cat/hec/gnrl_refr_cat_{self.refcat_version:04d}{'_'+self.suffix if self.suffix else ''}.fits")
 
-        print("using refcat:", self.cat)
+        print(("using refcat:", self.cat))
 
         if not os.path.exists(self.cat):
             raise RuntimeError(f"isdc ref cat not found: {self.cat}")
@@ -1630,8 +1630,8 @@ class BrightPIFImage(DataAnalysis):
             att=self.input_scw.auxadppath+"/attitude_snapshot.fits[AUXL-ATTI-SNA,1,BINTABLE]"
             attp_g=glob.glob(self.input_scw.auxadppath+"/attitude_predicted_*.fits*")
 
-            print("possible predicted attitude", attp_g)
-            print("possible predicted attitude", self.input_scw.auxadppath+"/attitude_predicted_*.fits*")
+            print(("possible predicted attitude", attp_g))
+            print(("possible predicted attitude", self.input_scw.auxadppath+"/attitude_predicted_*.fits*"))
 
             attp=attp_g[0]+"[AUXL-ATTI-PRE,1,BINTABLE]"
 
@@ -1713,7 +1713,7 @@ class ShadowUBCVirtual(DataAnalysis):
         return self.get_signature()+"."+self.version+(".brthr%.5lg"%self.brPifThreshold if self.brPifThreshold!=1e-4 else "")
 
     def main(self):
-        print(self.input_shadows)
+        print((self.input_shadows))
 
 
         construct_gnrl_scwg_grp(self.input_scw,[\
@@ -1742,8 +1742,8 @@ class ShadowUBCVirtual(DataAnalysis):
         try:
             ht.run()
         except Exception as e:
-            print("problem:", repr(e))
-            print("tool", ht.output)
+            print(("problem:", repr(e)))
+            print(("tool", ht.output))
 
             if 'Verif8Bins           Status :          0 Bands error 2 in TIME bins' in ht.output:
                 raise EfficiencyNotComputed(ht.output)
@@ -1864,7 +1864,7 @@ class BinnedBackgroundSpectrumFromGB(DataAnalysis):
 
         spectrum=[]
         for ef,dete,var in zip(corr_effi,corr_dete,corr_var):
-            print("reading:",ef.header['E_MIN'])
+            print(("reading:",ef.header['E_MIN']))
             spectrum.append(dict(
                             e1=ef.header['E_MIN'],
                             e2=ef.header['E_MAX'],
@@ -1962,7 +1962,7 @@ class CatExtract(DataAnalysis):
             i_offset=len(t_orig.data)
 
             for i,source in enumerate(self.input_extra_sources.sources):
-                print("adding",source)
+                print(("adding",source))
                 t_new.data[i_offset + i]['NAME'] = source['name']
                 t_new.data[i_offset + i]['RA_OBJ'] = source['ra']
                 t_new.data[i_offset + i]['DEC_OBJ'] = source['dec']
@@ -1973,7 +1973,7 @@ class CatExtract(DataAnalysis):
             fn="isgri_catalog_extra.fits"
             f.writeto(fn,clobber=True)
 
-        print("storing cat as",fn)
+        print(("storing cat as",fn))
         self.cat=DataFile(fn)
 
 
@@ -2022,7 +2022,7 @@ class ii_skyimage(DataAnalysis):
 
     def treat_input_analysis_exceptions(self,exceptions):
         for e in exceptions:
-            print("ii_skyimage experienced",e)
+            print(("ii_skyimage experienced",e))
 
             if isinstance(e[1],NoDeadData):
                 self.empty_results=True
@@ -2038,7 +2038,7 @@ class ii_skyimage(DataAnalysis):
 
 
     def main(self):
-        print("results marker",self.empty_results)
+        print(("results marker",self.empty_results))
         print("")
         if self.empty_results:
             print("it's so empty... probably excepted")
@@ -2153,7 +2153,7 @@ class ImageGroups(DataAnalysis):
         for scw,image,gb,gti,cat in self.members:
             fn = "og_%s.fits" % scw.input_scwid.str()
             if not hasattr(image,'skyima'):
-                print("skipping",scw)
+                print(("skipping",scw))
                 continue
             construct_gnrl_scwg_grp(scw, children=
                 [
@@ -2174,16 +2174,16 @@ class ImageGroups(DataAnalysis):
 
             fe=fits.open(cat.cat.get_path())[1]
             #fe=fits.open(cat.cat._da_unique_local_path)[1]
-            print(scw,"scw extracted cat has",len(fe.data),"sources",fe.data['NAME'][:10],"...")
+            print((scw,"scw extracted cat has",len(fe.data),"sources",fe.data['NAME'][:10],"..."))
             if total_extracted_cat is None:
                 total_extracted_cat=fe
             else:
                 total_extracted_cat.data=np.concatenate((total_extracted_cat.data,fe.data))
-                print("total extracted cat has",len(total_extracted_cat.data),"sources before filtering")
+                print(("total extracted cat has",len(total_extracted_cat.data),"sources before filtering"))
 
                 u,ui=np.unique(total_extracted_cat.data['NAME'],return_index=True)
                 total_extracted_cat.data=total_extracted_cat.data[ui]
-                print("total extracted cat has",len(total_extracted_cat.data),"sources after unique filtering")
+                print(("total extracted cat has",len(total_extracted_cat.data),"sources after unique filtering"))
 
             print("opening skyres band")
             sfe=fits.open(image.skyres.get_path())[2] # one band
@@ -2201,11 +2201,11 @@ class ImageGroups(DataAnalysis):
             if total_srclres is None:
                 total_srclres=srfe
             else:
-                print("concat srclres", len(total_srclres.data), len(srfe.data))
+                print(("concat srclres", len(total_srclres.data), len(srfe.data)))
                 if False:
                     total_srclres.data=np.concatenate((total_srclres.data,srfe.data))
                 else:
-                    print("SKIPING concat srclres", len(total_srclres.data), len(srfe.data))
+                    print(("SKIPING concat srclres", len(total_srclres.data), len(srfe.data)))
 
                 print("concat srclres done")
 
@@ -2264,7 +2264,7 @@ class LCGroups(DataAnalysis):
 
         for scw,lc in self.members:
             if not hasattr(lc,'lightcurve'):
-                print("lcgroups skipping this:",scw,lc)
+                print(("lcgroups skipping this:",scw,lc))
                 continue
 
             fn = "og_%s.fits" % scw.input_scwid.str()
@@ -2486,7 +2486,7 @@ class mosaic_ii_skyimage(DataAnalysis):
                                                 ht['MinNewSouSnr'].value,
                                                 new_newthr,
                                                 ))
-                print("WARNING:",warnings[-1])
+                print(("WARNING:",warnings[-1]))
                 ht['MinCatSouSnr']=new_catthr
                 ht['MinNewSouSnr']=new_newthr
 
@@ -2501,7 +2501,7 @@ class mosaic_ii_skyimage(DataAnalysis):
 
         status = int(g.groups()[0])
 
-        print("detected ii_skyimage output:", status)
+        print(("detected ii_skyimage output:", status))
 
         if status != 0:
             raise RuntimeError(f"ii_skyimage terminated with non-zero status: {status}!")
@@ -2512,7 +2512,7 @@ class mosaic_ii_skyimage(DataAnalysis):
 
         if not os.path.exists("isgri_mosa_ima.fits"):
             warnings.apped("no image produced: since there was no exception in the binary, assuming empty results")
-            print("warnings", warnings[-1])
+            print(("warnings", warnings[-1]))
             self.empty_results = True
             return
 
@@ -2548,11 +2548,11 @@ class mosaic_ii_skyimage(DataAnalysis):
 
 
             if len(f_cat[1].data)>0 and min(abs(ra - f_cat[1].data['RA_OBJ']) + abs(f_cat[1].data['DEC_OBJ'])) < 15./60.:
-                print(i,ra,dec,"already in the cat")
+                print((i,ra,dec,"already in the cat"))
                 continue
 
             if len(new_sources_indices)>0 and min([ (abs(ra - f_sr[1].data[o_i]['RA_FIN']) + abs(dec - f_sr[1].data[o_i]['DEC_FIN'])) for o_i in new_sources_indices]) < 15./60.:
-                print(i,ra,dec,"already in the new")
+                print((i,ra,dec,"already in the new"))
                 continue
 
 
@@ -2565,7 +2565,7 @@ class mosaic_ii_skyimage(DataAnalysis):
             for k in f_cat[1].data.columns:
                 new_sources_srcl_cat[j][k.name] = f_sr[1].data[i][k.name]
 
-        print("new_sources_srcl_cat:",new_sources_srcl_cat)
+        print(("new_sources_srcl_cat:",new_sources_srcl_cat))
 
 
         f_cat[1].data = np.concatenate((f_cat[1].data, new_sources_srcl_cat))
@@ -2605,12 +2605,12 @@ class CatForSpectraFromImaging(DataAnalysis):
 
         f=fits.open(self.input_imaging.srclres.path)
 
-        print("image catalog contains",len(f[1].data))
-        print("image catalog contains sig from",f[1].data['DETSIG'].min(),"to",f[1].data['DETSIG'].max())
+        print(("image catalog contains",len(f[1].data)))
+        print(("image catalog contains sig from",f[1].data['DETSIG'].min(),"to",f[1].data['DETSIG'].max()))
 
         if self.minsig is not None:
             f[1].data=f[1].data[f[1].data['DETSIG']>self.minsig]
-            print("selecting by significance",len(f[1].data))
+            print(("selecting by significance",len(f[1].data)))
 
         if self.maxsources is not None:
             raise Exception("not implemented")
@@ -2623,7 +2623,7 @@ class CatForSpectraFromImaging(DataAnalysis):
                 if source['name'] not in [str(s).strip() for s in t_orig.data['NAME']]:
                     new_extra_sources.append(source)
 
-            print("new extra sources",new_extra_sources)
+            print(("new extra sources",new_extra_sources))
 
             t_new = fits.BinTableHDU.from_columns(t_orig.columns,
                                                     nrows=len(t_orig.data) + len(new_extra_sources))
@@ -2632,7 +2632,7 @@ class CatForSpectraFromImaging(DataAnalysis):
             i_offset = len(t_orig.data)
 
             for i, source in enumerate(new_extra_sources):
-                print("adding", source)
+                print(("adding", source))
                 t_new.data[i_offset + i]['NAME'] = source['name']
                 t_new.data[i_offset + i]['RA_OBJ'] = source['ra']
                 t_new.data[i_offset + i]['DEC_OBJ'] = source['dec']
@@ -2665,15 +2665,15 @@ class ISGRIResponse(DataAnalysis):
                     ("resources", lambda:"/data/resources/rmf_62bands.fits"),
                     ("INTEGRAL_DATA", lambda:os.environ.get('INTEGRAL_DATA','')+"/resources/rmf_62bands.fits"),
                     ]:
-            print("trying to use response from", n)
+            print(("trying to use response from", n))
             try:
                 path = get_path()
                 if os.path.exists(path):
-                    print("found:", path)
+                    print(("found:", path))
                     self.path = path
                     break
             except Exception as e:
-                print("does not work:", e)
+                print(("does not work:", e))
                 tried.append(n)
 
         if self.path is None:
@@ -2928,7 +2928,7 @@ def construct_gnrl_scwg_grp(scw,children=[],fn="og.fits"):
 
     CFITSIO_INCLUDE_FILES_shortened = re.sub("\:+",":", os.environ['CFITSIO_INCLUDE_FILES'])
     if os.environ['CFITSIO_INCLUDE_FILES'] != CFITSIO_INCLUDE_FILES_shortened:
-        print("shortened CFITSIO_INCLUDE_FILES:", os.environ['CFITSIO_INCLUDE_FILES'] ,"to",CFITSIO_INCLUDE_FILES_shortened)
+        print(("shortened CFITSIO_INCLUDE_FILES:", os.environ['CFITSIO_INCLUDE_FILES'] ,"to",CFITSIO_INCLUDE_FILES_shortened))
 
     os.environ['CFITSIO_INCLUDE_FILES'] = CFITSIO_INCLUDE_FILES_shortened
 
@@ -2939,12 +2939,12 @@ def construct_gnrl_scwg_grp(scw,children=[],fn="og.fits"):
     try:
         dc.run()
     except Exception as e:
-        print("unknown exception",e)
-        print(subprocess.check_output("export",shell=True))
-        print(subprocess.check_output("echo $CFITSIO_INCLUDE_FILES/GNRL-SCWG-GRP.tpl",shell=True))
-        print(subprocess.check_output("ls -l $CFITSIO_INCLUDE_FILES/GNRL-SCWG-GRP.tpl",shell=True))
-        print(subprocess.check_output("pwd",shell=True))
-        print(subprocess.check_output("ls -lort",shell=True))
+        print(("unknown exception",e))
+        print((subprocess.check_output("export",shell=True)))
+        print((subprocess.check_output("echo $CFITSIO_INCLUDE_FILES/GNRL-SCWG-GRP.tpl",shell=True)))
+        print((subprocess.check_output("ls -l $CFITSIO_INCLUDE_FILES/GNRL-SCWG-GRP.tpl",shell=True)))
+        print((subprocess.check_output("pwd",shell=True)))
+        print((subprocess.check_output("ls -lort",shell=True)))
         raise
 
     da=heatool("dal_attr")
@@ -3036,7 +3036,7 @@ def set_attr(attrs,fn="og.fits"):
     pt2dt={int:"DAL_INT",str:"DAL_CHAR", float:'DAL_DOUBLE'}
     pt2k={int:"i",str:"s", float:'r'}
 
-    for k,v in attrs.items():
+    for k,v in list(attrs.items()):
         da=heatool("dal_attr")
         da['indol']=fn
         da['keynam']=k
@@ -3055,7 +3055,7 @@ def construct_empty_shadidx(bins,fn="og.fits",levl="BIN_I"):
     ht.run()
 
     for e1,e2 in bins:
-        print("appending",e1,e2)
+        print(("appending",e1,e2))
         dc=heatool('dal_append')
         dc['grpDOL']=fn
         dc['element']='ISGR-DETE-SHD.tpl'
@@ -3131,8 +3131,8 @@ class RevScWList(DataAnalysis):
             except Exception as e:
                 print(e)
 
-        print("event files in",self.input_rev.revroot)
-        print("found event files",event_files)
+        print(("event files in",self.input_rev.revroot))
+        print(("found event files",event_files))
 
         scwids=sorted([fn.split("/")[-2] for fn in event_files])
 
@@ -3198,15 +3198,15 @@ class PickFewScWList(DataAnalysis):
 
     def main(self):
         thelist=sorted(self.input_list.scwlistdata,key=lambda x:x.input_scwid.handle)
-        print("available list",len(thelist),thelist)
-        print("first scw:",self.firstscw)
+        print(("available list",len(thelist),thelist))
+        print(("first scw:",self.firstscw))
         if self.firstscws:
             self.scwlistdata=thelist[self.firstscw:self.nscw+self.firstscw]
         else:
             self.scwlistdata=thelist[-self.nscw:]
         if self.step!=1:
             self.scwlistdata=self.scwlistdata[::self.step]
-        print("resulting list:",len(self.scwlistdata),self.scwlistdata)
+        print(("resulting list:",len(self.scwlistdata),self.scwlistdata))
 
 class FileScWList(DataAnalysis):
     input_fn=None
@@ -3228,7 +3228,7 @@ class ScWList(DataAnalysis):
         self.scwlistdata=self.input_list.scwlistdata
 
 def converttime(informat,intime,outformat=""):
-    r=subprocess.check_output(["converttime",informat,intime,outformat])
+    r=subprocess.check_output(["converttime",informat,intime,outformat]).decode()
     d={}
     for l in r.split("\n"):
         t=re.search("Output Time\((.*?)\): (.*?)$",l,re.S)
