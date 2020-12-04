@@ -2600,6 +2600,11 @@ class CatForSpectraFromImaging(DataAnalysis):
             print("no results here")
             self.empty_results=True
             return
+        
+        if not hasattr(self.input_imaging, 'srclres'):
+            print("no results here")
+            self.empty_results=True
+            return
 
         catfn="cat4spectra.fits"
 
