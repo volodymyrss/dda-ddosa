@@ -1314,19 +1314,24 @@ class SpectraBins(DataAnalysis):
 
     version="v3"
     def main(self):
-        if self.rmfpath is not None:
-            self.binrmf=self.rmfpath
-        else:
-            self.binrmf=os.environ['INTEGRAL_DATA']+"/resources/rmf_62bands.fits"
+        self.binrmf = None
 
-        if not os.path.exists(self.binrmf):
-            self.binrmf=os.environ.get("INTEGRAL_RESOURCES","/data/resources")+"/rmf_62bands.fits"
+        tried = []
+        for binrmf_option in [
+                self.rmfpath
+                os.environ.get('INTEGRAL_DATA', '/data/')+"/resources/rmf_62bands.fits"
+                os.environ.get("INTEGRAL_RESOURCES", "/data/resources")+"/rmf_62bands.fits"
+                "/unsaved_data/savchenk/rmf_62bands.fits"
+                "/data/resources/rmf_62bands.fits"
+            ]:
+            if os.path.exists(binrmf_option):
+                self.binrmf = binrmf_option
+                break
+            else:
+                tried.append(binrmf_option)
 
-        if not os.path.exists(self.binrmf):
-            self.binrmf="/unsaved_data/savchenk/rmf_62bands.fits"
-
-        if not os.path.exists(self.binrmf):
-            self.binrmf="/data/resources/rmf_62bands.fits"
+        if self.binrmf is None:
+            raise Exception(f"rmf with bins not found in {self}, tried {'; '.join(tried)}")
 
         #self.binrmf=os.environ['CURRENT_IC']+"/ic/ibis/rsp/rmf_62bands.fits" # noo!!!
         #self.binrmf=os.environ['CURRENT_IC']+"/ic/ibis/rsp/isgr_ebds_mod_0001.fits" # noo!!!
