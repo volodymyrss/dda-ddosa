@@ -1325,7 +1325,7 @@ class SpectraBins(DataAnalysis):
                 "/unsaved_data/savchenk/rmf_62bands.fits",
                 "/data/resources/rmf_62bands.fits",
             ]:
-            if os.path.exists(binrmf_option):
+            if binrmf_option is not None and os.path.exists(binrmf_option):
                 self.binrmf = binrmf_option
                 print("\033[032mselected binrmf_option: ", binrmf_option, "\033[0m")
                 break
