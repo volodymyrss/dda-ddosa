@@ -245,6 +245,7 @@ class ODACache(dataanalysis.caches.cache_core.CacheBlob):
                 'ii_light',
                 'jemx_image', 'jemx_spe', 'jemx_lcr',
                 'spe_pick',
+                'ReportScWList',
                # 'RebinResponse',
                 ]:
             return True
