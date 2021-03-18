@@ -1307,7 +1307,7 @@ class BinEventsVirtual(DataAnalysis):
 
         if ( self.target_level=="BIN_I" or not hasattr(self.input_bins,'rmfbins') or not self.input_bins.rmfbins or not hasattr(self.input_bins,'binrmfext') ) and not ( hasattr(self.input_bins,'rmfbins') and self.input_bins.rmfbins ): # fix!!
 
-            bins = self.input_bins.restricted_bins
+            bins = self.input_bins.bins
 
             ht['isgri_e_num'] = len(bins)
             ht['isgri_e_min'] = " ".join([str(a[0]) for a in bins])
