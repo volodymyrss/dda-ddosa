@@ -1421,9 +1421,15 @@ class BinEventsVirtual(DataAnalysis):
         print("has binrmfext" if hasattr(self.input_bins,'binrmfext') else "no binrmfext")
 
         if ( self.target_level=="BIN_I" or not hasattr(self.input_bins,'rmfbins') or not self.input_bins.rmfbins or not hasattr(self.input_bins,'binrmfext') ) and not ( hasattr(self.input_bins,'rmfbins') and self.input_bins.rmfbins ): # fix!!
-            ht['isgri_e_num'] = len(self.input_bins.bins)
-            ht['isgri_e_min'] = " ".join([str(a[0]) for a in self.input_bins.bins])
-            ht['isgri_e_max'] = " ".join([str(a[1]) for a in self.input_bins.bins])
+
+            bins = []
+
+            for a in self.input_bins.bins:
+                bins.append([ max(15, a[0]), min(900, a[1]) ])
+
+            ht['isgri_e_num'] = len(bins)
+            ht['isgri_e_min'] = " ".join([str(a[0]) for a in bins])
+            ht['isgri_e_max'] = " ".join([str(a[1]) for a in bins])
         elif self.target_level=="BIN_S" or ( hasattr(self.input_bins,'rmfbins') and self.input_bins.rmfbins ) or hasattr(self.input_bins,'binrmfext'):
             ht['isgri_e_num'] = -1
 
