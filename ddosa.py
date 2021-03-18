@@ -481,6 +481,9 @@ class DataAnalysis(DataAnalysisPrototype):
 class NoScWData(da.AnalysisException):
     pass
 
+class MissingAttribute(da.AnalysisException):
+    pass
+
 class NoDeadData(da.AnalysisException):
     pass
     
@@ -2877,7 +2880,11 @@ def import_attr(obj,attr,target="og.fits"):
     da['indol']=obj
     da['outdol']=target
     da['keylist']=",".join(attr)
-    da.run()
+
+    try:
+        da.run()
+    except pilton.HEAToolException as e:
+        raise MissingAttribute()
     
 def set_attr(attrs,fn="og.fits"):
 
