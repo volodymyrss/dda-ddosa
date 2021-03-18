@@ -1184,6 +1184,12 @@ class ImageBins(DataAnalysis):
 
         return v
 
+    @property
+    def restricted_bins(self):
+        bins = []
+        for a in self.bins:
+            bins.append([ max(15, a[0]), min(900, a[1]) ])
+        return bins
 
     def main(self):
         if self.ebins is None:
@@ -1301,9 +1307,7 @@ class BinEventsVirtual(DataAnalysis):
 
         if ( self.target_level=="BIN_I" or not hasattr(self.input_bins,'rmfbins') or not self.input_bins.rmfbins or not hasattr(self.input_bins,'binrmfext') ) and not ( hasattr(self.input_bins,'rmfbins') and self.input_bins.rmfbins ): # fix!!
 
-            bins = []
-            for a in self.input_bins.bins:
-                bins.append([ max(15, a[0]), min(900, a[1]) ])
+            bins = self.input_bins.restricted_bins
 
             ht['isgri_e_num'] = len(bins)
             ht['isgri_e_min'] = " ".join([str(a[0]) for a in bins])
