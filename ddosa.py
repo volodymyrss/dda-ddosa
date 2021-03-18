@@ -1385,7 +1385,7 @@ class BinMapsVirtual(DataAnalysis):
     
     cached=True
 
-    version="v2"
+    version="v2.1"
     def main(self):
         #construct_gnrl_scwg_grp(self.input_scw,[\
         #        ])
