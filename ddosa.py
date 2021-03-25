@@ -619,7 +619,7 @@ class ScWData(DataAnalysis):
                     raise da.AnalysisException("scw data download failed somehow")
             else:
                 print("\033[31mScWData download forbidden! set DDOSA_SCWDATA_DOWNLOAD=yes to allow\033[0m")
-                raise da.AnalysisException("scw data not found and not allowed to download")
+                raise da.AnalysisException("scw data not found and not allowed to download, set DDOSA_SCWDATA_DOWNLOAD=yes to allow")
 
     def download(self):
         print("\033[31mScW not found\033[0m")
