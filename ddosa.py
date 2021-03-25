@@ -224,7 +224,7 @@ import bravado
 if os.environ.get("DDA_DISABLE_ASYNC", "no") == yes:
     class ODACache(dataanalysis.caches.cache_core.CacheBlob):
         def __repr__(self):
-            return f"[{self.__class__.__name__}: DISABLED]"
+            return "[" + self.__class__.__name__ + "DISABLED]"
 
         def approved_hashe(self, hashe):
             return False
