@@ -221,7 +221,7 @@ import dqueue
 import base64
 import bravado
         
-if os.environ.get("DDA_DISABLE_ASYNC", "no") == yes:
+if os.environ.get("DDA_DISABLE_ASYNC", "no") == "yes":
     class ODACache(dataanalysis.caches.cache_core.CacheBlob):
         def __repr__(self):
             return "[" + self.__class__.__name__ + "DISABLED]"
