@@ -220,95 +220,116 @@ class MemCacheIntegralBase:
 import dqueue
 import base64
 import bravado
+        
+if os.environ.get("DDA_DISABLE_ASYNC", "no") == yes:
+    class ODACache(dataanalysis.caches.cache_core.CacheBlob):
+        def __repr__(self):
+            return f"[{self.__class__.__name__}: DISABLED]"
 
-class ODACache(dataanalysis.caches.cache_core.CacheBlob):
-    _leader = None
+        def approved_hashe(self, hashe):
+            return False
 
-    def __repr__(self):
-        return f"[{self.__class__.__name__}: leader {self.leader}]"
+        def find(self, hashe):
+            return None
 
-    @property
-    def leader(self):
-        if self._leader is None:
-            self._leader = dqueue.from_uri(os.environ.get("ODAHUB"))
+        def deposit_blob(self, hashe, blob):
+            pass
 
-        return self._leader
+        def retrieve_blob(self, hashe):
+            return None
+else:
+    class ODACache(dataanalysis.caches.cache_core.CacheBlob):
+        _leader = None
 
-    def approved_hashe(self, hashe):
-        if hashe[-1].split(".")[0] in [
-                'ibis_gti', 'ibis_dead', 'CatExtract', 
-                'BinMapsImage', 'BinEventsImage', 'ghost_bustersImage', 'ii_skyimage', 
-                'mosaic_ii_skyimage',
-                'ii_spectra_extract',
-                'BinMapsSpectra', 'BinEventsSpectra', 'ghost_bustersSpectra', 'ii_spectra_extract', 'ISGRISpectraSum',
-                'BinMapsLC', 'ii_lc_extract', 'ISGRILCSum',
-                'ii_light',
-                'jemx_image', 'jemx_spe', 'jemx_lcr',
-                'spe_pick',
-                'ReportScWList',
-               # 'RebinResponse',
-                ]:
-            return True
+        def __repr__(self):
+            return f"[{self.__class__.__name__}: leader {self.leader}]"
 
+        @property
+        def odahub_disabled(self):
+            return os.environ.get("DDA_DISABLE_ASYNC", "no") == yes
 
-    def find(self, hashe):
-        print("\033[33mchecking if exists in ODA\033[0m")
+        @property
+        def leader(self):
+            if self._leader is None:
+                self._leader = dqueue.from_uri(os.environ.get("ODAHUB"))
 
-        while True:
-            try:
-                r = self.leader.consult_fact(
-                        dag=hashe,
-                        return_data=False
-                    )
-                print("\033[34mYES exists in ODA\033[0m")
-                break
-            except dqueue.data.NotFound as e:
-                print("\033[32mnot found in ODA\033[0m", e)
-                return None
-            except bravado.exception.HTTPBadGateway as e:
-                print("\033[31mproblem with gateway!\033[0m", e)
-                time.sleep(1)
-                continue
-            except Exception as e:
-                print("\033[31munknown problem, maybe with gateway!\033[0m", e)
-                time.sleep(1)
-                continue
+            return self._leader
 
-        print("\033[33mfound in ODA\033[0m", r)
-        return r
+        def approved_hashe(self, hashe):
+            if hashe[-1].split(".")[0] in [
+                    'ibis_gti', 'ibis_dead', 'CatExtract', 
+                    'BinMapsImage', 'BinEventsImage', 'ghost_bustersImage', 'ii_skyimage', 
+                    'mosaic_ii_skyimage',
+                    'ii_spectra_extract',
+                    'BinMapsSpectra', 'BinEventsSpectra', 'ghost_bustersSpectra', 'ii_spectra_extract', 'ISGRISpectraSum',
+                    'BinMapsLC', 'ii_lc_extract', 'ISGRILCSum',
+                    'ii_light',
+                    'jemx_image', 'jemx_spe', 'jemx_lcr',
+                    'spe_pick',
+                    'ReportScWList',
+                   # 'RebinResponse',
+                    ]:
+                return True
 
 
-    def deposit_blob(self, hashe, blob):
-        blob_b64 = base64.b64encode(blob.read()).decode()
+        def find(self, hashe):
+            print("\033[33mchecking if exists in ODA\033[0m")
 
-        r = self.leader.assert_fact(
-                dag=hashe,
-                data={ "blob": blob_b64 }
-            )
+            while True:
+                try:
+                    r = self.leader.consult_fact(
+                            dag=hashe,
+                            return_data=False
+                        )
+                    print("\033[34mYES exists in ODA\033[0m")
+                    break
+                except dqueue.data.NotFound as e:
+                    print("\033[32mnot found in ODA\033[0m", e)
+                    return None
+                except bravado.exception.HTTPBadGateway as e:
+                    print("\033[31mproblem with gateway!\033[0m", e)
+                    time.sleep(1)
+                    continue
+                except Exception as e:
+                    print("\033[31munknown problem, maybe with gateway!\033[0m", e)
+                    time.sleep(1)
+                    continue
 
-        print("deposited blob in ODA:",r)
+            print("\033[33mfound in ODA\033[0m", r)
+            return r
 
-    def retrieve_blob(self, hashe):
-        print("\033[33mtrying to restore from ODA\033[0m")
 
-        while True:
-            try:
-                r = self.leader.consult_fact(
-                        dag=hashe,
-                    )
-                break
-            except dqueue.data.NotFound as e:
-                print("\033[32mnot found in ODA\033[0m", e)
-                return None
-            except bravado.exception.HTTPBadGateway as e:
-                print("\033[31mproblem with gateway!\033[0m", e)
-                time.sleep(1)
-                continue
+        def deposit_blob(self, hashe, blob):
+            blob_b64 = base64.b64encode(blob.read()).decode()
 
-        blob = base64.b64decode(json.loads(r['data_json'])['blob'])
-        print("\033[33mrestored from ODA\033[0m: blob of", len(blob)/1024/1024, "kb")
+            r = self.leader.assert_fact(
+                    dag=hashe,
+                    data={ "blob": blob_b64 }
+                )
 
-        return io.BytesIO(blob)
+            print("deposited blob in ODA:",r)
+
+        def retrieve_blob(self, hashe):
+            print("\033[33mtrying to restore from ODA\033[0m")
+
+            while True:
+                try:
+                    r = self.leader.consult_fact(
+                            dag=hashe,
+                        )
+                    break
+                except dqueue.data.NotFound as e:
+                    print("\033[32mnot found in ODA\033[0m", e)
+                    return None
+                except bravado.exception.HTTPBadGateway as e:
+                    print("\033[31mproblem with gateway!\033[0m", e)
+                    time.sleep(1)
+                    continue
+
+            blob = base64.b64decode(json.loads(r['data_json'])['blob'])
+            print("\033[33mrestored from ODA\033[0m: blob of", len(blob)/1024/1024, "kb")
+
+            return io.BytesIO(blob)
 
 class MemCacheIntegralFallback(MemCacheIntegralBase,dataanalysis.caches.cache_core.CacheNoIndex):
     def store(self, hashe, obj):
