@@ -245,10 +245,6 @@ else:
             return f"[{self.__class__.__name__}: leader {self.leader}]"
 
         @property
-        def odahub_disabled(self):
-            return os.environ.get("DDA_DISABLE_ASYNC", "no") == yes
-
-        @property
         def leader(self):
             if self._leader is None:
                 self._leader = dqueue.from_uri(os.environ.get("ODAHUB"))
@@ -349,7 +345,7 @@ class IntegralODAFallback(MemCacheIntegralFallback):
     def __init__(self, *a, **aa):
         self._odacache = ODACache()
 
-        return MemCacheIntegralFallback.__init__(self, *a, **aa)
+        MemCacheIntegralFallback.__init__(self, *a, **aa)
 
     def store_local(self, hashe, obj):
         return LocalCacheNoParent.store(self, hashe, obj)
@@ -776,7 +772,7 @@ class Revolution(DataAnalysis):
         return r100+(r1100-r100)/1000*(r-100)
 
     def get_ijd_exact(self):
-        ijd_b = map(float, converttime("REVNUM",self.get_revid(),"IJD"))
+        ijd_b = list(map(float, converttime("REVNUM",self.get_revid(),"IJD")))
         return (ijd_b[1] + ijd_b[0]) / 2., (ijd_b[1] - ijd_b[0])
 
     def __repr__(self):
@@ -1479,7 +1475,7 @@ class BinEventsVirtual(DataAnalysis):
 
         self.post_process()
 
-    def extra_pars(selt,ht):
+    def extra_pars(self, ht):
         pass
 
     def post_process(self):
@@ -2547,7 +2543,7 @@ class mosaic_ii_skyimage(DataAnalysis):
 
 
         if not os.path.exists("isgri_mosa_ima.fits"):
-            warnings.apped("no image produced: since there was no exception in the binary, assuming empty results")
+            warnings.append("no image produced: since there was no exception in the binary, assuming empty results")
             print("warnings", warnings[-1])
             self.empty_results = True
             return
@@ -3134,7 +3130,7 @@ class IDScWList(DataAnalysis):
             #raise Exception("scwid_list must be a list")
 
         if len(self.scwid_list)==1:
-            v+="_one_"+self.scwid_list[0]
+            v += "_one_" + self.scwid_list[0]
             return v
 
         v=("_n%i"%len(self.scwid_list))+"_"+shhash("_".join(self.scwid_list))[:4]
