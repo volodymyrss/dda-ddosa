@@ -1204,6 +1204,14 @@ class ImageBins(DataAnalysis):
 class SpectraBins(DataAnalysis):
     input_binsname="spectral_bins_62"
 
+    @property
+    def restricted_bins(self):
+        bins = []
+        for a in self.bins:
+            bins.append([ a[0], a[1] ])
+            #bins.append([ max(15, a[0]), min(900, a[1]) ])
+        return bins
+
     rmfpath=None
     
     rmfbins=True
@@ -1225,7 +1233,7 @@ class SpectraBins(DataAnalysis):
         #self.binrmf=os.environ['CURRENT_IC']+"/ic/ibis/rsp/rmf_62bands.fits" # noo!!!
         #self.binrmf=os.environ['CURRENT_IC']+"/ic/ibis/rsp/isgr_ebds_mod_0001.fits" # noo!!!
         e=fits.open(self.binrmf)[self.rmfext].data
-        self.bins=zip(e['E_MIN'],e['E_MAX'])
+        self.bins=list(zip(e['E_MIN'],e['E_MAX']))
         self.binrmfext=self.binrmf+'[%i]'%self.rmfext
 
     def get_binrmfext(self):
