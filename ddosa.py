@@ -1150,7 +1150,7 @@ class ISGRIEvents(DataAnalysis):
     input_evttag=ibis_isgr_evts_tag
     
     cached=True
-    cache=cache_local
+    #cache=cache_local
 
     read_caches=[cache_local.__class__]
     write_caches=[cache_local.__class__]
