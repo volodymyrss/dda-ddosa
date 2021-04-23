@@ -270,6 +270,8 @@ else:
 
         def find(self, hashe):
             print("\033[33mchecking if exists in ODA\033[0m")
+            if os.environ.get('DDA_DEBUG_HASHE', 'no') == 'yes':
+                print("\033[35m", pprint.pformat(hashe), "\033[0m")
 
             while True:
                 try:
