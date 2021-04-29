@@ -1602,7 +1602,7 @@ class GRcat(DataAnalysis):
         return v
 
     def main(self):
-        refcatvar = os.environ["ISDC_REF_CAT"]
+        refcatvar = os.environ.get("ISDC_REF_CAT", None)
 
         if refcatvar:
             print(f"\033[31mWARNING: ISDC_REF_CAT env variable is set to {refcatvar}, but it will be ignored \033[0m")
@@ -1615,7 +1615,7 @@ class GRcat(DataAnalysis):
         print("using refcat:", self.cat)
 
         if not os.path.exists(self.cat):
-            raise RuntimeError(f"isdc ref cat not found: {self.cat}")
+            raise RuntimeError(f"isdc ref cat not found: {self.cat}, searched in rbp {detect_rbp()}")
 
 class BrightCat(DataAnalysis):
     input=GRcat
