@@ -2323,12 +2323,15 @@ class ISGRIImagePack(DataAnalysis):
     cached=True
 
     def main(self):
-        self.image_skyima = self.input_ii_skyimage.skyima
-        self.image_skyres = self.input_ii_skyimage.skyres
-        self.image_srclres = self.input_ii_skyimage.srclres
-        self.gti_output_gti = self.input_ibis_gti.output_gti
-        self.gb_corshad = self.input_ghost_bustersImage.corshad
-        self.cat_cat = self.input_CatExtract.cat
+        if not hasattr(self.input_ii_skyimage, 'skyima'):
+            return
+        else:
+            self.image_skyima = self.input_ii_skyimage.skyima
+            self.image_skyres = self.input_ii_skyimage.skyres
+            self.image_srclres = self.input_ii_skyimage.srclres
+            self.gti_output_gti = self.input_ibis_gti.output_gti
+            self.gb_corshad = self.input_ghost_bustersImage.corshad
+            self.cat_cat = self.input_CatExtract.cat
 
 class ImageGroups(DataAnalysis):
     input_scwlist=None
