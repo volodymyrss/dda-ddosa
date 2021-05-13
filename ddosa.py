@@ -3501,5 +3501,5 @@ dataanalysis.callback.default_callback_filter=CallbackRareDDOSAFilter
 if previously_accepted_classes is not None:
     dataanalysis.callback.default_callback_filter.set_callback_accepted_classes(previously_accepted_classes)
 
-dataanalysis.callback.default_callback_filter.set_callback_accepted_classes([mosaic_ii_skyimage, ii_skyimage, BinEventsImage, ibis_gti, ibis_dead, ISGRIEvents, ii_spectra_extract, BinEventsSpectra, ii_lc_extract, BinEventsLC, lc_pick])
+dataanalysis.callback.default_callback_filter.set_callback_accepted_classes([mosaic_ii_skyimage, ISGRIImagePack, ii_skyimage, BinEventsImage, ibis_gti, ibis_dead, ISGRIEvents, ii_spectra_extract, BinEventsSpectra, ii_lc_extract, BinEventsLC, lc_pick])
 
