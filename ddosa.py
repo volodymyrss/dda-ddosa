@@ -263,6 +263,7 @@ else:
                     'jemx_image', 'jemx_spe', 'jemx_lcr',
                     'spe_pick',
                     'ReportScWList',
+                    'ISGRIImagePack',
                    # 'RebinResponse',
                     ]:
                 return True
@@ -944,18 +945,45 @@ class BasicEventProcessingSummary(DataAnalysis):
 
         return [handle]
 
+
 class ImageProcessingSummary(DataAnalysis):
     run_for_hashe=True
 
     def main(self):
-        mf=ii_skyimage(assume=ScWData(input_scwid="any",use_abstract=True)) # arbitrary choice of scw, should be the same: assumption of course
-        ahash=mf.process(output_required=False,run_if_haveto=False)[0]
+        mf = ii_skyimage(assume=ScWData(input_scwid="any",use_abstract=True))
+        ahash = mf.process(output_required=False,run_if_haveto=False)[0]
         print("one scw hash:",ahash)
-        ahash=hashtools.hashe_replace_object(ahash,'AnyScW','None')
+        ahash = hashtools.hashe_replace_object(ahash,'AnyScW','None')
         print("generalized hash:",ahash)
-        rh=shhash(ahash)
+        rh = shhash(ahash)
         print("reduced hash",rh)
-        d=dataanalysis.DataHandle('processing_definition:'+rh[:8])
+        d = dataanalysis.DataHandle('processing_definition:'+rh[:8])
+        dataanalysis.AnalysisFactory.register_definition(d.handle,ahash)
+
+        self.factory.note_factorization(dict(
+            origin_object=self.__class__.__name__,
+            origin_module=__name__,
+            generalized_hash=ahash,
+            reduced_hash=rh,
+            handle=d.handle,
+        ))
+
+        d.hash=ahash
+        return [d]
+
+
+class ImagePackProcessingSummary(DataAnalysis):
+    run_for_hashe=True
+
+    def main(self):
+        mf = ISGRIImagePack(assume=ScWData(input_scwid="any",use_abstract=True))
+        ahash = mf.process(output_required=False,run_if_haveto=False)[0]
+        print("one scw hash:",ahash)
+        ahash = hashtools.hashe_replace_object(ahash,'AnyScW','None')
+        print("generalized hash:",ahash)
+        rh = shhash(ahash)
+        print("reduced hash",rh)
+        d = dataanalysis.DataHandle('processing_definition:'+rh[:8])
         dataanalysis.AnalysisFactory.register_definition(d.handle,ahash)
 
         self.factory.note_factorization(dict(
@@ -2160,7 +2188,7 @@ class ii_skyimage(DataAnalysis):
     def post_process(self):
         pass
 
-class ImageGroups(DataAnalysis):
+class ImageNoPackGroups(DataAnalysis):
     input_scwlist=None
     input_image_processing=ImageProcessingSummary
 
@@ -2277,6 +2305,147 @@ class ImageGroups(DataAnalysis):
                 ghost_bustersImage(assume=[scw]),
                 ibis_gti(assume=[scw]),
                 CatExtract(assume=[scw])
+            ) for scw in self.input_scwlist.scwlistdata
+        ]
+
+        if len(self.members)==0:
+            raise EmptyScWList()
+
+class ISGRIImagePack(DataAnalysis):
+    input_scw = ScWData
+    input_ii_skyimage = ii_skyimage
+    input_ghost_bustersImage = ghost_bustersImage
+    input_ibis_gti = ibis_gti
+    input_CatExtract = CatExtract
+
+    version="v1.1"
+
+    cached=True
+
+    def main(self):
+        self.image_skyima = self.input_ii_skyimage.skyima
+        self.image_skyres = self.input_ii_skyimage.skyres
+        self.image_srclres = self.input_ii_skyimage.srclres
+        self.gti_output_gti = self.input_ibis_gti.output_gti
+        self.gb_corshad = self.input_ghost_bustersImage.corshad
+        self.cat_cat = self.input_CatExtract.cat
+
+class ImageGroups(DataAnalysis):
+    input_scwlist=None
+    input_image_processing=ImagePackProcessingSummary
+
+    allow_alias=True
+    run_for_hashe=False
+
+    copy_cached_input=False
+    #copy_cached_input=True
+
+    outtype="BIN_I"
+
+    version="v1.1"
+
+    def construct_og(self,og_fn):
+        scw_og_fns = []
+
+        if len(self.members)==0:
+            raise EmptyImageList()
+
+        total_extracted_cat=None
+        total_skyres=None
+        total_srclres=None
+
+        for scw, pack in self.members:
+            #image,gb,gti,cat elf.members:
+
+            fn = "og_%s.fits" % scw.input_scwid.str()
+            if not hasattr(pack, 'image_skyima'):
+                print("skipping",scw)
+                continue
+            construct_gnrl_scwg_grp(scw, children=
+                [
+                    pack.image_skyima.get_path(),
+                    pack.image_skyres.get_path(),
+                    pack.gti_output_gti.get_path(),
+                    pack.gb_corshad.get_path(),
+     #               cat.cat._da_unique_local_path,
+                    scw.auxadppath + "/time_correlation.fits[AUXL-TCOR-HIS]",
+                ], fn=fn)
+
+            import_attr(scw.scwpath + "/swg.fits",
+                        ["OBTSTART", "OBTEND", "TSTART", "TSTOP", "SW_TYPE", "TELAPSE", "SWID", "SWBOUND"],fn)
+            set_attr({'ISDCLEVL': self.outtype}, fn)
+            set_attr({'INSTRUME': "IBIS"}, fn)
+
+            scw_og_fns.append(fn)
+
+            fe=fits.open(pack.cat_cat.get_path())[1]
+            #fe=fits.open(cat.cat._da_unique_local_path)[1]
+            print(scw,"scw extracted cat has",len(fe.data),"sources",fe.data['NAME'][:10],"...")
+            if total_extracted_cat is None:
+                total_extracted_cat=fe
+            else:
+                total_extracted_cat.data=np.concatenate((total_extracted_cat.data,fe.data))
+                print("total extracted cat has",len(total_extracted_cat.data),"sources before filtering")
+
+                u,ui=np.unique(total_extracted_cat.data['NAME'],return_index=True)
+                total_extracted_cat.data=total_extracted_cat.data[ui]
+                print("total extracted cat has",len(total_extracted_cat.data),"sources after unique filtering")
+
+            print("opening skyres band")
+            sfe=fits.open(pack.image_skyres.get_path())[2] # one band
+            print("opened skyres")
+            if total_skyres is None:
+                total_skyres=sfe
+            else:
+                print("concat skyres")
+                total_skyres.data=np.concatenate((total_skyres.data,sfe.data))
+                print("concat skyres done")
+
+            print("open srclres")
+            srfe=fits.open(pack.image_srclres.get_path())[1] # one band
+            print("open srclres done")
+            if total_srclres is None:
+                total_srclres=srfe
+            else:
+                print("concat srclres", len(total_srclres.data), len(srfe.data))
+                if False:
+                    total_srclres.data=np.concatenate((total_srclres.data,srfe.data))
+                else:
+                    print("SKIPING concat srclres", len(total_srclres.data), len(srfe.data))
+
+                print("concat srclres done")
+
+
+
+        if total_extracted_cat is not None:
+            total_extracted_cat.writeto("total_extracted_cat.fits",overwrite=True)
+            print("adopting datafile cat")
+            self.total_extracted_cat=da.DataFile("total_extracted_cat.fits")
+
+        if total_skyres is not None:
+            total_skyres.writeto("total_skyres.fits",overwrite=True)
+            print("adopting datafile skyres")
+            self.total_skyres=da.DataFile("total_skyres.fits")
+
+        if total_srclres is not None:
+            total_srclres.writeto("total_srclres.fits",overwrite=True)
+            print("adopting datafile srclres")
+            self.total_srclres=da.DataFile("total_srclres.fits")
+
+        construct_gnrl_scwg_grp_idx(scw_og_fns,fn="og_idx.fits")
+        set_attr({'ISDCLEVL': self.outtype}, "og_idx.fits")
+
+
+        construct_og(["og_idx.fits","total_skyres.fits","total_extracted_cat.fits"], fn=og_fn)
+        #construct_og(["og_idx.fits","total_extracted_cat.fits"], fn=og_fn)
+
+        set_attr({'ISDCLEVL': self.outtype}, og_fn)
+
+    def main(self):
+        self.members=[
+            (
+                scw, #needed?
+                ISGRIImagePack(assume=[scw])
             ) for scw in self.input_scwlist.scwlistdata
         ]
 
@@ -2403,9 +2572,8 @@ class mosaic_ii_skyimage(DataAnalysis):
     input_imgconfig = MosaicImagingConfig
 
     input_imagegroups=ImageGroups
+    #input_imagegroups=ImageNoPackGroups
 
-    #input_gb = ghost_bustersImage
-    #input_gti = ibis_gti
 
     cached = True
     copy_cached_input=False 
