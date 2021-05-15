@@ -403,7 +403,12 @@ class IntegralODAFallback(MemCacheIntegralFallback):
                                                 )
 
                 print(obj, "\033[031does not exist in ODA, uploading!\033[0m")
-                self._odacache.store(hashe, obj) 
+                #TODO: this seems to fail if cache is restored incomplete!
+                try:
+                    self._odacache.store(hashe, obj) 
+                except Exception as e:
+                    print(obj, "\033[031failed storing locally cached to ODA!\033[0m")
+                    raise
         else:
             print(obj, "\033[031mtrying to restore from ODA cache\033[0m")
 
