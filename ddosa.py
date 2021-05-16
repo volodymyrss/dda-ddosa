@@ -256,7 +256,7 @@ else:
                     'ibis_gti', 'ibis_dead', 'CatExtract', 
                     'BinMapsImage', 'BinEventsImage', 'ghost_bustersImage', 'ii_skyimage', 
                     'mosaic_ii_skyimage',
-                    'ii_spectra_extract',
+                    'ii_spectra_extract', 'ISGRISpectrumPack',
                     'BinMapsSpectra', 'BinEventsSpectra', 'ghost_bustersSpectra', 'ii_spectra_extract', 'ISGRISpectraSum',
                     'BinMapsLC', 'ii_lc_extract', 'ISGRILCSum',
                     'ii_light',
@@ -2868,11 +2868,21 @@ class CatForSpectraFromImaging(DataAnalysis):
 class ISGRIResponse(DataAnalysis):
     input_ecorrdata=GetEcorrCalDB
 
+    cached=False
+
     def rmf_path(self):
         return self.path
 
+    @property
+    def path(self):
+        return self.path_datafile.get_path()
+
+    @path.setter
+    def path(self, v):
+        raise RuntimeError("can not set path, need to set path_datafile")
+
     def main(self):
-        self.path = None
+        self._path = None
         tried = []
 
         for n, get_path in [
@@ -2885,14 +2895,16 @@ class ISGRIResponse(DataAnalysis):
                 path = get_path()
                 if os.path.exists(path):
                     print("found:", path)
-                    self.path = path
+                    self._path = path
                     break
             except Exception as e:
                 print("does not work:", e)
                 tried.append(n)
 
-        if self.path is None:
+        if self._path is None:
             raise Exception(f"No ISGRI Response found! tried: {tried}")
+
+        self.path_datafile = DataFile(self._path)
 
 class ii_spectra_extract(DataAnalysis):
     input_gb=ghost_bustersSpectra
