@@ -233,7 +233,7 @@ def localized_DataFile(f):
     lfn = a + ".fits"
     
     if lfn != fn:
-        fits.open(fn).writeto(lfn)
+        fits.open(fn).writeto(lfn, overwrite=True)
 
     return DataFile(lfn)
 
