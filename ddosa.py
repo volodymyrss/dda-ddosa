@@ -220,7 +220,13 @@ class MemCacheIntegralBase:
 import dqueue
 import base64
 import bravado
-        
+
+
+def localized_DataFile(fn):
+    lfn = os.path.basename(fn)
+    shutil.copyfile(fn, lfn)
+    return DataFile(lfn)
+
 if os.environ.get("DDA_DISABLE_ASYNC", "no") == "yes":
     class ODACache(dataanalysis.caches.cache_core.CacheBlob):
         def __repr__(self):
@@ -2337,12 +2343,12 @@ class ISGRIImagePack(DataAnalysis):
         if not hasattr(self.input_ii_skyimage, 'skyima'):
             return
         else:
-            self.image_skyima = self.input_ii_skyimage.skyima
-            self.image_skyres = self.input_ii_skyimage.skyres
-            self.image_srclres = self.input_ii_skyimage.srclres
-            self.gti_output_gti = self.input_ibis_gti.output_gti
-            self.gb_corshad = self.input_ghost_bustersImage.corshad
-            self.cat_cat = self.input_CatExtract.cat
+            self.image_skyima = localized_DataFile(self.input_ii_skyimage.skyima)
+            self.image_skyres = localized_DataFile(self.input_ii_skyimage.skyres)
+            self.image_srclres = localized_DataFile(self.input_ii_skyimage.srclres)
+            self.gti_output_gti = localized_DataFile(self.input_ibis_gti.output_gti)
+            self.gb_corshad = localized_DataFile(self.input_ghost_bustersImage.corshad)
+            self.cat_cat = localized_DataFile(self.input_CatExtract.cat)
 
 class ImageGroups(DataAnalysis):
     input_scwlist=None
@@ -2356,7 +2362,7 @@ class ImageGroups(DataAnalysis):
 
     outtype="BIN_I"
 
-    version="v1.1"
+    version="v1.2"
 
     def construct_og(self,og_fn):
         scw_og_fns = []
