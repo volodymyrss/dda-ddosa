@@ -228,12 +228,12 @@ def localized_DataFile(f):
     else:
         fn = f
 
-    lfn = os.path.basename(fn)
+    # this removes gz and postixes set for uniqueness by dda
+    a, b = os.path.basename(fn).split('.fits')
+    lfn = a + ".fits"
     
-    try:
-        shutil.copyfile(fn, lfn)
-    except shutil.SameFileError:
-        pass
+    if lfn != fn:
+        fits.open(fn).writeto(lfn)
 
     return DataFile(lfn)
 
