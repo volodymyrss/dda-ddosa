@@ -229,7 +229,12 @@ def localized_DataFile(f):
         fn = f
 
     lfn = os.path.basename(fn)
-    shutil.copyfile(fn, lfn)
+    
+    try:
+        shutil.copyfile(fn, lfn)
+    except shutil.SameFileError:
+        pass
+
     return DataFile(lfn)
 
 if os.environ.get("DDA_DISABLE_ASYNC", "no") == "yes":
