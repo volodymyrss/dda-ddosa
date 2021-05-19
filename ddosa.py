@@ -585,6 +585,9 @@ class FractionalEnergyBinsNotAllowed(da.AnalysisException):
 class EfficiencyNotComputed(da.AnalysisException):
     pass
 
+class PossiblyWrongEnergyRange(da.AnalysisException):
+    pass
+
 class BinnedMapsNotComputed(Exception):
     pass
 
@@ -1815,6 +1818,9 @@ class ShadowUBCVirtual(DataAnalysis):
             if 'Verif8Bins           Status :          0 Bands error 2 in TIME bins' in ht.output:
                 raise EfficiencyNotComputed(ht.output)
 
+            if 'FATAL !! : ReadBkgUnifBin       Status :          0 Uncorrect Bckg        maps' in ht.output:
+                raise PossiblyWrongEnergyRange(ht.output)
+            
             raise
 
         self.corshad=DataFile(fn)
