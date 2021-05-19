@@ -2345,7 +2345,7 @@ class ISGRIImagePack(DataAnalysis):
     input_ibis_gti = ibis_gti
     input_CatExtract = CatExtract
 
-    version="v1.1"
+    version="v1.2"
 
     cached=True
 
