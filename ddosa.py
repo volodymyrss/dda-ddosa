@@ -222,7 +222,12 @@ import base64
 import bravado
 
 
-def localized_DataFile(fn):
+def localized_DataFile(f):
+    if isinstance(f, DataFile):
+        fn = f.get_path()
+    else:
+        fn = f
+
     lfn = os.path.basename(fn)
     shutil.copyfile(fn, lfn)
     return DataFile(lfn)
