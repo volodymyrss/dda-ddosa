@@ -235,6 +235,8 @@ def localized_DataFile(f):
     if lfn != fn:
         fits.open(fn).writeto(lfn, overwrite=True)
 
+    print("\033[35mlocalizing DataFile:", fn, lfn, "\033[0m")
+
     return DataFile(lfn)
 
 if os.environ.get("DDA_DISABLE_ASYNC", "no") == "yes":
