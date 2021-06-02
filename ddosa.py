@@ -676,8 +676,15 @@ class ScWData(DataAnalysis):
             f=fits.open(self.scwpath+"/swg.fits")
             print("valid file:",f)
         except IOError as e:
-            if e.message=="Header missing END card.":
-                raise ScWDataCorrupted(self.scwpath,e.message)
+            print(f"\033[31m{self}.test_scw FAILED: {e} {e.__class__} {e.args}\033[0m")
+
+            message = getattr(e, 'message', None)
+            if message == None:
+                if len(e.args) > 0:
+                    message = e.args[0]
+
+            if message == "Header missing END card.":
+                raise ScWDataCorrupted(self.scwpath, message)
             else:
                 raise
 
