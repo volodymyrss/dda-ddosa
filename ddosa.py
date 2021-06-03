@@ -2928,7 +2928,7 @@ class ISGRIResponse(DataAnalysis):
         if self._path is None:
             raise Exception(f"No ISGRI Response found! tried: {tried}")
 
-        self.path_datafile = DataFile(self._path)
+        self.path_datafile = localized_DataFile(DataFile(self._path))
 
 class ii_spectra_extract(DataAnalysis):
     input_gb=ghost_bustersSpectra
