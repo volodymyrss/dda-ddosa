@@ -29,7 +29,7 @@
 # maks environment, osa, as input
 # make aliases for evolutions
 
-from dataanalysis.core import DataFile
+from dataanalysis.core import AnalysisException, DataFile
 from dataanalysis.caches import cache_core
 from dataanalysis import hashtools
 from dataanalysis.hashtools import shhash
@@ -2732,6 +2732,9 @@ class mosaic_ii_skyimage(DataAnalysis):
                     print("WARNING:",warnings[-1])
                     ht['MinCatSouSnr']=new_catthr
                     ht['MinNewSouSnr']=new_newthr
+
+                    if new_catthr > 100:
+                        raise AnalysisException("too many sources: mosaic crashes")
 
                     reset()
 
