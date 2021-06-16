@@ -2713,29 +2713,29 @@ class mosaic_ii_skyimage(DataAnalysis):
         common_log_file = "common-log-file.txt"
         env['COMMONLOGFILE'] = "+"+os.getcwd()+"/"+common_log_file
 
-        try:
-            ht.run(env=env)
-        except pilton.HEAToolException as e:
-            if 'in MAIN__ at ii_skyimage_main.f90:94' in ht.output:
-                new_catthr = int(float(ht['MinCatSouSnr'].value)*1.5)
-                new_newthr = int(float(ht['MinNewSouSnr'].value)*1.5)
-                warnings.append("""detected likely many-source segfault,
-                                   increasing catalogue source significance threshold from %.5lg to %.5lg,
-                                   increasing new source significance threshold from %.5lg to %.5lg"""%(
-                                                ht['MinCatSouSnr'].value,
-                                                new_catthr,
-                                                ht['MinNewSouSnr'].value,
-                                                new_newthr,
-                                                ))
-                print("WARNING:",warnings[-1])
-                ht['MinCatSouSnr']=new_catthr
-                ht['MinNewSouSnr']=new_newthr
-
-                reset()
-
+        while True:
+            try:
                 ht.run(env=env)
+                break
+            except pilton.HEAToolException as e:
+                if 'in MAIN__ at ii_skyimage_main.f90:94' in ht.output:
+                    new_catthr = int(float(ht['MinCatSouSnr'].value)*1.5)
+                    new_newthr = int(float(ht['MinNewSouSnr'].value)*1.5)
+                    warnings.append("""detected likely many-source segfault,
+                                    increasing catalogue source significance threshold from %.5lg to %.5lg,
+                                    increasing new source significance threshold from %.5lg to %.5lg"""%(
+                                                    ht['MinCatSouSnr'].value,
+                                                    new_catthr,
+                                                    ht['MinNewSouSnr'].value,
+                                                    new_newthr,
+                                                    ))
+                    print("WARNING:",warnings[-1])
+                    ht['MinCatSouSnr']=new_catthr
+                    ht['MinNewSouSnr']=new_newthr
 
-    
+                    reset()
+
+        
         g = re.search(r'Task ii_skyimage terminating with status ([0-9\-]*)', ht.output)
         if not g:
             raise RuntimeError("ii_skyimage terminated with unknown status!")
