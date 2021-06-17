@@ -2963,8 +2963,6 @@ class ii_spectra_extract(DataAnalysis):
 
     usebkg=True
 
-    report_runtime_destination="mysql://pixels.runtime"
-
     def main(self):
         if hasattr(self.input_cat,'empty_results') and self.input_cat.empty_results:
             print("empty here")
@@ -3077,8 +3075,6 @@ class ii_lc_extract(DataAnalysis):
     binary = "ii_lc_extract"
 
     usebkg = True
-
-    #report_runtime_destination = "mysql://pixels.runtime"
 
     def main(self):
         if hasattr(self.input_cat, 'empty_results') and self.input_cat.empty_results:
