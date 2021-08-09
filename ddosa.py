@@ -343,7 +343,21 @@ class IntegralODAFallback(MemCacheIntegralFallback):
         r = self.store_local(hashe, obj)
         
         print("storing to ODACache")
-        self._odacache.store(hashe, obj)
+
+        success = False
+        for i in range(10):
+            try:
+                self._odacache.store(hashe, obj)
+                success = True
+                break
+            except bravado.exception.HTTPGatewayTimeout as e:
+                print("failed to reach odahub, timeout:", e, "attempt", i)
+                time.sleep(10)
+
+        if not success:
+            raise Exception("problem storing after many attempts:", e)
+
+
         print(("after odacache store:", obj.factory.factory_assumptions_stacked))
 
         return r
