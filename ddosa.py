@@ -270,7 +270,17 @@ else:
             return self._leader
 
         def approved_hashe(self, hashe):
-            if hashe[-1].split(".")[0] in [
+            if os.environ.get('DDOSA_RESTRICT_ODA_CACHE', 'no') == 'yes':
+                if hashe[-1].split(".")[0] in [
+                    'mosaic_ii_skyimage',
+                    'ISGRISpectraSum',
+                    'ISGRILCSum',
+                    'spe_pick',
+                    'ReportScWList',
+                    ]:
+                    return True
+            else:
+                if hashe[-1].split(".")[0] in [
                     'ibis_gti', 'ibis_dead', 'CatExtract', 
                     'BinMapsImage', 'BinEventsImage', 'ghost_bustersImage', 'ii_skyimage', 
                     'mosaic_ii_skyimage',
@@ -284,7 +294,7 @@ else:
                     'ISGRIImagePack',
                    # 'RebinResponse',
                     ]:
-                return True
+                    return True
 
 
         def find(self, hashe):
