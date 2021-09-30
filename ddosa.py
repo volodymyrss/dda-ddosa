@@ -2747,6 +2747,10 @@ class mosaic_ii_skyimage(DataAnalysis):
                         raise AnalysisException("too many sources: mosaic crashes")
 
                     reset()
+                elif 'in DAL3AUXcalcInstrumentAttitudeThermal' in ht.output:
+                    raise
+                else:
+                    raise
 
         
         g = re.search(r'Task ii_skyimage terminating with status ([0-9\-]*)', ht.output)
