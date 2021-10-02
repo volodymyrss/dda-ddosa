@@ -619,6 +619,9 @@ class PossiblyWrongEnergyRange(da.AnalysisException):
 class BinnedMapsNotComputed(Exception):
     pass
 
+class IncompatibleIISpectraExtract(Exception):
+    pass
+
 def good_file(fn):
     return os.path.exists(fn) and isfile(fn) and access(fn, R_OK)
 
@@ -3071,6 +3074,9 @@ class ii_spectra_extract(DataAnalysis):
             self.pifs=DataFile(pif_fn)
         except pilton.HEAToolException as e:
             self.empty_results=True
+
+        if 'Error_1: PIL_get_int(method_cor)' in ht.output:
+            raise IncompatibleIISpectraExtract()
 
 
 class CatForLC(CatForSpectraFromImaging):
