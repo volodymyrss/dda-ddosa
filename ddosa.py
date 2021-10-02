@@ -2957,7 +2957,6 @@ class ii_spectra_extract(DataAnalysis):
     input_response=ISGRIResponse
     input_scw=ScWData()
     input_maps=BinMapsSpectra
-
     input_gti=ibis_gti
 
     cached=True
@@ -2971,7 +2970,14 @@ class ii_spectra_extract(DataAnalysis):
     shdtype="BIN_S"
     binary="ii_spectra_extract"
 
+    fullbkg=False
     usebkg=True
+
+    def get_version(self):
+        v =  super().get_version()
+        if self.fullbkg:
+            v += ".fullbkg"
+        return v
 
     def main(self):
         if hasattr(self.input_cat,'empty_results') and self.input_cat.empty_results:
@@ -3037,7 +3043,10 @@ class ii_spectra_extract(DataAnalysis):
             ht['isgrBkgDol']="-"
         ht['corrDol']=self.input_maps.corr.path
         ht['OutType']=self.shdtype
-        ht['method_cor']=1
+        if self.fullbkg:
+            ht['method_cor'] = 4 # no pre-fit correction
+        else:
+            ht['method_cor'] = 1 # global correction
 
         if hasattr(self,'input_bins') and not self.input_bins.rmfbins:
             ebins=self.input_bins.bins
