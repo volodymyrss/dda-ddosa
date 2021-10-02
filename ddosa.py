@@ -2983,7 +2983,7 @@ class ii_spectra_extract(DataAnalysis):
     def get_version(self):
         v =  super().get_version()
         if self.fullbkg:
-            v += ".fullbkg"
+            v += ".fullbkg0"
         return v
 
     def main(self):
