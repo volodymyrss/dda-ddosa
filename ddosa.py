@@ -2747,7 +2747,7 @@ class mosaic_ii_skyimage(DataAnalysis):
                     ht['MinNewSouSnr']=new_newthr
 
                     if new_catthr > 100:
-                        raise AnalysisException("too many sources: mosaic crashes")
+                        raise Exception("too many sources: mosaic crashes")
 
                     reset()
                 elif 'in DAL3AUXcalcInstrumentAttitudeThermal' in ht.output:
