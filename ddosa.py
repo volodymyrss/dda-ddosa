@@ -589,6 +589,9 @@ class DataAnalysis(DataAnalysisPrototype):
 class NoScWData(da.AnalysisException):
     pass
 
+class ERR_ISGR_OSM_DATA_INCONSISTENCY(da.AnalysisException):
+    pass
+
 class NoDeadData(da.AnalysisException):
     pass
 
@@ -1545,6 +1548,10 @@ class BinEventsVirtual(DataAnalysis):
         self.extra_pars(ht)
 
         ht.run()
+
+        if 'ERR_ISGR_OSM_DATA_INCONSISTENCY' in ht.output:
+            print("detected ERR_ISGR_OSM_DATA_INCONSISTENCY")
+            raise ERR_ISGR_OSM_DATA_INCONSISTENCY()
 
         self.shadow_detector=DataFile(det_fn)
         self.shadow_efficiency=DataFile(eff_fn)
