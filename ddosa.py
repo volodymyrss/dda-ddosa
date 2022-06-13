@@ -598,6 +598,9 @@ class NoDeadData(da.AnalysisException):
 class NoISGRIEvents(da.AnalysisException):
     pass
 
+class NoRevDir(da.AnalysisException):
+    pass
+
 class EmptyScWList(da.AnalysisException):
     pass
 
@@ -730,7 +733,8 @@ class ScWData(DataAnalysis):
             tried.append(p)
 
         if self.revdirver is None:
-            raise Exception("no revdir available! tried: {}".format(tried))
+            # raise Exception("no revdir available! tried: {}".format(tried))
+            raise NoRevDir("no revdir available! tried: {}".format(tried))
 
         self.scwpath=rbp+"/scw/"+self.revid+"/"+self.scwid
         self.revdirpath=rbp+"/scw/"+self.revid+"/rev."+self.revdirver
