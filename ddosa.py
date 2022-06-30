@@ -630,7 +630,7 @@ class DataAnalysis(DataAnalysisPrototype):
                 raise Exception(f"unexpected: {e} in {exception}")
 
         if have_expired_exceptions:
-            da.log(da.render("{RED}stored exceptions EXPIRED!{/}"), level='top')        
+            da.log(da.render("{RED}stored exceptions EXPIRED!{/}"), level='top')                    
             raise HaveExpiredAnalysisExceptions()
 
     def retrieve_cache(self, fih, rc=None):
@@ -638,6 +638,7 @@ class DataAnalysis(DataAnalysisPrototype):
             return super().retrieve_cache(fih, rc)
         except HaveExpiredAnalysisExceptions:
             da.log(da.render("{RED}stored exceptions EXPIRED!{/}"), level='top')        
+            self.analysis_exceptions = []
             return False
     
 
