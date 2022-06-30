@@ -761,13 +761,13 @@ class ScWData(DataAnalysis):
             return True
         except da.AnalysisException as e:
             print("exception searching for scw data:", e)
-            return False
-            # if self.scwver == "000":
-            #     print("searching for nrt in "+detect_rbp(self.scwver)+"/nrt")
-            #     self.assume_rbp(detect_rbp(self.scwver)+"/nrt")
-            #     return True
-            # else:
-            #     return False
+            # return False
+            if self.scwver == "000":
+                print("searching for nrt in "+detect_rbp(self.scwver)+"/nrt")
+                self.assume_rbp(detect_rbp(self.scwver)+"/nrt")
+                return True
+            else:
+                return False
         except Exception as e:
             print("\033[31mScWData find failed\033[0m", e)
             return False
@@ -864,9 +864,6 @@ class ScWData(DataAnalysis):
     def __repr__(self):
         return "[%s:%s]"%(self.__class__.__name__,self.input_scwid)
 
-
-class ScWDataVolatile(ScWData):
-    pass
 
 def detect_rbp(scwver="001"):
     rbp = os.environ["REP_BASE_PROD"]
