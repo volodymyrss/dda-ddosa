@@ -612,7 +612,7 @@ class DataAnalysis(DataAnalysisPrototype):
 
     def post_restore(self):
         exceptions = self.get_exceptions()
-        da.log(da.render("{RED}found stored exceptions{/} in"), repr(self), " requested by "+(" ".join(self._da_requested_by)), level='top')        
+        da.log(da.render("{BLUE}DDOSA{RED} found stored exceptions{/} in"), repr(self), " requested by "+(" ".join(self._da_requested_by)), level='top')        
 
         have_expired_exceptions = False
 
