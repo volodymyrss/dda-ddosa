@@ -639,6 +639,8 @@ class DataAnalysis(DataAnalysisPrototype):
             da.log(da.render("{RED}stored exceptions EXPIRED!{/}"), level='top')                    
             raise HaveExpiredAnalysisExceptions()
 
+        da.log(da.render("{RED}DDOSA {GREEN}post-restore finished smoothly{/}"), repr(self), " requested by "+(" ".join(self._da_requested_by)), level='top')        
+
     def retrieve_cache(self, fih, rc=None):
         try:
             return super().retrieve_cache(fih, rc)
