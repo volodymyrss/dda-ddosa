@@ -625,7 +625,7 @@ class DataAnalysis(DataAnalysisPrototype):
                    'no revdir available! tried:'  in str(exception):
                     if self.is_still_worth_recomputing:                    
                         have_expired_exceptions = True
-                        print(da.render("{RED}detected stored exception EXPIRED!{/}"))        
+                        da.log(da.render("{RED}detected stored exception EXPIRED!{/}"), level='top')        
             except Exception as e:
                 raise Exception(f"unexpected: {e} in {exception}")
 
