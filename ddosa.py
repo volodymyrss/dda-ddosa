@@ -597,13 +597,14 @@ class DataAnalysis(DataAnalysisPrototype):
                 involved_scws.append(str(a.input_scwid))
 
         scw = self.cache.get_scw(getattr(self,'_da_locally_complete',None))
+
         if scw is not None:
             involved_scws.append(scw)
 
         print("\n\033[32mall involved scws:", involved_scws, "\033[0m\n")
 
         for scw in involved_scws:
-            if int(scw[:4]) > 2500:
+            if int(scw.strip("[]")[:4]) > 2500:
                 return True
 
         return False
