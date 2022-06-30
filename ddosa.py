@@ -333,6 +333,7 @@ else:
             #         dag=hashe,
             #         data={ "blob": blob_b64 }
             #     )
+            r = None
 
             print("deposited blob in ODA:",r)
 
