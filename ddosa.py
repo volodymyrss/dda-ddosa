@@ -557,6 +557,9 @@ def get_OSA_tools(names=None):
 
     return OSA_tools
 
+class HaveExpiredAnalysisExceptions(Exception):
+    pass
+
 class DataAnalysis(DataAnalysisPrototype):
     cache=mc
 
@@ -585,9 +588,57 @@ class DataAnalysis(DataAnalysisPrototype):
     def __repr__(self):
         return "[%s%s%s%s%i]"%(self.get_version(),self.get_scw(),";Virtual" if self.virtual else "",";Complete" if self._da_locally_complete else "",id(self))
 
+    @property
+    def is_still_worth_recomputing(self):
+        involved_scws = []
+
+        for a in self.assumptions:
+            if isinstance(a,ScWData):
+                involved_scws.append(str(a.input_scwid))
+
+        scw = self.cache.get_scw(getattr(self,'_da_locally_complete',None))
+        if scw is not None:
+            involved_scws.append(scw)
+
+        print("\n\033[32mall involved scws:", involved_scws, "\033[0m\n")
+
+        for scw in involved_scws:
+            if int(scw[:4]) > 2500:
+                return True
+
+        return False
+
+    def post_restore(self):
+        exceptions = self.get_exceptions()
+        da.log(da.render("{RED}found stored exceptions{/} in"), repr(self), " requested by "+(" ".join(self._da_requested_by)), level='top')        
+
+        have_expired_exceptions = False
+
+        for exception in exceptions:            
+            da.log(da.render("{RED}stored exception{/}: {BLUE}" + exception[0] + " {/}"), level='top')        
+            da.log(da.render("                : {CYAN}" + repr(type(exception[1])) + ": " + repr(exception[1]) + " {/}"), level='top')        
+
+            if 'scw data not found and not allowed to download' in exception[1].args[0]:
+                if self.is_still_worth_recomputing:                    
+                    have_expired_exceptions = True
+                    da.log(da.render("{RED}detected stored exception EXPIRED!{/}"), level='top')        
+
+        if have_expired_exceptions:
+            da.log(da.render("{RED}stored exceptions EXPIRED!{/}"), level='top')        
+            raise HaveExpiredAnalysisExceptions()
+
+    def retrieve_cache(self, fih, rc=None):
+        try:
+            return super().retrieve_cache(fih, rc)
+        except HaveExpiredAnalysisExceptions:
+            da.log(da.render("{RED}stored exceptions EXPIRED!{/}"), level='top')        
+            return False
+    
 
 class NoScWData(da.AnalysisException):
-    pass
+    @property
+    def expired(self):
+        return False
 
 class ERR_ISGR_OSM_DATA_INCONSISTENCY(da.AnalysisException):
     pass
@@ -631,10 +682,22 @@ class IncompatibleIISpectraExtract(Exception):
 def good_file(fn):
     return os.path.exists(fn) and isfile(fn) and access(fn, R_OK)
 
+
+class INTEGRALArchive(DataAnalysis):
+    run_for_hashe=True
+
+    # archive_version="cons/rev_3"
+    def main(self):
+        return INTEGRALArchiveRev3()
+
+class INTEGRALArchiveRev3(da.NoAnalysis):
+    pass
+
+
 class ScWData(DataAnalysis):
     input_scwid=None
 
-    cached=False # how do we implment that this can change?
+    cached=False # how do we implement that this can change?
 
     schema_hidden=True
 
@@ -645,17 +708,25 @@ class ScWData(DataAnalysis):
 
     def main(self):
         try:
-            self.scwid=self.input_scwid.handle
+            self.scwid = self.input_scwid.handle
         except:
-            self.scwid=self.input_scwid
-        self.scwver=self.scwid[-3:]
-        self.revid=self.scwid[:4]
+            self.scwid = self.input_scwid
+
+        self.scwver = self.scwid[-3:]
+        self.revid = self.scwid[:4]
+
             
         print(f"extracted scwver {self.scwver} revid {self.revid}")
 
         if not self.find():
             print("ScW not found")
             print("\033[31mScWData not found\033[0m")
+
+            #  TODO: put proper limit!
+            if int(self.revid) > 400:
+                print(f"\033[31mthis ScW ID is to recent to be considered a permanent refernece in rev_3 index!\033[0m")
+                # return ScWDataVolatile(input_scwid=self.scwid)
+
             if os.environ.get("DDOSA_SCWDATA_DOWNLOAD", "no") == "yes":
                 print("\033[31mScWData download allowed\033[0m")
                 self.download()
@@ -668,6 +739,7 @@ class ScWData(DataAnalysis):
             else:
                 print("\033[31mScWData download forbidden! set DDOSA_SCWDATA_DOWNLOAD=yes to allow\033[0m")
                 raise da.AnalysisException("scw data not found and not allowed to download, set DDOSA_SCWDATA_DOWNLOAD=yes to allow")
+                # raise NoScWData("scw data not found and not allowed to download, set DDOSA_SCWDATA_DOWNLOAD=yes to allow")
 
     def download(self):
         print("\033[31mScW not found\033[0m")
@@ -678,13 +750,15 @@ class ScWData(DataAnalysis):
             print(f"searching in {detect_rbp(self.scwver)} for scwver {self.scwver}")
             self.assume_rbp(detect_rbp(self.scwver))
             return True
-        except da.AnalysisException:
-            if self.scwver == "000":
-                print("searching for nrt in "+detect_rbp(self.scwver)+"/nrt")
-                self.assume_rbp(detect_rbp(self.scwver)+"/nrt")
-                return True
-            else:
-                return False
+        except da.AnalysisException as e:
+            print("exception searching for scw data:", e)
+            return False
+            # if self.scwver == "000":
+            #     print("searching for nrt in "+detect_rbp(self.scwver)+"/nrt")
+            #     self.assume_rbp(detect_rbp(self.scwver)+"/nrt")
+            #     return True
+            # else:
+            #     return False
         except Exception as e:
             print("\033[31mScWData find failed\033[0m", e)
             return False
@@ -722,10 +796,11 @@ class ScWData(DataAnalysis):
 
 
     def assume_rbp(self,rbp):
+        print("will try to assume RBP:", rbp)
         self.revdirver = None
         tried = []
         for v in self.scwver, "002", "001", "000":
-            p = rbp+"/scw/"+self.revid+"/rev."+v
+            p = rbp+"/scw/"+self.revid+"/rev." + v
             if os.path.exists(p):
                 self.revdirver = v
                 print("found revdir ver", v)
@@ -779,6 +854,10 @@ class ScWData(DataAnalysis):
 
     def __repr__(self):
         return "[%s:%s]"%(self.__class__.__name__,self.input_scwid)
+
+
+class ScWDataVolatile(ScWData):
+    pass
 
 def detect_rbp(scwver="001"):
     rbp = os.environ["REP_BASE_PROD"]
