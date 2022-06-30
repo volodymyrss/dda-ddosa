@@ -615,13 +615,18 @@ class DataAnalysis(DataAnalysisPrototype):
         have_expired_exceptions = False
 
         for exception in exceptions:            
-            da.log(da.render("{RED}stored exception{/}: {BLUE}" + exception[0] + " {/}"), level='top')        
-            da.log(da.render("                : {CYAN}" + repr(type(exception[1])) + ": " + repr(exception[1]) + " {/}"), level='top')        
+            print(da.render("{RED}stored exception{/}: {BLUE}" + exception[0] + " {/}"))        
+            print(da.render("                : {CYAN}" + repr(type(exception[1])) + ": " + repr(exception[1]) + " {/}"))        
 
-            if 'scw data not found and not allowed to download' in exception[1].args[0]:
-                if self.is_still_worth_recomputing:                    
-                    have_expired_exceptions = True
-                    da.log(da.render("{RED}detected stored exception EXPIRED!{/}"), level='top')        
+            print(da.render("{CYAN}" + repr(type(exception[1])) + ": " + repr(exception[1]) + " {/}"))        
+
+            try:
+                if 'scw data not found and not allowed to download' in exception[1].args[0]:
+                    if self.is_still_worth_recomputing:                    
+                        have_expired_exceptions = True
+                        print(da.render("{RED}detected stored exception EXPIRED!{/}"))        
+            except Exception as e:
+                raise Exception(f"unexpected: {e} in {exception}")
 
         if have_expired_exceptions:
             da.log(da.render("{RED}stored exceptions EXPIRED!{/}"), level='top')        
