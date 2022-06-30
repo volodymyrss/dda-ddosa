@@ -329,10 +329,10 @@ else:
         def deposit_blob(self, hashe, blob):
             blob_b64 = base64.b64encode(blob.read()).decode()
 
-            # r = self.leader.assert_fact(
-            #         dag=hashe,
-            #         data={ "blob": blob_b64 }
-            #     )
+            r = self.leader.assert_fact(
+                    dag=hashe,
+                    data={ "blob": blob_b64 }
+                )
             r = None
 
             print("deposited blob in ODA:",r)
