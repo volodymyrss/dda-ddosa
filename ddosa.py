@@ -628,7 +628,8 @@ class DataAnalysis(DataAnalysisPrototype):
 
             try:
                 if 'scw data not found and not allowed to download' in str(exception) or \
-                   'no revdir available! tried:'  in str(exception):
+                   'no revdir available! tried:' in str(exception) or \
+                   'NoValidScW' in str(exception):
                     if self.is_still_worth_recomputing:                    
                         have_expired_exceptions = True
                         da.log(da.render("{RED}detected stored exception EXPIRED!{/}"), level='top')        
