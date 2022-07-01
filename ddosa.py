@@ -608,7 +608,10 @@ class DataAnalysis(DataAnalysisPrototype):
             if int(scw.strip("[]")[:4]) > 2500:
                 return True
 
-        return False
+        if len(involved_scws) == 0:
+            return True
+        else:
+            return False
 
     def post_restore(self):
         exceptions = self.get_exceptions()
