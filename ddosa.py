@@ -1368,7 +1368,14 @@ class ibis_gti(DataAnalysis):
         ogc['instrument']="IBIS"
         ogc['ogid']="scw_"+self.input_scw.scwid
         ogc['baseDir']=os.getcwd().replace("[","_").replace("]","_") # dangerous
-        ogc.run()
+
+        try:
+            ogc.run()
+        except pilton.HEAToolException as e:
+            if 'Error_1: Can not open the new scw' in ogc.output:
+                # e.g. in 109400250010.001
+                raise ScWDataCorrupted("found that we 'Can not open the new scw' - probably corrupt ScW data, try openning the files directly to check")
+            raise
 
         scwroot="scw/"+self.input_scw.scwid
 
@@ -1395,6 +1402,7 @@ class ibis_gti(DataAnalysis):
             ht['GTI_TimeFormat']='UTC'
 
         ht.run()
+
 
         shutil.copy(ht.cwd+"/ibis_gti.fits","./ibis_gti.fits")
         self.output_gti=DataFile("ibis_gti.fits")
@@ -1433,7 +1441,14 @@ class ibis_dead(DataAnalysis):
         ogc['instrument']="IBIS"
         ogc['ogid']="scw_"+self.input_scw.scwid
         ogc['baseDir']=wd # dangerous
-        ogc.run()
+
+        try:
+            ogc.run()
+        except pilton.HEAToolException as e:
+            if 'Error_1: Can not open the new scw' in ogc.output:
+                # e.g. in 109400250010.001
+                raise ScWDataCorrupted("found that we 'Can not open the new scw' - probably corrupt ScW data, try openning the files directly to check")
+            raise
 
         scwroot="scw/"+self.input_scw.scwid
 
@@ -1447,6 +1462,7 @@ class ibis_dead(DataAnalysis):
         ht['compoutDead']="compton_dead.fits(COMP-DEAD-SCP.tpl)"
         ht['disablePICsIT']="YES"
         ht['disableCompton']="YES"
+
         ht.run()
 
         if not os.path.exists(ht.cwd+"/isgri_dead.fits"):
