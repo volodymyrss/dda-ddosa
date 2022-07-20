@@ -612,8 +612,12 @@ class DataAnalysis(DataAnalysisPrototype):
             return True
         else:
             return False
+            
 
     def post_restore(self):
+        # TODO: product expiration globally?
+        # TODO: delicate state process, compare exception creation to index state
+
         exceptions = self.get_exceptions()
 
         if len(exceptions) > 0:
