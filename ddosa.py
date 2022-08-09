@@ -606,7 +606,7 @@ class DataAnalysis(DataAnalysisPrototype):
         print("\n\033[32mall involved scws:", involved_scws, "\033[0m\n")
 
         for scw in involved_scws:
-            if int(scw).endswith(".000"):
+            if scw.strip("[]").endswith(".000"):
                 return True
 
             #if int(scw.strip("[]")[:4]) > 2500:
