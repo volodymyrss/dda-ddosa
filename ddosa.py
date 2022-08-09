@@ -594,6 +594,7 @@ class DataAnalysis(DataAnalysisPrototype):
         involved_scws = []
 
         for a in self.assumptions:
+            print("\n\033[33mhave assumption", a, "\033[0m\n")
             if isinstance(a,ScWData):
                 involved_scws.append(str(a.input_scwid))
 
@@ -605,8 +606,11 @@ class DataAnalysis(DataAnalysisPrototype):
         print("\n\033[32mall involved scws:", involved_scws, "\033[0m\n")
 
         for scw in involved_scws:
-            if int(scw.strip("[]")[:4]) > 2500:
+            if int(scw).endswith(".000"):
                 return True
+
+            #if int(scw.strip("[]")[:4]) > 2500:
+            #    return True
 
         if len(involved_scws) == 0:
             return True
