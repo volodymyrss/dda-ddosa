@@ -53,6 +53,22 @@ import copy
 import json
 import re
 
+
+try:
+    import sentry_sdk
+    sentry_sdk.init(
+        dsn="https://b172be520dba4b8e9f3e9aed77dd9deb@o264756.ingest.sentry.io/6654431",
+
+        # Set traces_sample_rate to 1.0 to capture 100%
+        # of transactions for performance monitoring.
+        # We recommend adjusting this value in production.
+        traces_sample_rate=1.0
+    )
+except Exception as e:
+    print("no sentry!")
+
+#raise NotImplementedError
+
 try:
     import pandas as pd
 except ImportError:
@@ -704,6 +720,9 @@ class BinnedMapsNotComputed(Exception):
     pass
 
 class IncompatibleIISpectraExtract(Exception):
+    pass
+
+class IILCExtractBug(Exception):
     pass
 
 def good_file(fn):
@@ -3303,7 +3322,15 @@ class ii_lc_extract(DataAnalysis):
         # for k in ['SearchMode','ToSearch','CleanMode','MinCatSouSnr','MinNewSouSnr','NegModels','DoPart2']: # dopart2 is flow control, separately
         #    ht[k]=getattr(self.input_imgconfig,k)
 
-        ht.run()
+
+        try:
+            ht.run()
+        except pilton.HEAToolException as e:
+            if 'members number in shd index selection .ne.' in ht.output:
+                print("detected lc issue")
+                raise IILCExtractBug()
+
+            raise
 
         self.lightcurve = DataFile(lc_fn)
 
