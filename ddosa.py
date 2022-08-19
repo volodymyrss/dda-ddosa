@@ -722,7 +722,7 @@ class BinnedMapsNotComputed(Exception):
 class IncompatibleIISpectraExtract(Exception):
     pass
 
-class IILCExtractBug(Exception):
+class IILCExtractBug(AnalysisException):
     pass
 
 def good_file(fn):
