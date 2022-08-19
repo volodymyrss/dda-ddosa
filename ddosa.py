@@ -52,6 +52,7 @@ import ast
 import copy
 import json
 import re
+import traceback
 
 
 try:
@@ -65,7 +66,8 @@ try:
         traces_sample_rate=1.0
     )
 except Exception as e:
-    print("no sentry!")
+    print("no sentry!", e)
+    traceback.print_exc()
 
 #raise NotImplementedError
 
