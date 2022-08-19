@@ -3330,6 +3330,10 @@ class ii_lc_extract(DataAnalysis):
                 print("detected lc issue")
                 raise IILCExtractBug()
 
+            if 'ONTIME le 0' in ht.output:
+                print("detected lc issue")
+                raise IILCExtractBug('ILCONTIMEle')
+
             raise
 
         self.lightcurve = DataFile(lc_fn)
