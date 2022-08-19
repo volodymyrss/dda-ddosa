@@ -57,7 +57,7 @@ import re
 try:
     import sentry_sdk
     sentry_sdk.init(
-        dsn="https://b172be520dba4b8e9f3e9aed77dd9deb@o264756.ingest.sentry.io/6654431",
+        dsn="https://729c8672d2764026a313e83b8feb4b9c@sentry.obsuks1.unige.ch/2",
 
         # Set traces_sample_rate to 1.0 to capture 100%
         # of transactions for performance monitoring.
