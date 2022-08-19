@@ -65,9 +65,12 @@ try:
         # We recommend adjusting this value in production.
         traces_sample_rate=1.0
     )
+    print("sentry found!")
+    sentry_sdk.capture_message('starting ddosa')    
 except Exception as e:
     print("no sentry!", e)
     traceback.print_exc()
+    
 
 #raise NotImplementedError
 
