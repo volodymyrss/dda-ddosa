@@ -988,6 +988,8 @@ class Rev4ScW(Revolution):
         print("revolution id for scw:",revid)
         return revid
 
+
+
 class ICRoot(DataAnalysis):
     cached=False
 
@@ -3338,6 +3340,10 @@ class ii_lc_extract(DataAnalysis):
             if 'ONTIME le 0' in ht.output:
                 print("detected lc issue")
                 raise IILCExtractBug('ILCONTIMEle')
+            
+            if 'SIGBUS: Access to an undefined portion of a memory object' in ht.output:
+                print("detected lc issue")
+                raise IILCExtractBug('segbus')
 
             raise
 
@@ -3712,6 +3718,23 @@ def fromUTC(utc):
     return d
 
 
+
+class LongScWListForScW(DataAnalysis):
+    input_scw=ScWData
+    allow_alias=True
+
+    def main(self):
+        # self.input_scw.get_t1_t2()
+        self.scwlistdata = [ScWData(input_scwid="066500110010.001"), ScWData(input_scwid="066500120010.001")]
+
+class LongImageGroupsForScW(ImageGroups):
+    input_scwlist=LongScWListForScW
+
+class LongMosaicForScW(mosaic_ii_skyimage):
+    input_imagegroups=LongImageGroupsForScW
+
+
+
 import dataanalysis.callback
 
 previously_accepted_classes=dataanalysis.callback.default_callback_filter.callback_accepted_classes
@@ -3749,4 +3772,5 @@ if previously_accepted_classes is not None:
     dataanalysis.callback.default_callback_filter.set_callback_accepted_classes(previously_accepted_classes)
 
 dataanalysis.callback.default_callback_filter.set_callback_accepted_classes([mosaic_ii_skyimage, ISGRIImagePack, ii_skyimage, BinEventsImage, ibis_gti, ibis_dead, ISGRIEvents, ii_spectra_extract, BinEventsSpectra, ii_lc_extract, BinEventsLC, lc_pick])
+
 
