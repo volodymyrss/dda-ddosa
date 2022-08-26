@@ -66,7 +66,6 @@ try:
         traces_sample_rate=1.0
     )
     print("sentry found!")
-    sentry_sdk.capture_message('starting ddosa')    
 except Exception as e:
     print("no sentry!", e)
     traceback.print_exc()
@@ -3344,6 +3343,10 @@ class ii_lc_extract(DataAnalysis):
             if 'SIGBUS: Access to an undefined portion of a memory object' in ht.output:
                 print("detected lc issue")
                 raise IILCExtractBug('segbus')
+
+            if 'Error in F04ASF - matrix AtA not pos.def' in ht.output:
+                print("detected lc issue")
+                raise IILCExtractBug('probably too many sources')
 
             raise
 
