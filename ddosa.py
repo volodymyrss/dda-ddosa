@@ -2239,7 +2239,7 @@ class CatExtract(DataAnalysis):
             f[1].data=t_new.data
 
             fn="isgri_catalog_extra.fits"
-            f.writeto(fn,clobber=True)
+            f.writeto(fn,overwrite=True)
 
         print("storing cat as",fn)
         self.cat=DataFile(fn)
@@ -2818,7 +2818,7 @@ class mosaic_ii_skyimage(DataAnalysis):
         f_cat[1].data = np.concatenate((f_cat[1].data, new_sources_srcl_cat))
 
         merged_cat_fn = "merged_srcl_cat.fits"
-        f_cat.writeto(merged_cat_fn,clobber=True)
+        f_cat.writeto(merged_cat_fn,overwrite=True)
 
         return merged_cat_fn
 
@@ -2989,7 +2989,7 @@ class mosaic_ii_skyimage(DataAnalysis):
         f_cat[1].data = np.concatenate((f_cat[1].data, new_sources_srcl_cat))
 
         merged_res_fn = "merged_res.fits"
-        f_cat.writeto(merged_res_fn,clobber=True)
+        f_cat.writeto(merged_res_fn,overwrite=True)
 
         return DataFile(merged_res_fn)
 
@@ -3064,9 +3064,9 @@ class CatForSpectraFromImaging(DataAnalysis):
             f[1].data = t_new.data
 
             catfn = "isgri_catalog_extra.fits"
-            f.writeto(catfn, clobber=True)
+            f.writeto(catfn, overwrite=True)
 
-        f.writeto(catfn,clobber=True)
+        f.writeto(catfn,overwrite=True)
 
         self.cat=DataFile(catfn)
 
@@ -3534,7 +3534,7 @@ def construct_empty_shadidx(bins,fn="og.fits",levl="BIN_I"):
         og[2+i].header['E_MIN']=e1
         og[2+i].header['E_MAX']=e2
         og[2+i].header['ISDCLEVL']=levl
-    og.writeto(fn,clobber=True)
+    og.writeto(fn,overwrite=True)
 
 #class AnyScW(da.AnyAnalysis):
 #    pass
