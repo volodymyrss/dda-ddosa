@@ -1858,7 +1858,12 @@ class BrightCat(DataAnalysis):
     def main(self):
         #self.cat=self.input.cat+"[ISGRI_FLAG2==5]"
         #self.cat=self.input.cat+"[ISGRI_FLAG2==5]"
-        self.cat_path=self.input.cat+"[ISGRI_FLAG2==5&&ISGR_FLUX_1>100]"
+
+        localized_cat = os.path.basename(self.input.cat) + ".local"
+
+        shutil.copy(self.input.cat, localized_cat)
+        
+        self.cat_path = localized_cat + "[ISGRI_FLAG2==5&&ISGR_FLUX_1>100]"
 
         fn="very_bright_cat.fits"
 
