@@ -625,14 +625,24 @@ class DataAnalysis(DataAnalysisPrototype):
 
         print("\n\033[32mall involved scws:", involved_scws, "\033[0m\n")
 
+        remaining_scw = []
+
         for scw in involved_scws:
-            if scw.strip("[]").endswith(".000"):
-                return True
+            scw = scw.strip("[]")
+            if scw.endswith(".000"):
+                if "2588" in scw:
+                    # exception for temporarily lost data
+                    pass
+                else:
+                    return True
+
+            remaining_scw.append(scw)
+
 
             #if int(scw.strip("[]")[:4]) > 2500:
             #    return True
 
-        if len(involved_scws) == 0:
+        if len(remaining_scw) == 0:
             return True
         else:
             return False
