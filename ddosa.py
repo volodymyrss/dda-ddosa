@@ -591,6 +591,8 @@ class DataAnalysis(DataAnalysisPrototype):
 
     input_osatools=get_OSA_tools()
 
+    input_osa_version=os.getenv("OSA_VERSION", da.NoAnalysis)
+
     cached=False
 
     def get_scw(self):
