@@ -3367,6 +3367,9 @@ class ii_lc_extract(DataAnalysis):
 
             raise
 
+        if 'On entry to DGETRF parameter number  4 had an illegal value' in ht.output:
+            raise IILCExtractBug('DGETRF parameter number had an illegal value')
+
         self.lightcurve = DataFile(lc_fn)
 
 
