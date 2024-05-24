@@ -1361,28 +1361,90 @@ class ibis_isgr_evts_tag(DataAnalysis):
         self.output_events=DataFile(cte)
 
 class UserGTI(DataAnalysis):
-    pass
+
+    gti=None
+    gti_start=None
+    gti_end=None
+
+    def main(self):
+        
+        self.gti_list = []
+        
+        if self.gti and len(self.gti) == 2:
+            
+            print('Assuming single Good Time Interval')
+            print('GTI: {}, {}'.format(self.gti[0], self.gti[1]))
+            
+            self.gti_list.append((self.gti[0], self.gti[1]))
+        
+        else:
+
+            print('Defining multiple GTIs')
+
+            if len(self.gti_start) != len(self.gti_end):
+                raise Exception('Uneven number of start and end times specified. Cannot create GTIs.')
+
+            for i in range(len(self.gti_start)):
+                
+                print('GTI {}: {}, {}'.format(i+1, self.gti_start[i], self.gti_end[i]))
+                self.gti_list.append((self.gti_start[i], self.gti_end[i]))
 
 class gti_user(DataAnalysis):
-    input_gti=UserGTI
 
+    input_scw=ScWData
+    input_gti=UserGTI
+    version="v1"
+    
     cached=True
 
     def main(self):
-        fn="gti_user.fits"
-        remove_withtemplate(fn)
 
-        t1,t2=self.input_gti.gti
+        for i, gti in enumerate(self.input_gti.gti_list):            
 
-        bin="gti_user"
-        ogc=heatool(bin)
-        ogc['begin']=t1
-        ogc['end']=t2
-        ogc['gti']=fn
-        ogc.run()
+            fn="gti_user_{}.fits".format(i)
+            remove_withtemplate(fn)
+            
+            t1,t2=gti
 
-        self.gti=da.DataFile(fn)
+            bin="gti_user"
+            ogc=heatool(bin)
+            ogc['begin']=t1
+            ogc['end']=t2
+            ogc['gti']=fn
+            ogc.run()
 
+        out_fn="gti_user.fits"
+
+        with fits.open("gti_user_0.fits") as hdu1:
+
+            if i > 0:
+                
+                print('Merging multiple GTIs')
+                
+                for j in range(i):
+
+                    with fits.open("gti_user_{}.fits".format(j+1)) as hdu2:
+                        
+                        nrows1 = hdu1[1].data.shape[0]
+                        nrows2 = hdu2[1].data.shape[0]
+                        nrows = nrows1 + nrows2
+
+                        hdu = fits.BinTableHDU.from_columns(hdu1[1].columns, header=hdu1[1].header, nrows=nrows)
+                        for colname in hdu1[1].columns.names:
+                            hdu.data[colname][nrows1:] = hdu2[1].data[colname]
+
+                    hdu1[1] = hdu
+
+                hdu1.writeto(out_fn, overwrite=True)
+
+            else:
+                
+                print('Single GTI detected.')
+                hdu1.writeto(out_fn, overwrite=True)
+
+        print('Saving merged GTI user table.')
+        self.gti=da.DataFile(out_fn)
+        
 # maybe split indeed,but try to show another case
 class ibis_gti(DataAnalysis):
     input_scw=ScWData
