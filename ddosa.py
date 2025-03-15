@@ -581,6 +581,10 @@ def get_OSA_tools(names=None):
 class HaveExpiredAnalysisExceptions(Exception):
     pass
 
+class GhostBustersAnalysisExceptions(Exception):
+    pass
+
+
 class DataAnalysis(DataAnalysisPrototype):
     cache=mc
 
@@ -2111,7 +2115,11 @@ class ghost_bustersVirtual(DataAnalysis):
         ht['sourcecat']=self.input_cat.cat
         ht['maskmod']=self.input_ic.ibisicroot+"/mod/isgr_ghos_mod_001.fits[ISGR-GHOS-MOD,1,IMAGE]"
         ht['inDOL']="og.fits"
-        ht.run()
+
+        try:
+            ht.run()
+        except Exception as e:
+            raise GhostBustersAnalysisExceptions(ht.output)
 
         r="isgri_cor_shad_%s_gb.fits"%self.level
         shutil.copyfile(self.input_shadow.corshad.path,r)
